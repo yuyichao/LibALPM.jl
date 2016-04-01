@@ -14,6 +14,14 @@ include("enums.jl")
 version() = VersionNumber(ascii(ccall((:alpm_version, libalpm), Ptr{UInt8}, ())))
 capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
 
+# checksums
+compute_md5sum(fname) =
+    pointer_to_string(ccall((:alpm_compute_md5sum, libalpm),
+                            Ptr{UInt8}, (Cstring,), fname), true)
+compute_sha256sum(fname) =
+    pointer_to_string(ccall((:alpm_compute_sha256sum, libalpm),
+                            Ptr{UInt8}, (Cstring,), fname), true)
+
 # typedef struct __alpm_handle_t alpm_handle_t;
 # typedef struct __alpm_db_t alpm_db_t;
 # typedef struct __alpm_pkg_t alpm_pkg_t;
@@ -1174,20 +1182,10 @@ capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
 
 # /** @} */
 
-# /*
-#  * Helpers
-#  */
-
-# /* checksums */
-# char *alpm_compute_md5sum(const char *filename);
-# char *alpm_compute_sha256sum(const char *filename);
-
 # alpm_handle_t *alpm_initialize(const char *root, const char *dbpath,
 # 		alpm_errno_t *err);
 # int alpm_release(alpm_handle_t *handle);
 # int alpm_unlock(alpm_handle_t *handle);
-
-
 
 # void alpm_fileconflict_free(alpm_fileconflict_t *conflict);
 # void alpm_depmissing_free(alpm_depmissing_t *miss);
