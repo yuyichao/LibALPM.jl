@@ -1,6 +1,6 @@
 #!/usr/bin/julia -f
 
-module Error
+module Errno
 import LibALPM.libalpm
 @enum(errno_t,
       MEMORY = 1,
@@ -71,7 +71,7 @@ import LibALPM.libalpm
 Base.strerror(err::errno_t) =
     utf8(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
 end
-import .Error.errno_t
+import .Errno.errno_t
 
 "Package install reasons"
 module PkgReason
