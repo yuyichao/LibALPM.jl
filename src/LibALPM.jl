@@ -22,13 +22,50 @@ compute_sha256sum(fname) =
     pointer_to_string(ccall((:alpm_compute_sha256sum, libalpm),
                             Ptr{UInt8}, (Cstring,), fname), true)
 
+##
+# handle
+
+type Handle
+    ptr::Ptr{Void}
+    function Handle(root, db)
+        err = Ref{errno_t}()
+        ptr = ccall((:alpm_initialize, libalpm), Ptr{Void},
+                    (Cstring, Cstring, Ref{errno_t}), root, db, err)
+        if ptr == C_NULL
+            throw(Error(err[], "Create ALPM handle"))
+        end
+        self = new(ptr)
+        finalizer(self, release)
+        self
+    end
+end
+
+function release(hdl::Handle)
+    ptr = hdl.ptr
+    hdl.ptr = C_NULL
+    ptr == C_NULL && return
+    ccall((:alpm_release, libalpm), Cint, (Ptr{Void},), ptr)
+    nothing
+end
+
+Base.cconvert(::Type{Ptr{Void}}, hdl::Handle) = hdl
+Base.unsafe_convert(::Type{Ptr{Void}}, hdl::Handle) = hdl.ptr
+
+"Returns the current error code from the handle"
+errno(hdl::Handle) =
+    ccall((:alpm_errno, libalpm), errno_t, (Ptr{Void},), hdl)
+Error(hdl::Handle, msg) = Error(errno(hdl), msg)
+
+function unlock(hdl::Handle)
+    if ccall((:alpm_unlock, libalpm), Cint, (Ptr{Void},), hdl) != 0
+        throw(Error(hdl, "Unlock handle"))
+    end
+end
+
 # typedef struct __alpm_handle_t alpm_handle_t;
 # typedef struct __alpm_db_t alpm_db_t;
 # typedef struct __alpm_pkg_t alpm_pkg_t;
 # typedef struct __alpm_trans_t alpm_trans_t;
-
-# /** Returns the current error code from the handle. */
-# alpm_errno_t alpm_errno(alpm_handle_t *handle);
 
 # /** Dependency */
 # typedef struct _alpm_depend_t {
@@ -1181,11 +1218,6 @@ compute_sha256sum(fname) =
 # /** @} */
 
 # /** @} */
-
-# alpm_handle_t *alpm_initialize(const char *root, const char *dbpath,
-# 		alpm_errno_t *err);
-# int alpm_release(alpm_handle_t *handle);
-# int alpm_unlock(alpm_handle_t *handle);
 
 # void alpm_fileconflict_free(alpm_fileconflict_t *conflict);
 # void alpm_depmissing_free(alpm_depmissing_t *miss);

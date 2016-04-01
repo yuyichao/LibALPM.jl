@@ -72,6 +72,12 @@ Base.strerror(err::errno_t) =
     utf8(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
 end
 import .Errno.errno_t
+immutable Error
+    errno::errno_t
+    msg
+end
+Base.showerror(io::IO, err::Error) =
+    print(io, "ALPM Error: $(err.msg) ($(strerror(err.errno)))")
 
 "Package install reasons"
 module PkgReason
