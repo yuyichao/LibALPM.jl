@@ -2,6 +2,6 @@
 
 using LibALPM
 
-for err in instances(LibALPM.Error.errno_t)
+for err in instances(LibALPM.errno_t)
     strerror(err)::UTF8String
 end

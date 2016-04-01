@@ -19,98 +19,6 @@ include("enums.jl")
 # /** Returns the current error code from the handle. */
 # alpm_errno_t alpm_errno(alpm_handle_t *handle);
 
-# /*
-#  * Enumerations
-#  * These ones are used in multiple contexts, so are forward-declared.
-#  */
-
-# /** Package install reasons. */
-# typedef enum _alpm_pkgreason_t {
-# 	/** Explicitly requested by the user. */
-# 	ALPM_PKG_REASON_EXPLICIT = 0,
-# 	/** Installed as a dependency for another package. */
-# 	ALPM_PKG_REASON_DEPEND = 1
-# } alpm_pkgreason_t;
-
-# /** Location a package object was loaded from. */
-# typedef enum _alpm_pkgfrom_t {
-# 	ALPM_PKG_FROM_FILE = 1,
-# 	ALPM_PKG_FROM_LOCALDB,
-# 	ALPM_PKG_FROM_SYNCDB
-# } alpm_pkgfrom_t;
-
-# /** Method used to validate a package. */
-# typedef enum _alpm_pkgvalidation_t {
-# 	ALPM_PKG_VALIDATION_UNKNOWN = 0,
-# 	ALPM_PKG_VALIDATION_NONE = (1 << 0),
-# 	ALPM_PKG_VALIDATION_MD5SUM = (1 << 1),
-# 	ALPM_PKG_VALIDATION_SHA256SUM = (1 << 2),
-# 	ALPM_PKG_VALIDATION_SIGNATURE = (1 << 3)
-# } alpm_pkgvalidation_t;
-
-# /** Types of version constraints in dependency specs. */
-# typedef enum _alpm_depmod_t {
-# 	/** No version constraint */
-# 	ALPM_DEP_MOD_ANY = 1,
-# 	/** Test version equality (package=x.y.z) */
-# 	ALPM_DEP_MOD_EQ,
-# 	/** Test for at least a version (package>=x.y.z) */
-# 	ALPM_DEP_MOD_GE,
-# 	/** Test for at most a version (package<=x.y.z) */
-# 	ALPM_DEP_MOD_LE,
-# 	/** Test for greater than some version (package>x.y.z) */
-# 	ALPM_DEP_MOD_GT,
-# 	/** Test for less than some version (package<x.y.z) */
-# 	ALPM_DEP_MOD_LT
-# } alpm_depmod_t;
-
-# /**
-#  * File conflict type.
-#  * Whether the conflict results from a file existing on the filesystem, or with
-#  * another target in the transaction.
-#  */
-# typedef enum _alpm_fileconflicttype_t {
-# 	ALPM_FILECONFLICT_TARGET = 1,
-# 	ALPM_FILECONFLICT_FILESYSTEM
-# } alpm_fileconflicttype_t;
-
-# /** PGP signature verification options */
-# typedef enum _alpm_siglevel_t {
-# 	ALPM_SIG_PACKAGE = (1 << 0),
-# 	ALPM_SIG_PACKAGE_OPTIONAL = (1 << 1),
-# 	ALPM_SIG_PACKAGE_MARGINAL_OK = (1 << 2),
-# 	ALPM_SIG_PACKAGE_UNKNOWN_OK = (1 << 3),
-
-# 	ALPM_SIG_DATABASE = (1 << 10),
-# 	ALPM_SIG_DATABASE_OPTIONAL = (1 << 11),
-# 	ALPM_SIG_DATABASE_MARGINAL_OK = (1 << 12),
-# 	ALPM_SIG_DATABASE_UNKNOWN_OK = (1 << 13),
-
-# 	ALPM_SIG_USE_DEFAULT = (1 << 31)
-# } alpm_siglevel_t;
-
-# /** PGP signature verification status return codes */
-# typedef enum _alpm_sigstatus_t {
-# 	ALPM_SIGSTATUS_VALID,
-# 	ALPM_SIGSTATUS_KEY_EXPIRED,
-# 	ALPM_SIGSTATUS_SIG_EXPIRED,
-# 	ALPM_SIGSTATUS_KEY_UNKNOWN,
-# 	ALPM_SIGSTATUS_KEY_DISABLED,
-# 	ALPM_SIGSTATUS_INVALID
-# } alpm_sigstatus_t;
-
-# /** PGP signature verification status return codes */
-# typedef enum _alpm_sigvalidity_t {
-# 	ALPM_SIGVALIDITY_FULL,
-# 	ALPM_SIGVALIDITY_MARGINAL,
-# 	ALPM_SIGVALIDITY_NEVER,
-# 	ALPM_SIGVALIDITY_UNKNOWN
-# } alpm_sigvalidity_t;
-
-# /*
-#  * Structures
-#  */
-
 # /** Dependency */
 # typedef struct _alpm_depend_t {
 # 	char *name;
@@ -221,153 +129,17 @@ include("enums.jl")
 # } alpm_siglist_t;
 
 
-# /*
-#  * Hooks
-#  */
-
-# typedef enum _alpm_hook_when_t {
-# 	ALPM_HOOK_PRE_TRANSACTION = 1,
-# 	ALPM_HOOK_POST_TRANSACTION
-# } alpm_hook_when_t;
-
-# /*
-#  * Logging facilities
-#  */
-
-# /** Logging Levels */
-# typedef enum _alpm_loglevel_t {
-# 	ALPM_LOG_ERROR    = 1,
-# 	ALPM_LOG_WARNING  = (1 << 1),
-# 	ALPM_LOG_DEBUG    = (1 << 2),
-# 	ALPM_LOG_FUNCTION = (1 << 3)
-# } alpm_loglevel_t;
 
 # typedef void (*alpm_cb_log)(alpm_loglevel_t, const char *, va_list);
 
 # int alpm_logaction(alpm_handle_t *handle, const char *prefix,
 # 		const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 
-# /**
-#  * Type of events.
-#  */
-# typedef enum _alpm_event_type_t {
-# 	/** Dependencies will be computed for a package. */
-# 	ALPM_EVENT_CHECKDEPS_START = 1,
-# 	/** Dependencies were computed for a package. */
-# 	ALPM_EVENT_CHECKDEPS_DONE,
-# 	/** File conflicts will be computed for a package. */
-# 	ALPM_EVENT_FILECONFLICTS_START,
-# 	/** File conflicts were computed for a package. */
-# 	ALPM_EVENT_FILECONFLICTS_DONE,
-# 	/** Dependencies will be resolved for target package. */
-# 	ALPM_EVENT_RESOLVEDEPS_START,
-# 	/** Dependencies were resolved for target package. */
-# 	ALPM_EVENT_RESOLVEDEPS_DONE,
-# 	/** Inter-conflicts will be checked for target package. */
-# 	ALPM_EVENT_INTERCONFLICTS_START,
-# 	/** Inter-conflicts were checked for target package. */
-# 	ALPM_EVENT_INTERCONFLICTS_DONE,
-# 	/** Processing the package transaction is starting. */
-# 	ALPM_EVENT_TRANSACTION_START,
-# 	/** Processing the package transaction is finished. */
-# 	ALPM_EVENT_TRANSACTION_DONE,
-# 	/** Package will be installed/upgraded/downgraded/re-installed/removed; See
-# 	 * alpm_event_package_operation_t for arguments. */
-# 	ALPM_EVENT_PACKAGE_OPERATION_START,
-# 	/** Package was installed/upgraded/downgraded/re-installed/removed; See
-# 	 * alpm_event_package_operation_t for arguments. */
-# 	ALPM_EVENT_PACKAGE_OPERATION_DONE,
-# 	/** Target package's integrity will be checked. */
-# 	ALPM_EVENT_INTEGRITY_START,
-# 	/** Target package's integrity was checked. */
-# 	ALPM_EVENT_INTEGRITY_DONE,
-# 	/** Target package will be loaded. */
-# 	ALPM_EVENT_LOAD_START,
-# 	/** Target package is finished loading. */
-# 	ALPM_EVENT_LOAD_DONE,
-# 	/** Target delta's integrity will be checked. */
-# 	ALPM_EVENT_DELTA_INTEGRITY_START,
-# 	/** Target delta's integrity was checked. */
-# 	ALPM_EVENT_DELTA_INTEGRITY_DONE,
-# 	/** Deltas will be applied to packages. */
-# 	ALPM_EVENT_DELTA_PATCHES_START,
-# 	/** Deltas were applied to packages. */
-# 	ALPM_EVENT_DELTA_PATCHES_DONE,
-# 	/** Delta patch will be applied to target package; See
-# 	 * alpm_event_delta_patch_t for arguments.. */
-# 	ALPM_EVENT_DELTA_PATCH_START,
-# 	/** Delta patch was applied to target package. */
-# 	ALPM_EVENT_DELTA_PATCH_DONE,
-# 	/** Delta patch failed to apply to target package. */
-# 	ALPM_EVENT_DELTA_PATCH_FAILED,
-# 	/** Scriptlet has printed information; See alpm_event_scriptlet_info_t for
-# 	 * arguments. */
-# 	ALPM_EVENT_SCRIPTLET_INFO,
-# 	/** Files will be downloaded from a repository. */
-# 	ALPM_EVENT_RETRIEVE_START,
-# 	/** Files were downloaded from a repository. */
-# 	ALPM_EVENT_RETRIEVE_DONE,
-# 	/** Not all files were successfully downloaded from a repository. */
-# 	ALPM_EVENT_RETRIEVE_FAILED,
-# 	/** A file will be downloaded from a repository; See alpm_event_pkgdownload_t
-# 	 * for arguments */
-# 	ALPM_EVENT_PKGDOWNLOAD_START,
-# 	/** A file was downloaded from a repository; See alpm_event_pkgdownload_t
-# 	 * for arguments */
-# 	ALPM_EVENT_PKGDOWNLOAD_DONE,
-# 	/** A file failed to be downloaded from a repository; See
-# 	 * alpm_event_pkgdownload_t for arguments */
-# 	ALPM_EVENT_PKGDOWNLOAD_FAILED,
-# 	/** Disk space usage will be computed for a package. */
-# 	ALPM_EVENT_DISKSPACE_START,
-# 	/** Disk space usage was computed for a package. */
-# 	ALPM_EVENT_DISKSPACE_DONE,
-# 	/** An optdepend for another package is being removed; See
-# 	 * alpm_event_optdep_removal_t for arguments. */
-# 	ALPM_EVENT_OPTDEP_REMOVAL,
-# 	/** A configured repository database is missing; See
-# 	 * alpm_event_database_missing_t for arguments. */
-# 	ALPM_EVENT_DATABASE_MISSING,
-# 	/** Checking keys used to create signatures are in keyring. */
-# 	ALPM_EVENT_KEYRING_START,
-# 	/** Keyring checking is finished. */
-# 	ALPM_EVENT_KEYRING_DONE,
-# 	/** Downloading missing keys into keyring. */
-# 	ALPM_EVENT_KEY_DOWNLOAD_START,
-# 	/** Key downloading is finished. */
-# 	ALPM_EVENT_KEY_DOWNLOAD_DONE,
-# 	/** A .pacnew file was created; See alpm_event_pacnew_created_t for arguments. */
-# 	ALPM_EVENT_PACNEW_CREATED,
-# 	/** A .pacsave file was created; See alpm_event_pacsave_created_t for
-# 	 * arguments */
-# 	ALPM_EVENT_PACSAVE_CREATED,
-# 	/** Processing hooks will be started. */
-# 	ALPM_EVENT_HOOK_START,
-# 	/** Processing hooks is finished. */
-# 	ALPM_EVENT_HOOK_DONE,
-# 	/** A hook is starting */
-# 	ALPM_EVENT_HOOK_RUN_START,
-# 	/** A hook has finnished runnning */
-# 	ALPM_EVENT_HOOK_RUN_DONE
-# } alpm_event_type_t;
 
 # typedef struct _alpm_event_any_t {
 # 	/** Type of event. */
 # 	alpm_event_type_t type;
 # } alpm_event_any_t;
-
-# typedef enum _alpm_package_operation_t {
-# 	/** Package (to be) installed. (No oldpkg) */
-# 	ALPM_PACKAGE_INSTALL = 1,
-# 	/** Package (to be) upgraded */
-# 	ALPM_PACKAGE_UPGRADE,
-# 	/** Package (to be) re-installed. */
-# 	ALPM_PACKAGE_REINSTALL,
-# 	/** Package (to be) downgraded. */
-# 	ALPM_PACKAGE_DOWNGRADE,
-# 	/** Package (to be) removed. (No newpkg) */
-# 	ALPM_PACKAGE_REMOVE
-# } alpm_package_operation_t;
 
 # typedef struct _alpm_event_package_operation_t {
 # 	/** Type of event. */
@@ -482,22 +254,6 @@ include("enums.jl")
 # /** Event callback. */
 # typedef void (*alpm_cb_event)(alpm_event_t *);
 
-# /**
-#  * Type of questions.
-#  * Unlike the events or progress enumerations, this enum has bitmask values
-#  * so a frontend can use a bitmask map to supply preselected answers to the
-#  * different types of questions.
-#  */
-# typedef enum _alpm_question_type_t {
-# 	ALPM_QUESTION_INSTALL_IGNOREPKG = (1 << 0),
-# 	ALPM_QUESTION_REPLACE_PKG = (1 << 1),
-# 	ALPM_QUESTION_CONFLICT_PKG = (1 << 2),
-# 	ALPM_QUESTION_CORRUPTED_PKG = (1 << 3),
-# 	ALPM_QUESTION_REMOVE_PKGS = (1 << 4),
-# 	ALPM_QUESTION_SELECT_PROVIDER = (1 << 5),
-# 	ALPM_QUESTION_IMPORT_KEY = (1 << 6)
-# } alpm_question_type_t;
-
 # typedef struct _alpm_question_any_t {
 # 	/** Type of question. */
 # 	alpm_question_type_t type;
@@ -596,20 +352,6 @@ include("enums.jl")
 
 # /** Question callback */
 # typedef void (*alpm_cb_question)(alpm_question_t *);
-
-# /** Progress */
-# typedef enum _alpm_progress_t {
-# 	ALPM_PROGRESS_ADD_START,
-# 	ALPM_PROGRESS_UPGRADE_START,
-# 	ALPM_PROGRESS_DOWNGRADE_START,
-# 	ALPM_PROGRESS_REINSTALL_START,
-# 	ALPM_PROGRESS_REMOVE_START,
-# 	ALPM_PROGRESS_CONFLICTS_START,
-# 	ALPM_PROGRESS_DISKSPACE_START,
-# 	ALPM_PROGRESS_INTEGRITY_START,
-# 	ALPM_PROGRESS_LOAD_START,
-# 	ALPM_PROGRESS_KEYRING_START
-# } alpm_progress_t;
 
 # /** Progress callback */
 # typedef void (*alpm_cb_progress)(alpm_progress_t, const char *, int, size_t, size_t);
@@ -918,14 +660,6 @@ include("enums.jl")
 #  * @return the list of packages matching all regular expressions on success, NULL on error
 #  */
 # alpm_list_t *alpm_db_search(alpm_db_t *db, const alpm_list_t *needles);
-
-# typedef enum _alpm_db_usage_ {
-# 	ALPM_DB_USAGE_SYNC = 1,
-# 	ALPM_DB_USAGE_SEARCH = (1 << 1),
-# 	ALPM_DB_USAGE_INSTALL = (1 << 2),
-# 	ALPM_DB_USAGE_UPGRADE = (1 << 3),
-# 	ALPM_DB_USAGE_ALL = (1 << 4) - 1,
-# } alpm_db_usage_t;
 
 # /** Sets the usage of a database.
 #  * @param db pointer to the package database to set the status for
@@ -1320,44 +1054,6 @@ include("enums.jl")
 #  * @{
 #  */
 
-# /** Transaction flags */
-# typedef enum _alpm_transflag_t {
-# 	/** Ignore dependency checks. */
-# 	ALPM_TRANS_FLAG_NODEPS = 1,
-# 	/** Ignore file conflicts and overwrite files. */
-# 	ALPM_TRANS_FLAG_FORCE = (1 << 1),
-# 	/** Delete files even if they are tagged as backup. */
-# 	ALPM_TRANS_FLAG_NOSAVE = (1 << 2),
-# 	/** Ignore version numbers when checking dependencies. */
-# 	ALPM_TRANS_FLAG_NODEPVERSION = (1 << 3),
-# 	/** Remove also any packages depending on a package being removed. */
-# 	ALPM_TRANS_FLAG_CASCADE = (1 << 4),
-# 	/** Remove packages and their unneeded deps (not explicitly installed). */
-# 	ALPM_TRANS_FLAG_RECURSE = (1 << 5),
-# 	/** Modify database but do not commit changes to the filesystem. */
-# 	ALPM_TRANS_FLAG_DBONLY = (1 << 6),
-# 	/* (1 << 7) flag can go here */
-# 	/** Use ALPM_PKG_REASON_DEPEND when installing packages. */
-# 	ALPM_TRANS_FLAG_ALLDEPS = (1 << 8),
-# 	/** Only download packages and do not actually install. */
-# 	ALPM_TRANS_FLAG_DOWNLOADONLY = (1 << 9),
-# 	/** Do not execute install scriptlets after installing. */
-# 	ALPM_TRANS_FLAG_NOSCRIPTLET = (1 << 10),
-# 	/** Ignore dependency conflicts. */
-# 	ALPM_TRANS_FLAG_NOCONFLICTS = (1 << 11),
-# 	/* (1 << 12) flag can go here */
-# 	/** Do not install a package if it is already installed and up to date. */
-# 	ALPM_TRANS_FLAG_NEEDED = (1 << 13),
-# 	/** Use ALPM_PKG_REASON_EXPLICIT when installing packages. */
-# 	ALPM_TRANS_FLAG_ALLEXPLICIT = (1 << 14),
-# 	/** Do not remove a package if it is needed by another one. */
-# 	ALPM_TRANS_FLAG_UNNEEDED = (1 << 15),
-# 	/** Remove also explicitly installed unneeded deps (use with ALPM_TRANS_FLAG_RECURSE). */
-# 	ALPM_TRANS_FLAG_RECURSEALL = (1 << 16),
-# 	/** Do not lock the database during the operation. */
-# 	ALPM_TRANS_FLAG_NOLOCK = (1 << 17)
-# } alpm_transflag_t;
-
 # /** Returns the bitfield of flags for the current transaction.
 #  * @param handle the context handle
 #  * @return the bitfield of transaction flags
@@ -1488,11 +1184,6 @@ include("enums.jl")
 # int alpm_release(alpm_handle_t *handle);
 # int alpm_unlock(alpm_handle_t *handle);
 
-# enum alpm_caps {
-# 	ALPM_CAPABILITY_NLS = (1 << 0),
-# 	ALPM_CAPABILITY_DOWNLOADER = (1 << 1),
-# 	ALPM_CAPABILITY_SIGNATURES = (1 << 2)
-# };
 
 # const char *alpm_version(void);
 # enum alpm_caps alpm_capabilities(void);
