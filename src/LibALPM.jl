@@ -425,17 +425,19 @@ end
 # typedef int (*alpm_cb_fetch)(const char *url, const char *localpath,
 # int force);
 
-# /** Fetch a remote pkg.
-#  * @param handle the context handle
-#  * @param url URL of the package to download
-#  * @return the downloaded filepath on success, NULL on error
-#
-# char *alpm_fetch_pkgurl(alpm_handle_t *handle, const char *url);
+"""
+Fetch a remote pkg
 
-# /** @addtogroup alpm_api_options Options
+`hdl`: the context handle
+`url` URL of the package to download
+Returns the downloaded filepath on success.
+"""
+function fetch_pkgurl(hdl::Handle, url)
+    bytestring(ccall((:alpm_fetch_pkgurl, libalpm), Ptr{UInt8},
+                     (Ptr{Void}, Cstring), hdl, url))
+end
+
 #  * Libalpm option getters and setters
-#  * @{
-#
 
 # /** Returns the callback used for logging.
 # alpm_cb_log alpm_option_get_logcb(alpm_handle_t *handle);
@@ -472,23 +474,29 @@ end
 # /** Sets the callback used for operation progress.
 # int alpm_option_set_progresscb(alpm_handle_t *handle, alpm_cb_progress cb);
 
-# /** Returns the root of the destination filesystem. Read-only.
-# const char *alpm_option_get_root(alpm_handle_t *handle);
+"Returns the root of the destination filesystem"
+function get_root(hdl::Handle)
+    bytestring(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
+                     (Ptr{Void}), hdl))
+end
 
-# /** Returns the path to the database directory. Read-only.
-# const char *alpm_option_get_dbpath(alpm_handle_t *handle);
+"Returns the path to the database directory"
+function get_dbpath(hdl::Handle)
+    bytestring(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
+                     (Ptr{Void}), hdl))
+end
 
-# /** Get the name of the database lock file. Read-only.
-# const char *alpm_option_get_lockfile(alpm_handle_t *handle);
+"Get the name of the database lock file"
+function get_lockfile(hdl::Handle)
+    bytestring(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
+                     (Ptr{Void}), hdl))
+end
 
 # /** @name Accessors to the list of package cache directories.
-#  * @{
-#
 # alpm_list_t *alpm_option_get_cachedirs(alpm_handle_t *handle);
 # int alpm_option_set_cachedirs(alpm_handle_t *handle, alpm_list_t *cachedirs);
 # int alpm_option_add_cachedir(alpm_handle_t *handle, const char *cachedir);
 # int alpm_option_remove_cachedir(alpm_handle_t *handle, const char *cachedir);
-# /** @}
 
 # /** @name Accessors to the list of package hook directories.
 #  * @{
