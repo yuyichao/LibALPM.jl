@@ -187,6 +187,10 @@ import LibALPM: LibALPM, event_type_t
 
 abstract AbstractEvent
 
+immutable AnyEvent <: AbstractEvent
+    _type::event_type_t
+end
+
 immutable PackageOperation <: AbstractEvent
     _type::event_type_t
     operation::LibALPM.package_operation_t
@@ -194,7 +198,7 @@ immutable PackageOperation <: AbstractEvent
     newpkg::Ptr{Void} # alpm_pkg_t*
 end
 
-immutable OptdepRemoval
+immutable OptdepRemoval <: AbstractEvent
     _type::event_type_t
     # Package with the optdep.
     pkg::Ptr{Void} # alpm_pkg_t*
@@ -202,31 +206,31 @@ immutable OptdepRemoval
     optdep::Ptr{LibALPM.Depend}
 end
 
-immutable DeltaPatch
+immutable DeltaPatch <: AbstractEvent
     _type::event_type_t
     # Delta info
     delta::Ptr{LibALPM.Delta}
 end
 
-immutable ScripletInfo
+immutable ScripletInfo <: AbstractEvent
     _type::event_type_t
     # Line of scriptlet output.
     line::Cstring
 end
 
-immutable DatabaseMissing
+immutable DatabaseMissing <: AbstractEvent
     _type::event_type_t
     # Name of the database.
     dbname::Cstring
 end
 
-immutable PkgDownload
+immutable PkgDownload <: AbstractEvent
     _type::event_type_t
     # Name of the file
     file::Cstring
 end
 
-immutable PacnewCreated
+immutable PacnewCreated <: AbstractEvent
     _type::event_type_t
     # Whether the creation was result of a NoUpgrade or not
     from_noupgrade::Cint
@@ -238,7 +242,7 @@ immutable PacnewCreated
     file::Cstring
 end
 
-immutable PacsaveCreated
+immutable PacsaveCreated <: AbstractEvent
     _type::event_type_t
     # Whether the creation was result of a NoUpgrade or not
     from_noupgrade::Cint
@@ -248,13 +252,13 @@ immutable PacsaveCreated
     file::Cstring
 end
 
-immutable Hook
+immutable Hook <: AbstractEvent
     _type::event_type_t
     # Type of hooks.
     when::LibALPM.hook_when_t
 end
 
-immutable HookRun
+immutable HookRun <: AbstractEvent
     _type::event_type_t
     # Name of hook
     name::Cstring
@@ -267,6 +271,42 @@ immutable HookRun
 end
 end
 import .Event.AbstractEvent
+
+function dispatch_event(ptr::Ptr{Void}, cb)
+    event_type = unsafe_load(Ptr{event_type_t}(ptr))
+    if (event_type == EventType.PACKAGE_OPERATION_START ||
+        event_type == EventType.PACKAGE_OPERATION_DONE)
+        cb(event_type, unsafe_load(Ptr{Event.PackageOperation}(ptr)))
+    elseif event_type == EventType.OPTDEP_REMOVAL
+        cb(event_type, unsafe_load(Ptr{Event.OptdepRemoval}(ptr)))
+    elseif (event_type == EventType.DELTA_PATCHES_START ||
+            event_type == EventType.DELTA_PATCH_START ||
+            event_type == EventType.DELTA_PATCH_DONE ||
+            event_type == EventType.DELTA_PATCH_FAILED ||
+            event_type == EventType.DELTA_PATCHES_DONE)
+        cb(event_type, unsafe_load(Ptr{Event.DeltaPatch}(ptr)))
+    elseif event_type == EventType.SCRIPTLET_INFO
+        cb(event_type, unsafe_load(Ptr{Event.ScriptletInfo}(ptr)))
+    elseif event_type == EventType.DATABASE_MISSING
+        cb(event_type, unsafe_load(Ptr{Event.DatabaseMissing}(ptr)))
+    elseif (event_type == EventType.PKGDOWNLOAD_START ||
+            event_type == EventType.PKGDOWNLOAD_DONE ||
+            event_type == EventType.PKGDOWNLOAD_FAILED)
+        cb(event_type, unsafe_load(Ptr{Event.PkgDownload}(ptr)))
+    elseif event_type == EventType.PACNEW_CREATED
+        cb(event_type, unsafe_load(Ptr{Event.PacnewCreated}(ptr)))
+    elseif event_type == EventType.PACSAVE_CREATED
+        cb(event_type, unsafe_load(Ptr{Event.PacsaveCreated}(ptr)))
+    elseif (event_type == EventType.HOOK_START ||
+            event_type == EventType.HOOK_DONE)
+        cb(event_type, unsafe_load(Ptr{Event.Hook}(ptr)))
+    elseif (event_type == EventType.HOOK_RUN_START ||
+            event_type == EventType.HOOK_RUN_DONE)
+        cb(event_type, unsafe_load(Ptr{Event.HookRun}(ptr)))
+    else
+        cb(event_type, unsafe_load(Ptr{Event.AnyEvent}(ptr)))
+    end
+end
 
 # /** Event callback.
 # typedef void (*alpm_cb_event)(alpm_event_t *);
