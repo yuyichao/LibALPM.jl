@@ -10,6 +10,7 @@ else
 end
 
 include("enums.jl")
+include("list.jl")
 
 version() = VersionNumber(ascii(ccall((:alpm_version, libalpm), Ptr{UInt8}, ())))
 capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
