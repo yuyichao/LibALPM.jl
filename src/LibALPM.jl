@@ -182,115 +182,91 @@ end
 # int alpm_logaction(alpm_handle_t *handle, const char *prefix,
 # const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 
-# typedef struct _alpm_event_package_operation_t {
-# Type of event.
-# alpm_event_type_t type;
-# Type of operation.
-# alpm_package_operation_t operation;
-# Old package.
-# alpm_pkg_t *oldpkg;
-# New package.
-# alpm_pkg_t *newpkg;
-# } alpm_event_package_operation_t;
+module Event
+import LibALPM: LibALPM, event_type_t
 
-# typedef struct _alpm_event_optdep_removal_t {
-# Type of event.
-# alpm_event_type_t type;
-# Package with the optdep.
-# alpm_pkg_t *pkg;
-# Optdep being removed.
-# alpm_depend_t *optdep;
-# } alpm_event_optdep_removal_t;
+abstract AbstractEvent
 
-# typedef struct _alpm_event_delta_patch_t {
-# Type of event.
-# alpm_event_type_t type;
-# Delta info
-# alpm_delta_t *delta;
-# } alpm_event_delta_patch_t;
+immutable PackageOperation <: AbstractEvent
+    _type::event_type_t
+    operation::LibALPM.package_operation_t
+    oldpkg::Ptr{Void} # alpm_pkg_t*
+    newpkg::Ptr{Void} # alpm_pkg_t*
+end
 
-# typedef struct _alpm_event_scriptlet_info_t {
-# Type of event.
-# alpm_event_type_t type;
-# Line of scriptlet output.
-# const char *line;
-# } alpm_event_scriptlet_info_t;
+immutable OptdepRemoval
+    _type::event_type_t
+    # Package with the optdep.
+    pkg::Ptr{Void} # alpm_pkg_t*
+    # Optdep being removed.
+    optdep::Ptr{LibALPM.Depend}
+end
 
-# typedef struct _alpm_event_database_missing_t {
-# Type of event.
-# alpm_event_type_t type;
-# Name of the database.
-# const char *dbname;
-# } alpm_event_database_missing_t;
+immutable DeltaPatch
+    _type::event_type_t
+    # Delta info
+    delta::Ptr{LibALPM.Delta}
+end
 
-# typedef struct _alpm_event_pkgdownload_t {
-# Type of event.
-# alpm_event_type_t type;
-# Name of the file
-# const char *file;
-# } alpm_event_pkgdownload_t;
+immutable ScripletInfo
+    _type::event_type_t
+    # Line of scriptlet output.
+    line::Cstring
+end
 
-# typedef struct _alpm_event_pacnew_created_t {
-# Type of event.
-# alpm_event_type_t type;
-# Whether the creation was result of a NoUpgrade or not
-# int from_noupgrade;
-# Old package.
-# alpm_pkg_t *oldpkg;
-# New Package.
-# alpm_pkg_t *newpkg;
-# Filename of the file without the .pacnew suffix
-# const char *file;
-# } alpm_event_pacnew_created_t;
+immutable DatabaseMissing
+    _type::event_type_t
+    # Name of the database.
+    dbname::Cstring
+end
 
-# typedef struct _alpm_event_pacsave_created_t {
-# Type of event.
-# alpm_event_type_t type;
-# Old package.
-# alpm_pkg_t *oldpkg;
-# Filename of the file without the .pacsave suffix.
-# const char *file;
-# } alpm_event_pacsave_created_t;
+immutable PkgDownload
+    _type::event_type_t
+    # Name of the file
+    file::Cstring
+end
 
-# typedef struct _alpm_event_hook_t {
-# Type of event.*/
-# alpm_event_type_t type;
-# Type of hooks.
-# alpm_hook_when_t when;
-# } alpm_event_hook_t;
+immutable PacnewCreated
+    _type::event_type_t
+    # Whether the creation was result of a NoUpgrade or not
+    from_noupgrade::Cint
+    # Old package.
+    oldpkg::Ptr{Void} # alpm_pkg_t*
+    # New Package.
+    newpkg::Ptr{Void} # alpm_pkg_t*
+    # Filename of the file without the .pacnew suffix
+    file::Cstring
+end
 
-# typedef struct _alpm_event_hook_run_t {
-# Type of event.*/
-# alpm_event_type_t type;
-# Name of hook
-# const char *name;
-# Description of hook to be outputted
-# const char *desc;
-# position of hook being run
-# size_t position;
-# total hooks being run
-# size_t total;
-# } alpm_event_hook_run_t;
+immutable PacsaveCreated
+    _type::event_type_t
+    # Whether the creation was result of a NoUpgrade or not
+    from_noupgrade::Cint
+    # Old package.
+    oldpkg::Ptr{Void} # alpm_pkg_t*
+    # Filename of the file without the .pacsave suffix.
+    file::Cstring
+end
 
-# /** Events.
-#  * This is an union passed to the callback, that allows the frontend to know
-#  * which type of event was triggered (via type). It is then possible to
-#  * typecast the pointer to the right structure, or use the union field, in order
-#  * to access event-specific data.
-# typedef union _alpm_event_t {
-# alpm_event_type_t type;
-# alpm_event_any_t any;
-# alpm_event_package_operation_t package_operation;
-# alpm_event_optdep_removal_t optdep_removal;
-# alpm_event_delta_patch_t delta_patch;
-# alpm_event_scriptlet_info_t scriptlet_info;
-# alpm_event_database_missing_t database_missing;
-# alpm_event_pkgdownload_t pkgdownload;
-# alpm_event_pacnew_created_t pacnew_created;
-# alpm_event_pacsave_created_t pacsave_created;
-# alpm_event_hook_t hook;
-# alpm_event_hook_run_t hook_run;
-# } alpm_event_t;
+immutable Hook
+    _type::event_type_t
+    # Type of hooks.
+    when::LibALPM.hook_when_t
+end
+
+immutable HookRun
+    _type::event_type_t
+    # Name of hook
+    name::Cstring
+    # Description of hook to be outputted
+    desc::Cstring
+    # position of hook being run
+    position::Csize_t
+    # total hooks being run
+    total::Csize_t
+end
+end
+import .Event.AbstractEvent
 
 # /** Event callback.
 # typedef void (*alpm_cb_event)(alpm_event_t *);

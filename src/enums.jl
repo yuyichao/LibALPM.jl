@@ -214,10 +214,10 @@ module EventType
       # Processing the package transaction is finished
       TRANSACTION_DONE,
       # Package will be installed/upgraded/downgraded/re-installed/removed; See
-      # alpm_event_package_operation_t for arguments
+      # Event.PackageOperation for arguments
       PACKAGE_OPERATION_START,
       # Package was installed/upgraded/downgraded/re-installed/removed; See
-      # alpm_event_package_operation_t for arguments
+      # Event.PackageOperation for arguments
       PACKAGE_OPERATION_DONE,
       # Target package's integrity will be checked
       INTEGRITY_START,
@@ -236,13 +236,13 @@ module EventType
       # Deltas were applied to packages
       DELTA_PATCHES_DONE,
       # Delta patch will be applied to target package; See
-      # alpm_event_delta_patch_t for arguments.
+      # Event.DeltaPatch for arguments.
       DELTA_PATCH_START,
       # Delta patch was applied to target package
       DELTA_PATCH_DONE,
       # Delta patch failed to apply to target package
       DELTA_PATCH_FAILED,
-      # Scriptlet has printed information; See alpm_event_scriptlet_info_t for
+      # Scriptlet has printed information; See Event.ScriptletInfo for
       # arguments
       SCRIPTLET_INFO,
       # Files will be downloaded from a repository
@@ -251,24 +251,24 @@ module EventType
       RETRIEVE_DONE,
       # Not all files were successfully downloaded from a repository
       RETRIEVE_FAILED,
-      # A file will be downloaded from a repository; See alpm_event_pkgdownload_t
+      # A file will be downloaded from a repository; See Event.PkgDownload
       # for arguments
       PKGDOWNLOAD_START,
-      # A file was downloaded from a repository; See alpm_event_pkgdownload_t
+      # A file was downloaded from a repository; See Event.PkgDownload
       # for arguments
       PKGDOWNLOAD_DONE,
       # A file failed to be downloaded from a repository; See
-      # alpm_event_pkgdownload_t for arguments
+      # Event.PkgDownload for arguments
       PKGDOWNLOAD_FAILED,
       # Disk space usage will be computed for a package
       DISKSPACE_START,
       # Disk space usage was computed for a package
       DISKSPACE_DONE,
       # An optdepend for another package is being removed; See
-      # alpm_event_optdep_removal_t for arguments
+      # Event.OptdepRemoval for arguments
       OPTDEP_REMOVAL,
       # A configured repository database is missing; See
-      # alpm_event_database_missing_t for arguments
+      # Event.DatabaseMissing for arguments
       DATABASE_MISSING,
       # Checking keys used to create signatures are in keyring
       KEYRING_START,
@@ -278,10 +278,9 @@ module EventType
       KEY_DOWNLOAD_START,
       # Key downloading is finished
       KEY_DOWNLOAD_DONE,
-      # A .pacnew file was created; See alpm_event_pacnew_created_t for arguments
+      # A .pacnew file was created; See Event.PacnewCreated for arguments
       PACNEW_CREATED,
-      # A .pacsave file was created; See alpm_event_pacsave_created_t for
-      # arguments
+      # A .pacsave file was created; See Event.PacsaveCreated for arguments
       PACSAVE_CREATED,
       # Processing hooks will be started
       HOOK_START,
