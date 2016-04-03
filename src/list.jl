@@ -16,7 +16,15 @@ function list_to_array{T}(::Type{T}, list::Ptr{list_t}, cb)
     res
 end
 
-function array_to_list{T}(ary, cb, freecb::Ptr{Void}=C_NULL)
+function free(list::Ptr{list_t}, freecb::Ptr{Void}=C_NULL)
+    if freecb != C_NULL
+        ccall((:alpm_list_free_inner, libalpm), Void,
+              (Ptr{list_t}, Ptr{Void}), list, freecb)
+    end
+    ccall((:alpm_list_free, libalpm), Void, (Ptr{list_t},), list)
+end
+
+function array_to_list(ary, cb, freecb::Ptr{Void}=C_NULL)
     list = Ptr{list_t}(0)
     try
         for obj in ary
@@ -25,11 +33,7 @@ function array_to_list{T}(ary, cb, freecb::Ptr{Void}=C_NULL)
                          (Ptr{list_t}, Ptr{Void}), list, data)
         end
     catch ex
-        if freecb != C_NULL
-            ccall((:alpm_list_free_inner, libalpm), Void,
-                  (Ptr{list_t}, Ptr{Void}), list, freecb)
-        end
-        ccall((:alpm_list_free, libalpm), Void, (Ptr{list_t},), list)
+        free(list, freecb)
         rethrow(ex)
     end
     list

@@ -493,20 +493,69 @@ function get_lockfile(hdl::Handle)
                      (Ptr{Void},), hdl))
 end
 
-# /** @name Accessors to the list of package cache directories.
-# alpm_list_t *alpm_option_get_cachedirs(alpm_handle_t *handle);
-# int alpm_option_set_cachedirs(alpm_handle_t *handle, alpm_list_t *cachedirs);
-# int alpm_option_add_cachedir(alpm_handle_t *handle, const char *cachedir);
-# int alpm_option_remove_cachedir(alpm_handle_t *handle, const char *cachedir);
+# Accessors to the list of package cache directories
+function get_cachedirs(hdl::Handle)
+    dirs = ccall((:alpm_option_get_cachedirs, libalpm), Ptr{list_t},
+                 (Ptr{Void},), hdl)
+    list_to_array(UTF8String, dirs,
+                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                  (Ptr{Void}, Csize_t)
+                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+end
+function set_cachedirs(hdl::Handle, dirs)
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+                         cglobal(:free))
+    ret = ccall((:alpm_option_set_cachedirs, libalpm), Cint,
+                (Ptr{Void}, Ptr{list_t}), hdl, list)
+    if ret != 0
+        free(list, cglobal(:free))
+        throw(Error(hdl))
+    end
+end
+function add_cachedir(hdl::Handle, cachedir)
+    ret = ccall((:alpm_option_add_cachedir, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, cachedir)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
+function remove_cachedir(hdl::Handle, cachedir)
+    ret = ccall((:alpm_option_remove_cachedir, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, cachedir)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# /** @name Accessors to the list of package hook directories.
-#  * @{
-#
-# alpm_list_t *alpm_option_get_hookdirs(alpm_handle_t *handle);
-# int alpm_option_set_hookdirs(alpm_handle_t *handle, alpm_list_t *hookdirs);
-# int alpm_option_add_hookdir(alpm_handle_t *handle, const char *hookdir);
-# int alpm_option_remove_hookdir(alpm_handle_t *handle, const char *hookdir);
-# /** @}
+# Accessors to the list of package hook directories
+function get_hookdirs(hdl::Handle)
+    dirs = ccall((:alpm_option_get_hookdirs, libalpm), Ptr{list_t},
+                 (Ptr{Void},), hdl)
+    list_to_array(UTF8String, dirs,
+                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                  (Ptr{Void}, Csize_t)
+                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+end
+function set_hookdirs(hdl::Handle, dirs)
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+                         cglobal(:free))
+    ret = ccall((:alpm_option_set_hookdirs, libalpm), Cint,
+                (Ptr{Void}, Ptr{list_t}), hdl, list)
+    if ret != 0
+        free(list, cglobal(:free))
+        throw(Error(hdl))
+    end
+end
+function add_hookdir(hdl::Handle, hookdir)
+    ret = ccall((:alpm_option_add_hookdir, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, hookdir)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
+function remove_hookdir(hdl::Handle, hookdir)
+    ret = ccall((:alpm_option_remove_hookdir, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, hookdir)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
 "Returns the logfile name"
 function get_logfile(hdl::Handle)
@@ -546,57 +595,165 @@ function set_usesyslog(hdl::Handle, usesyslog)
     nothing
 end
 
-# /** @name Accessors to the list of no-upgrade files.
-#  * These functions modify the list of files which should
-#  * not be updated by package installation.
-#  * @{
+# Accessors to the list of no-upgrade files.
 #
-# alpm_list_t *alpm_option_get_noupgrades(alpm_handle_t *handle);
-# int alpm_option_add_noupgrade(alpm_handle_t *handle, const char *path);
-# int alpm_option_set_noupgrades(alpm_handle_t *handle, alpm_list_t *noupgrade);
-# int alpm_option_remove_noupgrade(alpm_handle_t *handle, const char *path);
-# int alpm_option_match_noupgrade(alpm_handle_t *handle, const char *path);
-# /** @}
+# These functions modify the list of files which should
+# not be updated by package installation.
+function get_noupgrades(hdl::Handle)
+    dirs = ccall((:alpm_option_get_noupgrades, libalpm), Ptr{list_t},
+                 (Ptr{Void},), hdl)
+    list_to_array(UTF8String, dirs,
+                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                  (Ptr{Void}, Csize_t)
+                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+end
+function set_noupgrades(hdl::Handle, dirs)
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+                         cglobal(:free))
+    ret = ccall((:alpm_option_set_noupgrades, libalpm), Cint,
+                (Ptr{Void}, Ptr{list_t}), hdl, list)
+    if ret != 0
+        free(list, cglobal(:free))
+        throw(Error(hdl))
+    end
+end
+function add_noupgrade(hdl::Handle, noupgrade)
+    ret = ccall((:alpm_option_add_noupgrade, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, noupgrade)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
+function remove_noupgrade(hdl::Handle, noupgrade)
+    ret = ccall((:alpm_option_remove_noupgrade, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, noupgrade)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
+"""
+Return 0 if string matches pattern,
+negative if they don't match and positive if the last match was inverted.
+"""
+function match_noupgrade(hdl::Handle, noupgrade)
+    ccall((:alpm_option_match_noupgrade, libalpm), Cint,
+          (Ptr{Void}, Cstring), hdl, noupgrade)
+end
 
-# /** @name Accessors to the list of no-extract files.
-#  * These functions modify the list of filenames which should
-#  * be skipped packages which should
-#  * not be upgraded by a sysupgrade operation.
-#  * @{
+# Accessors to the list of no-extract files.
 #
-# alpm_list_t *alpm_option_get_noextracts(alpm_handle_t *handle);
-# int alpm_option_add_noextract(alpm_handle_t *handle, const char *path);
-# int alpm_option_set_noextracts(alpm_handle_t *handle, alpm_list_t *noextract);
-# int alpm_option_remove_noextract(alpm_handle_t *handle, const char *path);
-# int alpm_option_match_noextract(alpm_handle_t *handle, const char *path);
-# /** @}
+# These functions modify the list of filenames which should
+# be skipped packages which should not be upgraded by a sysupgrade operation.
+function get_noextracts(hdl::Handle)
+    dirs = ccall((:alpm_option_get_noextracts, libalpm), Ptr{list_t},
+                 (Ptr{Void},), hdl)
+    list_to_array(UTF8String, dirs,
+                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                  (Ptr{Void}, Csize_t)
+                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+end
+function set_noextracts(hdl::Handle, dirs)
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+                         cglobal(:free))
+    ret = ccall((:alpm_option_set_noextracts, libalpm), Cint,
+                (Ptr{Void}, Ptr{list_t}), hdl, list)
+    if ret != 0
+        free(list, cglobal(:free))
+        throw(Error(hdl))
+    end
+end
+function add_noextract(hdl::Handle, noextract)
+    ret = ccall((:alpm_option_add_noextract, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, noextract)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
+function remove_noextract(hdl::Handle, noextract)
+    ret = ccall((:alpm_option_remove_noextract, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, noextract)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
+"""
+Return 0 if string matches pattern,
+negative if they don't match and positive if the last match was inverted.
+"""
+function match_noextract(hdl::Handle, noextract)
+    ccall((:alpm_option_match_noextract, libalpm), Cint,
+          (Ptr{Void}, Cstring), hdl, noextract)
+end
 
-# /** @name Accessors to the list of ignored packages.
-#  * These functions modify the list of packages that
-#  * should be ignored by a sysupgrade.
-#  * @{
+# Accessors to the list of ignored packages.
 #
-# alpm_list_t *alpm_option_get_ignorepkgs(alpm_handle_t *handle);
-# int alpm_option_add_ignorepkg(alpm_handle_t *handle, const char *pkg);
-# int alpm_option_set_ignorepkgs(alpm_handle_t *handle, alpm_list_t *ignorepkgs);
-# int alpm_option_remove_ignorepkg(alpm_handle_t *handle, const char *pkg);
-# /** @}
+# These functions modify the list of packages that
+# should be ignored by a sysupgrade.
+function get_ignorepkgs(hdl::Handle)
+    dirs = ccall((:alpm_option_get_ignorepkgs, libalpm), Ptr{list_t},
+                 (Ptr{Void},), hdl)
+    list_to_array(UTF8String, dirs,
+                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                  (Ptr{Void}, Csize_t)
+                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+end
+function set_ignorepkgs(hdl::Handle, dirs)
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+                         cglobal(:free))
+    ret = ccall((:alpm_option_set_ignorepkgs, libalpm), Cint,
+                (Ptr{Void}, Ptr{list_t}), hdl, list)
+    if ret != 0
+        free(list, cglobal(:free))
+        throw(Error(hdl))
+    end
+end
+function add_ignorepkg(hdl::Handle, ignorepkg)
+    ret = ccall((:alpm_option_add_ignorepkg, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, ignorepkg)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
+function remove_ignorepkg(hdl::Handle, ignorepkg)
+    ret = ccall((:alpm_option_remove_ignorepkg, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, ignorepkg)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# /** @name Accessors to the list of ignored groups.
-#  * These functions modify the list of groups whose packages
-#  * should be ignored by a sysupgrade.
-#  * @{
+# Accessors to the list of ignored groups.
 #
-# alpm_list_t *alpm_option_get_ignoregroups(alpm_handle_t *handle);
-# int alpm_option_add_ignoregroup(alpm_handle_t *handle, const char *grp);
-# int alpm_option_set_ignoregroups(alpm_handle_t *handle, alpm_list_t *ignoregrps);
-# int alpm_option_remove_ignoregroup(alpm_handle_t *handle, const char *grp);
-# /** @}
+# These functions modify the list of groups whose packages
+# should be ignored by a sysupgrade.
+function get_ignoregroups(hdl::Handle)
+    dirs = ccall((:alpm_option_get_ignoregroups, libalpm), Ptr{list_t},
+                 (Ptr{Void},), hdl)
+    list_to_array(UTF8String, dirs,
+                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                  (Ptr{Void}, Csize_t)
+                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+end
+function set_ignoregroups(hdl::Handle, dirs)
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+                         cglobal(:free))
+    ret = ccall((:alpm_option_set_ignoregroups, libalpm), Cint,
+                (Ptr{Void}, Ptr{list_t}), hdl, list)
+    if ret != 0
+        free(list, cglobal(:free))
+        throw(Error(hdl))
+    end
+end
+function add_ignoregroup(hdl::Handle, ignoregroup)
+    ret = ccall((:alpm_option_add_ignoregroup, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, ignoregroup)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
+function remove_ignoregroup(hdl::Handle, ignoregroup)
+    ret = ccall((:alpm_option_remove_ignoregroup, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, ignoregroup)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# /** @name Accessors to the list of ignored dependencies.
-#  * These functions modify the list of dependencies that
-#  * should be ignored by a sysupgrade.
-#  * @{
+# Accessors to the list of ignored dependencies.
+# These functions modify the list of dependencies that
+# should be ignored by a sysupgrade.
 #
 # alpm_list_t *alpm_option_get_assumeinstalled(alpm_handle_t *handle);
 # int alpm_option_add_assumeinstalled(alpm_handle_t *handle, const alpm_depend_t *dep);
@@ -1201,7 +1358,6 @@ end
 #  * @param handle the context handle
 #  * @param pkg the package to add
 #  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#
 # int alpm_add_pkg(alpm_handle_t *handle, alpm_pkg_t *pkg);
 
 # /** Add a package removal action to the transaction.
