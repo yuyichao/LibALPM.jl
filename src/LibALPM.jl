@@ -499,7 +499,7 @@ function get_cachedirs(hdl::Handle)
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
                   ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t)
+                                  (Ptr{Void}, Csize_t),
                                   p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_cachedirs(hdl::Handle, dirs)
@@ -531,7 +531,7 @@ function get_hookdirs(hdl::Handle)
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
                   ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t)
+                                  (Ptr{Void}, Csize_t),
                                   p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_hookdirs(hdl::Handle, dirs)
@@ -604,7 +604,7 @@ function get_noupgrades(hdl::Handle)
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
                   ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t)
+                                  (Ptr{Void}, Csize_t),
                                   p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_noupgrades(hdl::Handle, dirs)
@@ -647,7 +647,7 @@ function get_noextracts(hdl::Handle)
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
                   ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t)
+                                  (Ptr{Void}, Csize_t),
                                   p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_noextracts(hdl::Handle, dirs)
@@ -690,7 +690,7 @@ function get_ignorepkgs(hdl::Handle)
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
                   ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t)
+                                  (Ptr{Void}, Csize_t),
                                   p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_ignorepkgs(hdl::Handle, dirs)
@@ -725,7 +725,7 @@ function get_ignoregroups(hdl::Handle)
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
                   ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t)
+                                  (Ptr{Void}, Csize_t),
                                   p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_ignoregroups(hdl::Handle, dirs)
@@ -761,35 +761,85 @@ end
 # int alpm_option_remove_assumeinstalled(alpm_handle_t *handle, const alpm_depend_t *dep);
 # /** @}
 
-# /** Returns the targeted architecture.
-# const char *alpm_option_get_arch(alpm_handle_t *handle);
-# /** Sets the targeted architecture.
-# int alpm_option_set_arch(alpm_handle_t *handle, const char *arch);
+"Returns the targeted architecture"
+function get_arch(hdl::Handle)
+    bytestring(ccall((:alpm_option_get_arch, libalpm), Ptr{UInt8},
+                     (Ptr{Void},), hdl))
+end
+"Sets the targeted architecture"
+function set_arch(hdl::Handle, arch)
+    ret = ccall((:alpm_option_set_arch, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, arch)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# double alpm_option_get_deltaratio(alpm_handle_t *handle);
-# int alpm_option_set_deltaratio(alpm_handle_t *handle, double ratio);
+function get_deltaratio(hdl::Handle)
+    ccall((:alpm_option_get_deltaratio, libalpm), Cdouble,
+          (Ptr{Void},), hdl)
+end
+function set_deltaratio(hdl::Handle, deltaratio)
+    ret = ccall((:alpm_option_set_deltaratio, libalpm), Cint,
+                (Ptr{Void}, Cdouble), hdl, deltaratio)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# int alpm_option_get_checkspace(alpm_handle_t *handle);
-# int alpm_option_set_checkspace(alpm_handle_t *handle, int checkspace);
+function get_checkspace(hdl::Handle)
+    ccall((:alpm_option_get_checkspace, libalpm), Cint, (Ptr{Void},), hdl) != 0
+end
+function set_checkspace(hdl::Handle, checkspace)
+    ret = ccall((:alpm_option_set_checkspace, libalpm), Cint,
+                (Ptr{Void}, Cint), hdl, checkspace)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# const char *alpm_option_get_dbext(alpm_handle_t *handle);
-# int alpm_option_set_dbext(alpm_handle_t *handle, const char *dbext);
+function get_dbext(hdl::Handle)
+    bytestring(ccall((:alpm_option_get_dbext, libalpm), Ptr{UInt8},
+                     (Ptr{Void},), hdl))
+end
+function set_dbext(hdl::Handle, dbext)
+    ret = ccall((:alpm_option_set_dbext, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, dbext)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# alpm_siglevel_t alpm_option_get_default_siglevel(alpm_handle_t *handle);
-# int alpm_option_set_default_siglevel(alpm_handle_t *handle, alpm_siglevel_t level);
+function get_siglevel(hdl::Handle)
+    ccall((:alpm_option_get_siglevel, libalpm), Cint, (Ptr{Void},), hdl)
+end
+function set_siglevel(hdl::Handle, siglevel)
+    ret = ccall((:alpm_option_set_siglevel, libalpm), Cint,
+                (Ptr{Void}, Cint), hdl, siglevel)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# alpm_siglevel_t alpm_option_get_local_file_siglevel(alpm_handle_t *handle);
-# int alpm_option_set_local_file_siglevel(alpm_handle_t *handle, alpm_siglevel_t level);
+function get_local_file_siglevel(hdl::Handle)
+    ccall((:alpm_option_get_local_file_siglevel, libalpm),
+          Cint, (Ptr{Void},), hdl)
+end
+function set_local_file_siglevel(hdl::Handle, siglevel)
+    ret = ccall((:alpm_option_set_local_file_siglevel, libalpm), Cint,
+                (Ptr{Void}, Cint), hdl, siglevel)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# alpm_siglevel_t alpm_option_get_remote_file_siglevel(alpm_handle_t *handle);
-# int alpm_option_set_remote_file_siglevel(alpm_handle_t *handle, alpm_siglevel_t level);
-
-# /** @}
+function get_remote_file_siglevel(hdl::Handle)
+    ccall((:alpm_option_get_remote_file_siglevel, libalpm),
+          Cint, (Ptr{Void},), hdl)
+end
+function set_remote_file_siglevel(hdl::Handle, siglevel)
+    ret = ccall((:alpm_option_set_remote_file_siglevel, libalpm), Cint,
+                (Ptr{Void}, Cint), hdl, siglevel)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
 # /** @addtogroup alpm_api_databases Database Functions
 #  * Functions to query and manipulate the database of libalpm.
-#  * @{
-#
 
 # /** Get the database of locally installed packages.
 #  * The returned pointer points to an internal structure
