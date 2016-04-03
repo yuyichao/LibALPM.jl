@@ -477,19 +477,19 @@ end
 "Returns the root of the destination filesystem"
 function get_root(hdl::Handle)
     bytestring(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
-                     (Ptr{Void}), hdl))
+                     (Ptr{Void},), hdl))
 end
 
 "Returns the path to the database directory"
 function get_dbpath(hdl::Handle)
     bytestring(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
-                     (Ptr{Void}), hdl))
+                     (Ptr{Void},), hdl))
 end
 
 "Get the name of the database lock file"
 function get_lockfile(hdl::Handle)
     bytestring(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
-                     (Ptr{Void}), hdl))
+                     (Ptr{Void},), hdl))
 end
 
 # /** @name Accessors to the list of package cache directories.
@@ -507,20 +507,43 @@ end
 # int alpm_option_remove_hookdir(alpm_handle_t *handle, const char *hookdir);
 # /** @}
 
-# /** Returns the logfile name.
-# const char *alpm_option_get_logfile(alpm_handle_t *handle);
-# /** Sets the logfile name.
-# int alpm_option_set_logfile(alpm_handle_t *handle, const char *logfile);
+"Returns the logfile name"
+function get_logfile(hdl::Handle)
+    bytestring(ccall((:alpm_option_get_logfile, libalpm), Ptr{UInt8},
+                     (Ptr{Void},), hdl))
+end
+"Sets the logfile name"
+function set_logfile(hdl::Handle, logfile)
+    ret = ccall((:alpm_option_set_logfile, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, logfile)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# /** Returns the path to libalpm's GnuPG home directory.
-# const char *alpm_option_get_gpgdir(alpm_handle_t *handle);
-# /** Sets the path to libalpm's GnuPG home directory.
-# int alpm_option_set_gpgdir(alpm_handle_t *handle, const char *gpgdir);
+"Returns the path to libalpm's GnuPG home directory"
+function get_gpgdir(hdl::Handle)
+    bytestring(ccall((:alpm_option_get_gpgdir, libalpm), Ptr{UInt8},
+                     (Ptr{Void},), hdl))
+end
+"Sets the path to libalpm's GnuPG home directory"
+function set_gpgdir(hdl::Handle, gpgdir)
+    ret = ccall((:alpm_option_set_gpgdir, libalpm), Cint,
+                (Ptr{Void}, Cstring), hdl, gpgdir)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
-# /** Returns whether to use syslog (0 is FALSE, TRUE otherwise).
-# int alpm_option_get_usesyslog(alpm_handle_t *handle);
-# /** Sets whether to use syslog (0 is FALSE, TRUE otherwise).
-# int alpm_option_set_usesyslog(alpm_handle_t *handle, int usesyslog);
+"Returns whether to use syslog"
+function get_usesyslog(hdl::Handle)
+    ccall((:alpm_option_get_usesyslog, libalpm), Cint, (Ptr{Void},), hdl) != 0
+end
+"Sets whether to use syslog"
+function set_usesyslog(hdl::Handle, usesyslog)
+    ret = ccall((:alpm_option_set_usesyslog, libalpm), Cint,
+                (Ptr{Void}, Cint), hdl, usesyslog)
+    ret == 0 || throw(Error(hdl))
+    nothing
+end
 
 # /** @name Accessors to the list of no-upgrade files.
 #  * These functions modify the list of files which should
