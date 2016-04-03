@@ -308,114 +308,102 @@ function dispatch_event(ptr::Ptr{Void}, cb)
     end
 end
 
-# /** Event callback.
+# Event callback.
 # typedef void (*alpm_cb_event)(alpm_event_t *);
 
-# typedef struct _alpm_question_any_t {
-# Type of question.
-# alpm_question_type_t type;
-# Answer.
-# int answer;
-# } alpm_question_any_t;
+module Question
+import LibALPM
+abstract AbstractQuestion
 
-# typedef struct _alpm_question_install_ignorepkg_t {
-# Type of question.
-# alpm_question_type_t type;
-# Answer: whether or not to install pkg anyway.
-# int install;
-# /* Package in IgnorePkg/IgnoreGroup.
-# alpm_pkg_t *pkg;
-# } alpm_question_install_ignorepkg_t;
+immutable AnyQuestion
+    # Type of question
+    _type::Cint
+    # Answer
+    answer::Cint
+end
 
-# typedef struct _alpm_question_replace_t {
-# Type of question.
-# alpm_question_type_t type;
-# Answer: whether or not to replace oldpkg with newpkg.
-# int replace;
-# /* Package to be replaced.
-# alpm_pkg_t *oldpkg;
-# /* Package to replace with.
-# alpm_pkg_t *newpkg;
-# /* DB of newpkg
-# alpm_db_t *newdb;
-# } alpm_question_replace_t;
+immutable InstallIgnorepkg
+    # Type of question
+    _type::Cint
+    # Answer: whether or not to install pkg anyway
+    install::Cint
+    # Package in IgnorePkg/IgnoreGroup
+    pkg::Ptr{Void} # alpm_pkg_t*
+end
 
-# typedef struct _alpm_question_conflict_t {
-# Type of question.
-# alpm_question_type_t type;
-# Answer: whether or not to remove conflict->package2.
-# int remove;
-# Conflict info.
-# alpm_conflict_t *conflict;
-# } alpm_question_conflict_t;
+immutable Replace
+    # Type of question
+    _type::Cint
+    # Answer: whether or not to replace oldpkg with newpkg
+    replace::Cint
+    # Package to be replaced
+    oldpkg::Ptr{Void} # alpm_pkg_t*
+    # Package to replace with
+    newpkg::Ptr{Void} # alpm_pkg_t*
+    # DB of newpkg
+    newdb::Ptr{Void} # alpm_db_t*
+end
 
-# typedef struct _alpm_question_corrupted_t {
-# Type of question.
-# alpm_question_type_t type;
-# Answer: whether or not to remove filepath.
-# int remove;
-# Filename to remove
-# const char *filepath;
-# Error code indicating the reason for package invalidity
-# alpm_errno_t reason;
-# } alpm_question_corrupted_t;
+immutable Conflict
+    # Type of question
+    _type::Cint
+    # Answer: whether or not to remove conflict->package2
+    remove::Cint
+    # Conflict info
+    conflict::Ptr{LibALPM.Conflict}
+end
 
-# typedef struct _alpm_question_remove_pkgs_t {
-# Type of question.
-# alpm_question_type_t type;
-# Answer: whether or not to skip packages.
-# int skip;
-# List of alpm_pkg_t* with unresolved dependencies.
-# alpm_list_t *packages;
-# } alpm_question_remove_pkgs_t;
+immutable Corrupted
+    # Type of question
+    _type::Cint
+    # Answer: whether or not to remove filepath.
+    remove::Cint
+    # Filename to remove
+    filepath::Cstring
+    # Error code indicating the reason for package invalidity
+    reason::LibALPM.errno_t
+end
 
-# typedef struct _alpm_question_select_provider_t {
-# Type of question.
-# alpm_question_type_t type;
-# Answer: which provider to use (index from providers).
-# int use_index;
-# List of alpm_pkg_t* as possible providers.
-# alpm_list_t *providers;
-# What providers provide for.
-# alpm_depend_t *depend;
-# } alpm_question_select_provider_t;
+immutable RemovePkgs
+    # Type of question
+    _type::Cint
+    # Answer: whether or not to skip packages
+    skip::Cint
+    # List of alpm_pkg_t* with unresolved dependencies
+    # FIXME: alpm_list_t*
+    packages::Ptr{Void}
+end
 
-# typedef struct _alpm_question_import_key_t {
-# Type of question.
-# alpm_question_type_t type;
-# Answer: whether or not to import key.
-# int import;
-# The key to import.
-# alpm_pgpkey_t *key;
-# } alpm_question_import_key_t;
+immutable SelectProvider
+    # Type of question
+    _type::Cint
+    # Answer: which provider to use (index from providers)
+    use_index::Cint
+    # List of alpm_pkg_t* as possible providers
+    # FIXME: alpm_list_t*
+    providers::Ptr{Void}
+    # What providers provide for
+    depend::Ptr{LibALPM.Depend}
+end
 
-# /**
-#  * Questions.
-#  * This is an union passed to the callback, that allows the frontend to know
-#  * which type of question was triggered (via type). It is then possible to
-#  * typecast the pointer to the right structure, or use the union field, in order
-#  * to access question-specific data.
-# typedef union _alpm_question_t {
-# alpm_question_type_t type;
-# alpm_question_any_t any;
-# alpm_question_install_ignorepkg_t install_ignorepkg;
-# alpm_question_replace_t replace;
-# alpm_question_conflict_t conflict;
-# alpm_question_corrupted_t corrupted;
-# alpm_question_remove_pkgs_t remove_pkgs;
-# alpm_question_select_provider_t select_provider;
-# alpm_question_import_key_t import_key;
-# } alpm_question_t;
+immutable ImportKey
+    # Type of question
+    _type::Cint
+    # Answer: whether or not to import key
+    _import::Cint
+    # The key to import
+    key::Ptr{LibALPM.PGPKey}
+end
 
-# /** Question callback
+end
+
+# Question callback
 # typedef void (*alpm_cb_question)(alpm_question_t *);
 
-# /** Progress callback
+# Progress callback
 # typedef void (*alpm_cb_progress)(alpm_progress_t, const char *, int, size_t, size_t);
 
-# /*
 #  * Downloading
-#
 
 # /** Type of download progress callbacks.
 #  * @param filename the name of the file being downloaded
