@@ -879,35 +879,52 @@ Return a reference to the local database
 get_localdb(hdl::Handle) =
     DB(ccall((:alpm_get_localdb, libalpm), Ptr{Void}, (Ptr{Void},), hdl), hdl)
 
-# /** Get the list of sync databases.
-#  * Returns a list of alpm_db_t structures, one for each registered
-#  * sync database.
-#  * @param handle the context handle
-#  * @return a reference to an internal list of alpm_db_t structures
-#
-# alpm_list_t *alpm_get_syncdbs(alpm_handle_t *handle);
+"""
+Get the list of sync databases.
 
-# /** Register a sync database of packages.
-#  * @param handle the context handle
-#  * @param treename the name of the sync repository
-#  * @param level what level of signature checking to perform on the
-#  * database; note that this must be a '.sig' file type verification
-#  * @return an alpm_db_t* on success (the value), NULL on error
-#
-# alpm_db_t *alpm_register_syncdb(alpm_handle_t *handle, const char *treename,
-# alpm_siglevel_t level);
+Returns an array of DB's, one for each registered sync database.
+"""
+function get_syncdbs(hdl::Handle)
+    dbs = ccall((:alpm_get_syncdbs, libalpm), Ptr{list_t}, (Ptr{Void},), hdl)
+    list_to_array(DB, dbs, p->DB(p, hdl))
+end
 
-# /** Unregister all package databases.
-#  * @param handle the context handle
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#
-# int alpm_unregister_all_syncdbs(alpm_handle_t *handle);
+"""
+Register a sync database of packages.
 
-# /** Unregister a package database.
-#  * @param db pointer to the package database to unregister
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#
-# int alpm_db_unregister(alpm_db_t *db);
+`treename`: the name of the sync repository
+`level`: what level of signature checking to perform on the database;
+         note that this must be a '.sig' file type verification
+
+Returns an DB on success
+"""
+function register_syncdb(hdl::Handle, treename, level)
+    db = ccall((:alpm_register_syncdb, libalpm), Ptr{Void},
+               (Ptr{Void}, Cstring, UInt32), hdl, treename, level)
+    db == C_NULL && throw(Error(hdl, "register_syncdb"))
+    DB(db, hdl)
+end
+
+"Unregister all package databases"
+function unregister_all_syncdbs(hdl::Handle)
+    # This covers local db too
+    _null_all_dbs(hdl.dbs)
+    ret = ccall((:alpm_unregister_all_syncdbs, libalpm), Cint, (Ptr{Void},), hdl)
+    ret == 0 || throw(Error(hdl, "unregister_all_syncdbs"))
+    nothing
+end
+
+"Unregister a package database"
+function unregister(db::DB)
+    ptr = db.ptr
+    ptr == C_NULL && throw(UndefRefError())
+    hdl = db.hdl
+    db.ptr = C_NULL
+    delete!(hdl.dbs, ptr)
+    ret = ccall((:alpm_db_unregister, libalpm), Cint, (Ptr{Void},), ptr)
+    ret == 0 || throw(Error(hdl, "unregister"))
+    nothing
+end
 
 # /** Get the name of a package database.
 #  * @param db pointer to the package database
