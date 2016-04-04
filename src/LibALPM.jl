@@ -450,8 +450,8 @@ Fetch a remote pkg
 Returns the downloaded filepath on success.
 """
 function fetch_pkgurl(hdl::Handle, url)
-    bytestring(ccall((:alpm_fetch_pkgurl, libalpm), Ptr{UInt8},
-                     (Ptr{Void}, Cstring), hdl, url))
+    utf8(ccall((:alpm_fetch_pkgurl, libalpm), Ptr{UInt8},
+               (Ptr{Void}, Cstring), hdl, url))
 end
 
 #  * Libalpm option getters and setters
@@ -493,20 +493,20 @@ end
 
 "Returns the root of the destination filesystem"
 function get_root(hdl::Handle)
-    bytestring(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
-                     (Ptr{Void},), hdl))
+    utf8(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
+               (Ptr{Void},), hdl))
 end
 
 "Returns the path to the database directory"
 function get_dbpath(hdl::Handle)
-    bytestring(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
-                     (Ptr{Void},), hdl))
+    utf8(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
+               (Ptr{Void},), hdl))
 end
 
 "Get the name of the database lock file"
 function get_lockfile(hdl::Handle)
-    bytestring(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
-                     (Ptr{Void},), hdl))
+    utf8(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
+               (Ptr{Void},), hdl))
 end
 
 # Accessors to the list of package cache directories
@@ -525,20 +525,20 @@ function set_cachedirs(hdl::Handle, dirs)
                 (Ptr{Void}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
-        throw(Error(hdl))
+        throw(Error(hdl, "set_cachedirs"))
     end
 end
 function add_cachedir(hdl::Handle, cachedir)
     ret = ccall((:alpm_option_add_cachedir, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, cachedir)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "add_cachedir"))
     nothing
 end
 function remove_cachedir(hdl::Handle, cachedir)
     ret = ccall((:alpm_option_remove_cachedir, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, cachedir)
-    ret == 0 || throw(Error(hdl))
-    nothing
+    ret < 0 && throw(Error(hdl, "remove_cachedir"))
+    ret != 0
 end
 
 # Accessors to the list of package hook directories
@@ -557,45 +557,45 @@ function set_hookdirs(hdl::Handle, dirs)
                 (Ptr{Void}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
-        throw(Error(hdl))
+        throw(Error(hdl, "set_hookdirs"))
     end
 end
 function add_hookdir(hdl::Handle, hookdir)
     ret = ccall((:alpm_option_add_hookdir, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, hookdir)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "add_hookdir"))
     nothing
 end
 function remove_hookdir(hdl::Handle, hookdir)
     ret = ccall((:alpm_option_remove_hookdir, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, hookdir)
-    ret == 0 || throw(Error(hdl))
-    nothing
+    ret < 0 && throw(Error(hdl, "remove_hookdir"))
+    ret != 0
 end
 
 "Returns the logfile name"
 function get_logfile(hdl::Handle)
-    bytestring(ccall((:alpm_option_get_logfile, libalpm), Ptr{UInt8},
-                     (Ptr{Void},), hdl))
+    utf8(ccall((:alpm_option_get_logfile, libalpm), Ptr{UInt8},
+               (Ptr{Void},), hdl))
 end
 "Sets the logfile name"
 function set_logfile(hdl::Handle, logfile)
     ret = ccall((:alpm_option_set_logfile, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, logfile)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "set_logfile"))
     nothing
 end
 
 "Returns the path to libalpm's GnuPG home directory"
 function get_gpgdir(hdl::Handle)
-    bytestring(ccall((:alpm_option_get_gpgdir, libalpm), Ptr{UInt8},
-                     (Ptr{Void},), hdl))
+    utf8(ccall((:alpm_option_get_gpgdir, libalpm), Ptr{UInt8},
+               (Ptr{Void},), hdl))
 end
 "Sets the path to libalpm's GnuPG home directory"
 function set_gpgdir(hdl::Handle, gpgdir)
     ret = ccall((:alpm_option_set_gpgdir, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, gpgdir)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "set_gpgdir"))
     nothing
 end
 
@@ -607,7 +607,7 @@ end
 function set_usesyslog(hdl::Handle, usesyslog)
     ret = ccall((:alpm_option_set_usesyslog, libalpm), Cint,
                 (Ptr{Void}, Cint), hdl, usesyslog)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "usesyslog"))
     nothing
 end
 
@@ -630,20 +630,20 @@ function set_noupgrades(hdl::Handle, dirs)
                 (Ptr{Void}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
-        throw(Error(hdl))
+        throw(Error(hdl, "set_noupgrades"))
     end
 end
 function add_noupgrade(hdl::Handle, noupgrade)
     ret = ccall((:alpm_option_add_noupgrade, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, noupgrade)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "add_noupgrade"))
     nothing
 end
 function remove_noupgrade(hdl::Handle, noupgrade)
     ret = ccall((:alpm_option_remove_noupgrade, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, noupgrade)
-    ret == 0 || throw(Error(hdl))
-    nothing
+    ret < 0 && throw(Error(hdl, "remove_noupgrade"))
+    ret != 0
 end
 """
 Return 0 if string matches pattern,
@@ -673,20 +673,20 @@ function set_noextracts(hdl::Handle, dirs)
                 (Ptr{Void}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
-        throw(Error(hdl))
+        throw(Error(hdl, "set_noextracts"))
     end
 end
 function add_noextract(hdl::Handle, noextract)
     ret = ccall((:alpm_option_add_noextract, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, noextract)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "add_noextract"))
     nothing
 end
 function remove_noextract(hdl::Handle, noextract)
     ret = ccall((:alpm_option_remove_noextract, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, noextract)
-    ret == 0 || throw(Error(hdl))
-    nothing
+    ret < 0 && throw(Error(hdl, "remove_noextract"))
+    ret != 0
 end
 """
 Return 0 if string matches pattern,
@@ -716,20 +716,20 @@ function set_ignorepkgs(hdl::Handle, dirs)
                 (Ptr{Void}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
-        throw(Error(hdl))
+        throw(Error(hdl, "ignorepkgs"))
     end
 end
 function add_ignorepkg(hdl::Handle, ignorepkg)
     ret = ccall((:alpm_option_add_ignorepkg, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, ignorepkg)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "add_ignorepkg"))
     nothing
 end
 function remove_ignorepkg(hdl::Handle, ignorepkg)
     ret = ccall((:alpm_option_remove_ignorepkg, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, ignorepkg)
-    ret == 0 || throw(Error(hdl))
-    nothing
+    ret < 0 && throw(Error(hdl, "remove_ignorepkg"))
+    ret != 0
 end
 
 # Accessors to the list of ignored groups.
@@ -751,20 +751,20 @@ function set_ignoregroups(hdl::Handle, dirs)
                 (Ptr{Void}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
-        throw(Error(hdl))
+        throw(Error(hdl, "set_ignoregroups"))
     end
 end
 function add_ignoregroup(hdl::Handle, ignoregroup)
     ret = ccall((:alpm_option_add_ignoregroup, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, ignoregroup)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "add_ignoregroup"))
     nothing
 end
 function remove_ignoregroup(hdl::Handle, ignoregroup)
     ret = ccall((:alpm_option_remove_ignoregroup, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, ignoregroup)
-    ret == 0 || throw(Error(hdl))
-    nothing
+    ret < 0 && throw(Error(hdl, "remove_ignoregroup"))
+    ret != 0
 end
 
 # Accessors to the list of ignored dependencies.
@@ -779,14 +779,14 @@ end
 
 "Returns the targeted architecture"
 function get_arch(hdl::Handle)
-    bytestring(ccall((:alpm_option_get_arch, libalpm), Ptr{UInt8},
-                     (Ptr{Void},), hdl))
+    ascii(ccall((:alpm_option_get_arch, libalpm), Ptr{UInt8},
+                (Ptr{Void},), hdl))
 end
 "Sets the targeted architecture"
 function set_arch(hdl::Handle, arch)
     ret = ccall((:alpm_option_set_arch, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, arch)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "set_arch"))
     nothing
 end
 
@@ -797,7 +797,7 @@ end
 function set_deltaratio(hdl::Handle, deltaratio)
     ret = ccall((:alpm_option_set_deltaratio, libalpm), Cint,
                 (Ptr{Void}, Cdouble), hdl, deltaratio)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "set_deltaratio"))
     nothing
 end
 
@@ -807,18 +807,18 @@ end
 function set_checkspace(hdl::Handle, checkspace)
     ret = ccall((:alpm_option_set_checkspace, libalpm), Cint,
                 (Ptr{Void}, Cint), hdl, checkspace)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "set_checkspace"))
     nothing
 end
 
 function get_dbext(hdl::Handle)
-    bytestring(ccall((:alpm_option_get_dbext, libalpm), Ptr{UInt8},
-                     (Ptr{Void},), hdl))
+    utf8(ccall((:alpm_option_get_dbext, libalpm), Ptr{UInt8},
+               (Ptr{Void},), hdl))
 end
 function set_dbext(hdl::Handle, dbext)
     ret = ccall((:alpm_option_set_dbext, libalpm), Cint,
                 (Ptr{Void}, Cstring), hdl, dbext)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "set_dbext"))
     nothing
 end
 
@@ -828,7 +828,7 @@ end
 function set_siglevel(hdl::Handle, siglevel)
     ret = ccall((:alpm_option_set_siglevel, libalpm), Cint,
                 (Ptr{Void}, Cint), hdl, siglevel)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "set_siglevel"))
     nothing
 end
 
@@ -839,7 +839,7 @@ end
 function set_local_file_siglevel(hdl::Handle, siglevel)
     ret = ccall((:alpm_option_set_local_file_siglevel, libalpm), Cint,
                 (Ptr{Void}, Cint), hdl, siglevel)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "set_local_file_siglevel"))
     nothing
 end
 
@@ -850,7 +850,7 @@ end
 function set_remote_file_siglevel(hdl::Handle, siglevel)
     ret = ccall((:alpm_option_set_remote_file_siglevel, libalpm), Cint,
                 (Ptr{Void}, Cint), hdl, siglevel)
-    ret == 0 || throw(Error(hdl))
+    ret == 0 || throw(Error(hdl, "set_remote_file_siglevel"))
     nothing
 end
 
