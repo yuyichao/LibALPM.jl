@@ -9,7 +9,7 @@ end
 function list_to_array{T}(::Type{T}, list::Ptr{list_t}, cb)
     res = T[]
     while list != C_NULL
-        push!(res, cb(list.data))
+        push!(res, cb(unsafe_load(list).data))
         list = ccall((:alpm_list_next, libalpm),
                      Ptr{list_t}, (Ptr{list_t},), list)
     end

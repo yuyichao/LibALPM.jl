@@ -11,6 +11,7 @@ end
 
 include("enums.jl")
 include("list.jl")
+include("weakdict.jl")
 
 version() = VersionNumber(ascii(ccall((:alpm_version, libalpm), Ptr{UInt8}, ())))
 capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
@@ -32,28 +33,43 @@ type Handle
         err = Ref{errno_t}()
         ptr = ccall((:alpm_initialize, libalpm), Ptr{Void},
                     (Cstring, Cstring, Ref{errno_t}), root, db, err)
-        if ptr == C_NULL
-            throw(Error(err[], "Create ALPM handle"))
-        end
+        ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
         self = new(ptr)
         finalizer(self, release)
+        all_handlers[ptr] = self
+        self
+    end
+    function Handle(ptr::Ptr{Void})
+        ptr == C_NULL && throw(UndefRefError())
+        cached = all_handlers[ptr]
+        isnull(cached) || return get(cached)
+        self = new(ptr)
+        finalizer(self, release)
+        all_handlers[ptr] = self
         self
     end
 end
+
+const all_handlers = CObjMap{Handle}()
 
 function release(hdl::Handle)
     ptr = hdl.ptr
     hdl.ptr = C_NULL
     ptr == C_NULL && return
+    delete!(all_handlers, ptr)
     ccall((:alpm_release, libalpm), Cint, (Ptr{Void},), ptr)
     nothing
 end
 
 Base.cconvert(::Type{Ptr{Void}}, hdl::Handle) = hdl
-Base.unsafe_convert(::Type{Ptr{Void}}, hdl::Handle) = hdl.ptr
+function Base.unsafe_convert(::Type{Ptr{Void}}, hdl::Handle)
+    ptr = hdl.ptr
+    ptr == C_NULL && throw(UndefRefError())
+    ptr
+end
 
 "Returns the current error code from the handle"
-errno(hdl::Handle) =
+Base.errno(hdl::Handle) =
     ccall((:alpm_errno, libalpm), errno_t, (Ptr{Void},), hdl)
 Error(hdl::Handle, msg) = Error(errno(hdl), msg)
 
@@ -498,9 +514,9 @@ function get_cachedirs(hdl::Handle)
     dirs = ccall((:alpm_option_get_cachedirs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
-                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t),
-                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+                  p->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                (Ptr{Void}, Csize_t),
+                                p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_cachedirs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -530,9 +546,9 @@ function get_hookdirs(hdl::Handle)
     dirs = ccall((:alpm_option_get_hookdirs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
-                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t),
-                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+                  p->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                (Ptr{Void}, Csize_t),
+                                p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_hookdirs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -603,9 +619,9 @@ function get_noupgrades(hdl::Handle)
     dirs = ccall((:alpm_option_get_noupgrades, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
-                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t),
-                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+                  p->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                (Ptr{Void}, Csize_t),
+                                p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_noupgrades(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -646,9 +662,9 @@ function get_noextracts(hdl::Handle)
     dirs = ccall((:alpm_option_get_noextracts, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
-                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t),
-                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+                  p->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                (Ptr{Void}, Csize_t),
+                                p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_noextracts(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -689,9 +705,9 @@ function get_ignorepkgs(hdl::Handle)
     dirs = ccall((:alpm_option_get_ignorepkgs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
-                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t),
-                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+                  p->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                (Ptr{Void}, Csize_t),
+                                p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_ignorepkgs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -724,9 +740,9 @@ function get_ignoregroups(hdl::Handle)
     dirs = ccall((:alpm_option_get_ignoregroups, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
     list_to_array(UTF8String, dirs,
-                  ptr->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
-                                  (Ptr{Void}, Csize_t),
-                                  p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
+                  p->utf8(ccall(:jl_pchar_to_array, Ref{Vector{UInt8}},
+                                (Ptr{Void}, Csize_t),
+                                p, ccall(:strlen, Csize_t, (Ptr{Void},), p))))
 end
 function set_ignoregroups(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
