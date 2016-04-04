@@ -107,18 +107,25 @@ function update(db::DB, force)
     ret != 0
 end
 
-# /** Get a package entry from a package database.
-#  * @param db pointer to the package database to get the package from
-#  * @param name of the package
-#  * @return the package entry on success, NULL on error
-#
-# alpm_pkg_t *alpm_db_get_pkg(alpm_db_t *db, const char *name);
+"""
+Get a package entry from a package database.
 
-# /** Get the package cache of a package database.
-#  * @param db pointer to the package database to get the package from
-#  * @return the list of packages on success, NULL on error
-#
-# alpm_list_t *alpm_db_get_pkgcache(alpm_db_t *db);
+`name`: of the package
+"""
+function get_pkg(db::DB, name)
+    pkg = ccall((:alpm_db_get_pkg, libalpm), Ptr{Void}, (Ptr{Void}, Cstring),
+                db, name)
+    hdl = db.hdl
+    pkg == C_NULL && throw(Error(hdl, "get_pkg"))
+    Pkg(pkg, hdl)
+end
+
+"Get the package cache of a package database"
+function get_pkgcache(db::DB)
+    pkgs = ccall((:alpm_db_get_pkgcache, libalpm), Ptr{list_t}, (Ptr{Void},), db)
+    hdl = db.hdl
+    list_to_array(Pkg, pkgs, p->Pkg(p, hdl))
+end
 
 # /** Get a group entry from a package database.
 #  * @param db pointer to the package database to get the group from
