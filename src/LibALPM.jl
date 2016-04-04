@@ -804,13 +804,13 @@ function set_dbext(hdl::Handle, dbext)
     nothing
 end
 
-function get_siglevel(hdl::Handle)
-    ccall((:alpm_option_get_siglevel, libalpm), Cint, (Ptr{Void},), hdl)
+function get_default_siglevel(hdl::Handle)
+    ccall((:alpm_option_get_default_siglevel, libalpm), Cint, (Ptr{Void},), hdl)
 end
-function set_siglevel(hdl::Handle, siglevel)
-    ret = ccall((:alpm_option_set_siglevel, libalpm), Cint,
+function set_default_siglevel(hdl::Handle, siglevel)
+    ret = ccall((:alpm_option_set_default_siglevel, libalpm), Cint,
                 (Ptr{Void}, Cint), hdl, siglevel)
-    ret == 0 || throw(Error(hdl, "set_siglevel"))
+    ret == 0 || throw(Error(hdl, "set_default_siglevel"))
     nothing
 end
 

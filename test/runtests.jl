@@ -62,5 +62,87 @@ LibALPM.set_usesyslog(hdl, true)
 LibALPM.set_usesyslog(hdl, false)
 @test !LibALPM.get_usesyslog(hdl)
 
+@test LibALPM.get_noupgrades(hdl) == UTF8String[]
+LibALPM.set_noupgrades(hdl, ["linux", "!julia"])
+@test LibALPM.get_noupgrades(hdl) == UTF8String["linux", "!julia"]
+LibALPM.add_noupgrade(hdl, "glibc")
+@test LibALPM.get_noupgrades(hdl) == UTF8String["linux", "!julia", "glibc"]
+@test LibALPM.remove_noupgrade(hdl, "linux")
+@test LibALPM.get_noupgrades(hdl) == UTF8String["!julia", "glibc"]
+@test !LibALPM.remove_noupgrade(hdl, "linux")
+@test LibALPM.get_noupgrades(hdl) == UTF8String["!julia", "glibc"]
+@test LibALPM.match_noupgrade(hdl, "glibc") == 0
+@test LibALPM.match_noupgrade(hdl, "linux") == -1
+@test LibALPM.match_noupgrade(hdl, "julia") == 1
+
+@test LibALPM.get_noextracts(hdl) == UTF8String[]
+LibALPM.set_noextracts(hdl, ["linux", "!julia"])
+@test LibALPM.get_noextracts(hdl) == UTF8String["linux", "!julia"]
+LibALPM.add_noextract(hdl, "glibc")
+@test LibALPM.get_noextracts(hdl) == UTF8String["linux", "!julia", "glibc"]
+@test LibALPM.remove_noextract(hdl, "linux")
+@test LibALPM.get_noextracts(hdl) == UTF8String["!julia", "glibc"]
+@test !LibALPM.remove_noextract(hdl, "linux")
+@test LibALPM.get_noextracts(hdl) == UTF8String["!julia", "glibc"]
+@test LibALPM.match_noextract(hdl, "glibc") == 0
+@test LibALPM.match_noextract(hdl, "linux") == -1
+@test LibALPM.match_noextract(hdl, "julia") == 1
+
+@test LibALPM.get_ignorepkgs(hdl) == UTF8String[]
+LibALPM.set_ignorepkgs(hdl, ["linux", "julia"])
+@test LibALPM.get_ignorepkgs(hdl) == UTF8String["linux", "julia"]
+LibALPM.add_ignorepkg(hdl, "glibc")
+@test LibALPM.get_ignorepkgs(hdl) == UTF8String["linux", "julia", "glibc"]
+@test LibALPM.remove_ignorepkg(hdl, "linux")
+@test LibALPM.get_ignorepkgs(hdl) == UTF8String["julia", "glibc"]
+@test !LibALPM.remove_ignorepkg(hdl, "linux")
+@test LibALPM.get_ignorepkgs(hdl) == UTF8String["julia", "glibc"]
+
+@test LibALPM.get_ignoregroups(hdl) == UTF8String[]
+LibALPM.set_ignoregroups(hdl, ["base", "base-devel"])
+@test LibALPM.get_ignoregroups(hdl) == UTF8String["base", "base-devel"]
+LibALPM.add_ignoregroup(hdl, "xorg")
+@test LibALPM.get_ignoregroups(hdl) == UTF8String["base", "base-devel", "xorg"]
+@test LibALPM.remove_ignoregroup(hdl, "base")
+@test LibALPM.get_ignoregroups(hdl) == UTF8String["base-devel", "xorg"]
+@test !LibALPM.remove_ignoregroup(hdl, "base")
+@test LibALPM.get_ignoregroups(hdl) == UTF8String["base-devel", "xorg"]
+
+@test_throws ArgumentError LibALPM.get_arch(hdl)
+LibALPM.set_arch(hdl, Base.ARCH)
+@test LibALPM.get_arch(hdl) == string(Base.ARCH)
+
+@test LibALPM.get_deltaratio(hdl) == 0
+LibALPM.set_deltaratio(hdl, 0.7)
+@test LibALPM.get_deltaratio(hdl) == 0.7
+
+@test !LibALPM.get_checkspace(hdl)
+LibALPM.set_checkspace(hdl, true)
+@test LibALPM.get_checkspace(hdl)
+
+@test LibALPM.get_dbext(hdl) == ".db"
+LibALPM.set_dbext(hdl, ".db2")
+@test LibALPM.get_dbext(hdl) == ".db2"
+LibALPM.set_dbext(hdl, ".db")
+@test LibALPM.get_dbext(hdl) == ".db"
+
+@test LibALPM.get_default_siglevel(hdl) == 0
+LibALPM.set_default_siglevel(hdl, LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                             LibALPM.SigLevel.DATABASE)
+@test LibALPM.get_default_siglevel(hdl) == (LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                            LibALPM.SigLevel.DATABASE)
+
+@test LibALPM.get_local_file_siglevel(hdl) == 0
+LibALPM.set_local_file_siglevel(hdl, LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                LibALPM.SigLevel.DATABASE)
+@test (LibALPM.get_local_file_siglevel(hdl) ==
+       LibALPM.SigLevel.PACKAGE_OPTIONAL | LibALPM.SigLevel.DATABASE)
+
+@test LibALPM.get_remote_file_siglevel(hdl) == 0
+LibALPM.set_remote_file_siglevel(hdl, LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                 LibALPM.SigLevel.DATABASE)
+@test (LibALPM.get_remote_file_siglevel(hdl) ==
+       LibALPM.SigLevel.PACKAGE_OPTIONAL | LibALPM.SigLevel.DATABASE)
+
 LibALPM.unlock(hdl)
 LibALPM.release(hdl)
