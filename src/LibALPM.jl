@@ -111,6 +111,13 @@ type DB
     end
 end
 
+Base.cconvert(::Type{Ptr{Void}}, db::DB) = db
+function Base.unsafe_convert(::Type{Ptr{Void}}, db::DB)
+    ptr = db.ptr
+    ptr == C_NULL && throw(UndefRefError())
+    ptr
+end
+
 # typedef struct __alpm_pkg_t alpm_pkg_t;
 # typedef struct __alpm_trans_t alpm_trans_t;
 
@@ -926,11 +933,14 @@ function unregister(db::DB)
     nothing
 end
 
-# /** Get the name of a package database.
-#  * @param db pointer to the package database
-#  * @return the name of the package database, NULL on error
-#
-# const char *alpm_db_get_name(const alpm_db_t *db);
+"""
+Get the name of a package database.
+"""
+function get_name(db::DB)
+    name = ccall((:alpm_db_get_name, libalpm), Ptr{UInt8}, (Ptr{Void},), db)
+    name == C_NULL && throw(Error(db.hdl, "get_name"))
+    utf8(name)
+end
 
 # /** Get the signature verification level for a database.
 #  * Will return the default verification level if this database is set up
