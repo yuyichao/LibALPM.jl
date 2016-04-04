@@ -29,12 +29,13 @@ compute_sha256sum(fname) =
 
 type Handle
     ptr::Ptr{Void}
+    dbs::CObjMap
     function Handle(root, db)
         err = Ref{errno_t}()
         ptr = ccall((:alpm_initialize, libalpm), Ptr{Void},
                     (Cstring, Cstring, Ref{errno_t}), root, db, err)
         ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
-        self = new(ptr)
+        self = new(ptr, CObjMap())
         finalizer(self, release)
         all_handlers[ptr] = self
         self
@@ -43,7 +44,7 @@ type Handle
         ptr == C_NULL && throw(UndefRefError())
         cached = all_handlers[ptr, Handle]
         isnull(cached) || return get(cached)
-        self = new(ptr)
+        self = new(ptr, CObjMap())
         finalizer(self, release)
         all_handlers[ptr] = self
         self
@@ -52,11 +53,23 @@ end
 
 const all_handlers = CObjMap()
 
+function _null_all_dbs(cmap::CObjMap)
+    for (k, v) in cmap.dict
+        val = v.value
+        val === nothing && continue
+        db = val::DB
+        db.ptr = C_NULL
+    end
+    empty!(cmap.dict)
+end
+
 function release(hdl::Handle)
     ptr = hdl.ptr
     hdl.ptr = C_NULL
+    dbs = hdl.dbs
     ptr == C_NULL && return
     delete!(all_handlers, ptr)
+    _null_all_dbs(dbs)
     ccall((:alpm_release, libalpm), Cint, (Ptr{Void},), ptr)
     nothing
 end
@@ -79,7 +92,25 @@ function unlock(hdl::Handle)
     end
 end
 
-# typedef struct __alpm_db_t alpm_db_t;
+type DB
+    ptr::Ptr{Void}
+    hdl::Handle
+    function DB(ptr::Ptr{Void}, hdl::Handle)
+        ptr == C_NULL && throw(UndefRefError())
+        cached = hdl.dbs[ptr, DB]
+        isnull(cached) || return get(cached)
+        self = new(ptr, hdl)
+        hdl.dbs[ptr] = self
+        self
+    end
+    function DB(ptr::Ptr{Void})
+        ptr == C_NULL && throw(UndefRefError())
+        # WARNING! Internal libalpm API used
+        hdlptr = unsafe_load(Ptr{Ptr{Void}}(ptr))
+        DB(ptr, Handle(hdlptr))
+    end
+end
+
 # typedef struct __alpm_pkg_t alpm_pkg_t;
 # typedef struct __alpm_trans_t alpm_trans_t;
 
@@ -836,16 +867,17 @@ function set_remote_file_siglevel(hdl::Handle, siglevel)
     nothing
 end
 
-# /** @addtogroup alpm_api_databases Database Functions
-#  * Functions to query and manipulate the database of libalpm.
-
-# /** Get the database of locally installed packages.
-#  * The returned pointer points to an internal structure
-#  * of libalpm which should only be manipulated through
-#  * libalpm functions.
-#  * @return a reference to the local database
+# Database Functions
 #
-# alpm_db_t *alpm_get_localdb(alpm_handle_t *handle);
+# Functions to query and manipulate the database of libalpm.
+
+"""
+Get the database of locally installed packages.
+
+Return a reference to the local database
+"""
+get_localdb(hdl::Handle) =
+    DB(ccall((:alpm_get_localdb, libalpm), Ptr{Void}, (Ptr{Void},), hdl), hdl)
 
 # /** Get the list of sync databases.
 #  * Returns a list of alpm_db_t structures, one for each registered

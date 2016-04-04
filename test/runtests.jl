@@ -144,5 +144,7 @@ LibALPM.set_remote_file_siglevel(hdl, LibALPM.SigLevel.PACKAGE_OPTIONAL |
 @test (LibALPM.get_remote_file_siglevel(hdl) ==
        LibALPM.SigLevel.PACKAGE_OPTIONAL | LibALPM.SigLevel.DATABASE)
 
+localdb = LibALPM.get_localdb(hdl)
+
 LibALPM.unlock(hdl)
 LibALPM.release(hdl)

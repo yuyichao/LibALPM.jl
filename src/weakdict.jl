@@ -27,7 +27,7 @@ function Base.setindex!(map::CObjMap, val::ANY, ptr::Ptr{Void})
 end
 
 function Base.getindex{T}(map::CObjMap, ptr::Ptr{Void}, ::Type{T})
-    if ptr in keys(map)
+    if ptr in keys(map.dict)
         val = map.dict[ptr].value
         val !== nothing && return Nullable{T}(val::T)
     end
