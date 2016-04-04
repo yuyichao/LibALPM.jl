@@ -1,6 +1,6 @@
 #!/usr/bin/julia -f
 
-type CObjMap{T}
+type CObjMap
     dict::Dict{Ptr{Void},WeakRef}
     new_added::Int
     last_pause::Int
@@ -18,7 +18,7 @@ function maybe_gc(map::CObjMap)
     end
 end
 
-function Base.setindex!{T}(map::CObjMap{T}, val::T, ptr::Ptr{Void})
+function Base.setindex!(map::CObjMap, val::ANY, ptr::Ptr{Void})
     maybe_gc(map)
     ref = WeakRef(val)
     map.new_added += 1
@@ -26,7 +26,7 @@ function Base.setindex!{T}(map::CObjMap{T}, val::T, ptr::Ptr{Void})
     nothing
 end
 
-function Base.getindex{T}(map::CObjMap{T}, ptr::Ptr{Void})
+function Base.getindex{T}(map::CObjMap, ptr::Ptr{Void}, ::Type{T})
     if ptr in keys(map)
         val = map.dict[ptr].value
         val !== nothing && return Nullable{T}(val::T)

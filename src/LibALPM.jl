@@ -41,7 +41,7 @@ type Handle
     end
     function Handle(ptr::Ptr{Void})
         ptr == C_NULL && throw(UndefRefError())
-        cached = all_handlers[ptr]
+        cached = all_handlers[ptr, Handle]
         isnull(cached) || return get(cached)
         self = new(ptr)
         finalizer(self, release)
@@ -50,7 +50,7 @@ type Handle
     end
 end
 
-const all_handlers = CObjMap{Handle}()
+const all_handlers = CObjMap()
 
 function release(hdl::Handle)
     ptr = hdl.ptr
