@@ -370,14 +370,14 @@ module Question
 import LibALPM
 abstract AbstractQuestion
 
-immutable AnyQuestion
+immutable AnyQuestion <: AbstractQuestion
     # Type of question
     _type::Cint
     # Answer
     answer::Cint
 end
 
-immutable InstallIgnorepkg
+immutable InstallIgnorepkg <: AbstractQuestion
     # Type of question
     _type::Cint
     # Answer: whether or not to install pkg anyway
@@ -386,7 +386,7 @@ immutable InstallIgnorepkg
     pkg::Ptr{Void} # alpm_pkg_t*
 end
 
-immutable Replace
+immutable Replace <: AbstractQuestion
     # Type of question
     _type::Cint
     # Answer: whether or not to replace oldpkg with newpkg
@@ -399,7 +399,7 @@ immutable Replace
     newdb::Ptr{Void} # alpm_db_t*
 end
 
-immutable Conflict
+immutable Conflict <: AbstractQuestion
     # Type of question
     _type::Cint
     # Answer: whether or not to remove conflict->package2
@@ -408,7 +408,7 @@ immutable Conflict
     conflict::Ptr{LibALPM.Conflict}
 end
 
-immutable Corrupted
+immutable Corrupted <: AbstractQuestion
     # Type of question
     _type::Cint
     # Answer: whether or not to remove filepath.
@@ -419,7 +419,7 @@ immutable Corrupted
     reason::LibALPM.errno_t
 end
 
-immutable RemovePkgs
+immutable RemovePkgs <: AbstractQuestion
     # Type of question
     _type::Cint
     # Answer: whether or not to skip packages
@@ -429,7 +429,7 @@ immutable RemovePkgs
     packages::Ptr{Void}
 end
 
-immutable SelectProvider
+immutable SelectProvider <: AbstractQuestion
     # Type of question
     _type::Cint
     # Answer: which provider to use (index from providers)
@@ -441,7 +441,7 @@ immutable SelectProvider
     depend::Ptr{LibALPM.Depend}
 end
 
-immutable ImportKey
+immutable ImportKey <: AbstractQuestion
     # Type of question
     _type::Cint
     # Answer: whether or not to import key
@@ -942,32 +942,65 @@ function get_name(db::DB)
     utf8(name)
 end
 
-# /** Get the signature verification level for a database.
-#  * Will return the default verification level if this database is set up
-#  * with ALPM_SIG_USE_DEFAULT.
-#  * @param db pointer to the package database
-#  * @return the signature verification level
-#
-# alpm_siglevel_t alpm_db_get_siglevel(alpm_db_t *db);
+"""
+Get the signature verification level for a database
 
-# /** Check the validity of a database.
-#  * This is most useful for sync databases and verifying signature status.
-#  * If invalid, the handle error code will be set accordingly.
-#  * @param db pointer to the package database
-#  * @return 0 if valid, -1 if invalid (pm_errno is set accordingly)
-#
-# int alpm_db_get_valid(alpm_db_t *db);
+Will return the default verification level if this database is set up
+with ALPM_SIG_USE_DEFAULT.
+"""
+get_siglevel(db::DB) =
+    ccall((:alpm_db_get_siglevel, libalpm), UInt32, (Ptr{Void},), db)
 
-# /** @name Accessors to the list of servers for a database.
-#  * @{
-#
-# alpm_list_t *alpm_db_get_servers(const alpm_db_t *db);
-# int alpm_db_set_servers(alpm_db_t *db, alpm_list_t *servers);
-# int alpm_db_add_server(alpm_db_t *db, const char *url);
-# int alpm_db_remove_server(alpm_db_t *db, const char *url);
-# /** @}
+"""
+Check the validity of a database.
 
-# int alpm_db_update(int force, alpm_db_t *db);
+This is most useful for sync databases and verifying signature status.
+If invalid, the handle error code will be set accordingly.
+Return 0 if valid, -1 if invalid (errno is set accordingly)
+"""
+get_valid(db::DB) =
+    ccall((:alpm_db_get_valid, libalpm), Cint, (Ptr{Void},), db)
+function check_valid(db::DB)
+    get_valid(db) == 0 || throw(Error(db.hdl, "check_valid"))
+    nothing
+end
+
+# Accessors to the list of servers for a database.
+function get_servers(db::DB)
+    servers = ccall((:alpm_db_get_servers, libalpm), Ptr{list_t},
+                    (Ptr{Void},), db)
+    list_to_array(UTF8String, servers, p->utf8(Ptr{UInt8}(p)))
+end
+function set_servers(db::DB, servers)
+    list = array_to_list(servers,
+                         str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+                         cglobal(:free))
+    ret = ccall((:alpm_db_set_servers, libalpm), Cint,
+                (Ptr{Void}, Ptr{list_t}), db, list)
+    if ret != 0
+        free(list, cglobal(:free))
+        throw(Error(db.hdl, "set_servers"))
+    end
+end
+function add_server(db::DB, server)
+    ret = ccall((:alpm_db_add_server, libalpm), Cint,
+                (Ptr{Void}, Cstring), db, server)
+    ret == 0 || throw(Error(db.hdl, "add_server"))
+    nothing
+end
+function remove_server(db::DB, server)
+    ret = ccall((:alpm_db_remove_server, libalpm), Cint,
+                (Ptr{Void}, Cstring), db, server)
+    ret < 0 && throw(Error(db.hdl, "remove_server"))
+    ret != 0
+end
+
+"Return true if db is already up to date."
+function update(db::DB, force)
+    ret = ccall((:alpm_db_update, libalpm), Cint, (Cint, Ptr{Void}), force, db)
+    ret < 0 && throw(Error(db.hdl, "update"))
+    ret != 0
+end
 
 # /** Get a package entry from a package database.
 #  * @param db pointer to the package database to get the package from
@@ -1020,8 +1053,6 @@ end
 
 # /** @addtogroup alpm_api_packages Package Functions
 #  * Functions to manipulate libalpm packages
-#  * @{
-#
 
 # /** Create a package from a file.
 #  * If full is false, the archive is read only until all necessary
@@ -1091,8 +1122,6 @@ end
 #  * Any pointer returned by these functions points to internal structures
 #  * allocated by libalpm. They should not be freed nor modified in any
 #  * way.
-#  * @{
-#
 
 # /** Gets the name of the file from which the package was loaded.
 #  * @param pkg a pointer to package
