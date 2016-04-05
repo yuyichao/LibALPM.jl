@@ -32,153 +32,164 @@ function Base.unsafe_convert(::Type{Ptr{Void}}, pkg::Pkg)
     ptr
 end
 
-# /** Check the integrity (with md5) of a package from the sync cache.
-#  * @param pkg package pointer
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#
-# int alpm_pkg_checkmd5sum(alpm_pkg_t *pkg);
+"Check the integrity (with md5) of a package from the sync cache"
+function checkmd5sum(pkg::Pkg)
+    ret = ccall((:alpm_pkg_checkmd5sum, libalpm), Cint, (Ptr{Void},), pkg)
+    ret == 0 || throw(Error(pkg.hdl, "checkmd5sum"))
+    nothing
+end
 
-# /** Computes the list of packages requiring a given package.
-#  * The return value of this function is a newly allocated
-#  * list of package names (char*), it should be freed by the caller.
-#  * @param pkg a package
-#  * @return the list of packages requiring pkg
-#
-# alpm_list_t *alpm_pkg_compute_requiredby(alpm_pkg_t *pkg);
+"Computes the list of packages requiring a given package"
+function compute_requiredby(pkg::Pkg)
+    list = ccall((:alpm_pkg_compute_requiredby, libalpm),
+                 Ptr{list_t}, (Ptr{Void},), pkg)
+    list == C_NULL && throw(Error(pkg.hdl, "compute_requiredby"))
+    try
+        ary = list_to_array(UTF8String, list, p->ptr_to_utf8(p, true))
+    catch
+        free(list, cglobal(:free))
+        rethrow()
+    end
+    free(list)
+    ary
+end
 
-# /** Computes the list of packages optionally requiring a given package.
-#  * The return value of this function is a newly allocated
-#  * list of package names (char*), it should be freed by the caller.
-#  * @param pkg a package
-#  * @return the list of packages optionally requiring pkg
-#
-# alpm_list_t *alpm_pkg_compute_optionalfor(alpm_pkg_t *pkg);
+"Computes the list of packages optionally requiring a given package"
+function compute_optionalfor(pkg::Pkg)
+    list = ccall((:alpm_pkg_compute_optionalfor, libalpm),
+                 Ptr{list_t}, (Ptr{Void},), pkg)
+    list == C_NULL && throw(Error(pkg.hdl, "compute_optionalfor"))
+    try
+        ary = list_to_array(UTF8String, list, p->ptr_to_utf8(p, true))
+    catch
+        free(list, cglobal(:free))
+        rethrow()
+    end
+    free(list)
+    ary
+end
 
-# /** Test if a package should be ignored.
-#  * Checks if the package is ignored via IgnorePkg, or if the package is
-#  * in a group ignored via IgnoreGroup.
-#  * @param handle the context handle
-#  * @param pkg the package to test
-#  * @return 1 if the package should be ignored, 0 otherwise
-#
-# int alpm_pkg_should_ignore(alpm_handle_t *handle, alpm_pkg_t *pkg);
+"""
+Test if a package should be ignored
 
-# /** @name Package Property Accessors
-#  * Any pointer returned by these functions points to internal structures
-#  * allocated by libalpm. They should not be freed nor modified in any
-#  * way.
+Checks if the package is ignored via IgnorePkg,
+or if the package is in a group ignored via IgnoreGroup.
+"""
+should_ignore(pkg::Pkg) =
+    ccall((:alpm_pkg_should_ignore, libalpm), Cint, (Ptr{Void}, Ptr{Void}),
+          pkg.hdl, pkg) != 0
 
-# /** Gets the name of the file from which the package was loaded.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_filename(alpm_pkg_t *pkg);
+"Gets the name of the file from which the package was loaded"
+function get_filename(pkg::Pkg)
+    ptr_to_utf8(ccall((:alpm_pkg_get_filename, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), pkg))
+end
 
-# /** Returns the package base name.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_base(alpm_pkg_t *pkg);
+"Returns the package base name"
+function get_base(pkg::Pkg)
+    ptr_to_utf8(ccall((:alpm_pkg_get_base, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), pkg))
+end
 
-# /** Returns the package name.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_name(alpm_pkg_t *pkg);
+"Returns the package name"
+function get_name(pkg::Pkg)
+    ptr_to_utf8(ccall((:alpm_pkg_get_name, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), pkg))
+end
 
-# /** Returns the package version as a string.
-#  * This includes all available epoch, version, and pkgrel components. Use
-#  * alpm_pkg_vercmp() to compare version strings if necessary.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_version(alpm_pkg_t *pkg);
+"""
+Returns the package version as a string
 
-# /** Returns the origin of the package.
-#  * @return an alpm_pkgfrom_t constant, -1 on error
-#
-# alpm_pkgfrom_t alpm_pkg_get_origin(alpm_pkg_t *pkg);
+This includes all available epoch, version, and pkgrel components. Use
+`LibALPM.vercmp()` to compare version strings if necessary.
+"""
+function get_version(pkg::Pkg)
+    ptr_to_utf8(ccall((:alpm_pkg_get_version, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), pkg))
+end
 
-# /** Returns the package description.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_desc(alpm_pkg_t *pkg);
+"Returns the origin of the package"
+function get_origin(pkg::Pkg)
+    from = ccall((:alpm_pkg_get_origin, libalpm),
+                 pkgfrom_t, (Ptr{Void},), pkg)
+    Int32(from) == -1 && throw(Error(pkg.hdl, "get_origin"))
+    from
+end
 
-# /** Returns the package URL.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_url(alpm_pkg_t *pkg);
+"Returns the package description"
+function get_desc(pkg::Pkg)
+    ptr_to_utf8(ccall((:alpm_pkg_get_desc, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), pkg))
+end
 
-# /** Returns the build timestamp of the package.
-#  * @param pkg a pointer to package
-#  * @return the timestamp of the build time
-#
-# int64_t alpm_pkg_get_builddate(alpm_pkg_t *pkg);
+"Returns the package URL"
+function get_url(pkg::Pkg)
+    ptr_to_utf8(ccall((:alpm_pkg_get_url, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), pkg))
+end
 
-# /** Returns the install timestamp of the package.
-#  * @param pkg a pointer to package
-#  * @return the timestamp of the install time
-#
-# int64_t alpm_pkg_get_installdate(alpm_pkg_t *pkg);
+"Returns the build timestamp of the package"
+get_builddate(pkg::Pkg) =
+    ccall((:alpm_pkg_get_builddate, libalpm), Int64, (Ptr{Void},), pkg)
 
-# /** Returns the packager's name.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_packager(alpm_pkg_t *pkg);
+"Returns the install timestamp of the package"
+get_installdate(pkg::Pkg) =
+    ccall((:alpm_pkg_get_installdate, libalpm), Int64, (Ptr{Void},), pkg)
 
-# /** Returns the package's MD5 checksum as a string.
-#  * The returned string is a sequence of 32 lowercase hexadecimal digits.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_md5sum(alpm_pkg_t *pkg);
+"Returns the packager's name"
+function get_packager(pkg::Pkg)
+    ptr_to_utf8(ccall((:alpm_pkg_get_packager, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), pkg))
+end
 
-# /** Returns the package's SHA256 checksum as a string.
-#  * The returned string is a sequence of 64 lowercase hexadecimal digits.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_sha256sum(alpm_pkg_t *pkg);
+"Returns the package's MD5 checksum as a string"
+function get_md5sum(pkg::Pkg)
+    ptr_to_utf8(ccall((:alpm_pkg_get_md5sum, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), pkg))
+end
 
-# /** Returns the architecture for which the package was built.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_arch(alpm_pkg_t *pkg);
+"Returns the package's SHA256 checksum as a string"
+function get_sha256sum(pkg::Pkg)
+    ptr_to_utf8(ccall((:alpm_pkg_get_sha256sum, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), pkg))
+end
 
-# /** Returns the size of the package. This is only available for sync database
-#  * packages and package files, not those loaded from the local database.
-#  * @param pkg a pointer to package
-#  * @return the size of the package in bytes.
-#
-# off_t alpm_pkg_get_size(alpm_pkg_t *pkg);
+"Returns the architecture for which the package was built"
+function get_arch(pkg::Pkg)
+    ptr_to_utf8(ccall((:alpm_pkg_get_arch, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), pkg))
+end
 
-# /** Returns the installed size of the package.
-#  * @param pkg a pointer to package
-#  * @return the total size of files installed by the package.
-#
-# off_t alpm_pkg_get_isize(alpm_pkg_t *pkg);
+"""
+Returns the size of the package.
 
-# /** Returns the package installation reason.
-#  * @param pkg a pointer to package
-#  * @return an enum member giving the install reason.
-#
-# alpm_pkgreason_t alpm_pkg_get_reason(alpm_pkg_t *pkg);
+This is only available for sync database packages and package files,
+not those loaded from the local database.
+"""
+get_size(pkg::Pkg) =
+    ccall((:alpm_pkg_get_size, libalpm), Int64, (Ptr{Void},), pkg)
 
-# /** Returns the list of package licenses.
-#  * @param pkg a pointer to package
-#  * @return a pointer to an internal list of strings.
-#
-# alpm_list_t *alpm_pkg_get_licenses(alpm_pkg_t *pkg);
+"Returns the installed size of the package"
+get_isize(pkg::Pkg) =
+    ccall((:alpm_pkg_get_isize, libalpm), Int64, (Ptr{Void},), pkg)
 
-# /** Returns the list of package groups.
-#  * @param pkg a pointer to package
-#  * @return a pointer to an internal list of strings.
-#
-# alpm_list_t *alpm_pkg_get_groups(alpm_pkg_t *pkg);
+"Returns the package installation reason"
+get_reason(pkg::Pkg) =
+    ccall((:alpm_pkg_get_reason, libalpm), pkgreason_t, (Ptr{Void},), pkg)
+
+"Returns the list of package licenses"
+function get_licenses(pkg::Pkg)
+    list = ccall((:alpm_pkg_get_licenses, libalpm), Ptr{list_t},
+                 (Ptr{Void},), pkg)
+    list_to_array(UTF8String, list, ptr_to_utf8)
+end
+
+"Returns the list of package groups"
+function get_groups(pkg::Pkg)
+    list = ccall((:alpm_pkg_get_groups, libalpm), Ptr{list_t},
+                 (Ptr{Void},), pkg)
+    list_to_array(UTF8String, list, ptr_to_utf8)
+end
 
 # /** Returns the list of package dependencies as alpm_depend_t.
 #  * @param pkg a pointer to package
@@ -216,28 +227,30 @@ end
 #
 # alpm_list_t *alpm_pkg_get_replaces(alpm_pkg_t *pkg);
 
-# /** Returns the list of files installed by pkg.
-#  * The filenames are relative to the install root,
-#  * and do not include leading slashes.
-#  * @param pkg a pointer to package
-#  * @return a pointer to a filelist object containing a count and an array of
-#  * package file objects
-#
-# alpm_filelist_t *alpm_pkg_get_files(alpm_pkg_t *pkg);
+"""
+Returns the list of files installed by pkg
 
-# /** Returns the list of files backed up when installing pkg.
-#  * @param pkg a pointer to package
-#  * @return a reference to a list of alpm_backup_t objects
-#
-# alpm_list_t *alpm_pkg_get_backup(alpm_pkg_t *pkg);
+The filenames are relative to the install root,
+and do not include leading slashes.
+"""
+function get_files(pkg::Pkg)
+    list = ccall((:alpm_pkg_get_files, libalpm), Ptr{list_t},
+                 (Ptr{Void},), pkg)
+    list_to_array(UTF8String, list, ptr_to_utf8)
+end
 
-# /** Returns the database containing pkg.
-#  * Returns a pointer to the alpm_db_t structure the package is
-#  * originating from, or NULL if the package was loaded from a file.
-#  * @param pkg a pointer to package
-#  * @return a pointer to the DB containing pkg, or NULL.
-#
-# alpm_db_t *alpm_pkg_get_db(alpm_pkg_t *pkg);
+"Returns the list of files backed up when installing pkg"
+function get_backup(pkg::Pkg)
+    list = ccall((:alpm_pkg_get_backup, libalpm), Ptr{list_t},
+                 (Ptr{Void},), pkg)
+    list_to_array(UTF8String, list, ptr_to_utf8)
+end
+
+
+"Returns the database containing pkg"
+get_db(pkg::Pkg) =
+    DB(ccall((:alpm_pkg_get_db, libalpm), Ptr{Void}, (Ptr{Void},), pkg),
+       pkg.hdl)
 
 # /** Returns the base64 encoded package signature.
 #  * @param pkg a pointer to package

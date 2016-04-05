@@ -18,8 +18,6 @@ include("handle.jl")
 include("db.jl")
 include("pkg.jl")
 
-# typedef struct __alpm_pkg_t alpm_pkg_t;
-
 # typedef void (*alpm_cb_log)(alpm_loglevel_t, const char *, va_list);
 
 # int alpm_logaction(alpm_handle_t *handle, const char *prefix,
@@ -132,20 +130,6 @@ include("pkg.jl")
 # struct archive_entry **entry);
 
 # int alpm_pkg_mtree_close(const alpm_pkg_t *pkg, struct archive *archive);
-
-# /*
-#  * Filelists
-#
-
-# /** Determines whether a package filelist contains a given path.
-#  * The provided path should be relative to the install root with no leading
-#  * slashes, e.g. "etc/localtime". When searching for directories, the path must
-#  * have a trailing slash.
-#  * @param filelist a pointer to a package filelist
-#  * @param path the path to search for in the package
-#  * @return a pointer to the matching file or NULL if not found
-#
-# alpm_file_t *alpm_filelist_contains(alpm_filelist_t *filelist, const char *path);
 
 # /*
 #  * Signatures
