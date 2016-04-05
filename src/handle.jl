@@ -482,16 +482,6 @@ function unregister_all_syncdbs(hdl::Handle)
     nothing
 end
 
-# TODO
-# Accessors to the list of ignored dependencies.
-# These functions modify the list of dependencies that
-# should be ignored by a sysupgrade.
-#
-# alpm_list_t *alpm_option_get_assumeinstalled(alpm_handle_t *handle);
-# int alpm_option_add_assumeinstalled(alpm_handle_t *handle, const alpm_depend_t *dep);
-# int alpm_option_set_assumeinstalled(alpm_handle_t *handle, alpm_list_t *deps);
-# int alpm_option_remove_assumeinstalled(alpm_handle_t *handle, const alpm_depend_t *dep);
-
 # Package Functions
 # Functions to manipulate libalpm packages
 
@@ -516,4 +506,36 @@ function load(hdl::Handle, filename, full, level)
                 hdl, filename, full, level, pkgout)
     ret == 0 || throw(Error(hdl, "load"))
     Pkg(pkgout[], hdl, true)
+end
+
+# Accessors to the list of ignored dependencies.
+# These functions modify the list of dependencies that
+# should be ignored by a sysupgrade.
+function get_assumeinstalled(hdl::Handle)
+    list = ccall((:alpm_option_get_assumeinstalled, libalpm),
+                 Ptr{list_t}, (Ptr{Void},), hdl)
+    list_to_array(Depend, list, Depend)
+end
+function add_assumeinstalled(hdl::Handle, dep)
+    ret = ccall((:alpm_option_add_assumeinstalled, libalpm),
+                Ptr{list_t}, (Ptr{Void}, Ptr{CType.Depend}), hdl, Depend(dep))
+    ret == 0 || throw(Error(hdl, "add_assumeinstalled"))
+    nothing
+end
+function set_assumeinstalled(hdl::Handle, deps)
+    list = array_to_list(deps, dep->to_c(Depend(dep)),
+                         cglobal((:alpm_dep_free, libalpm)))
+    ret = ccall((:alpm_option_set_assumeinstalled, libalpm),
+                Ptr{list_t}, (Ptr{Void}, Ptr{list_t}), hdl, list)
+    if ret != 0
+        free(list, cglobal((:alpm_dep_free, libalpm)))
+        throw(Error(hdl, "set_assumeinstalled"))
+    end
+    nothing
+end
+function remove_assumeinstalled(hdl::Handle, dep)
+    ret = ccall((:alpm_option_remove_assumeinstalled, libalpm),
+                Ptr{list_t}, (Ptr{Void}, Ptr{CType.Depend}), hdl, Depend(dep))
+    ret < 0 && throw(Error(hdl, "remove_assumeinstalled"))
+    ret != 0
 end
