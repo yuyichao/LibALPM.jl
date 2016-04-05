@@ -93,40 +93,12 @@ include("pkg.jl")
 # /** Sets the callback used for operation progress.
 # int alpm_option_set_progresscb(alpm_handle_t *handle, alpm_cb_progress cb);
 
-# /** @}
-
-# /** @addtogroup alpm_api_packages Package Functions
-#  * Functions to manipulate libalpm packages
-
-# /** Create a package from a file.
-#  * If full is false, the archive is read only until all necessary
-#  * metadata is found. If it is true, the entire archive is read, which
-#  * serves as a verification of integrity and the filelist can be created.
-#  * The allocated structure should be freed using alpm_pkg_free().
-#  * @param handle the context handle
-#  * @param filename location of the package tarball
-#  * @param full whether to stop the load after metadata is read or continue
-#  * through the full archive
-#  * @param level what level of package signature checking to perform on the
-#  * package; note that this must be a '.sig' file type verification
-#  * @param pkg address of the package pointer
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#
-# int alpm_pkg_load(alpm_handle_t *handle, const char *filename, int full,
-# alpm_siglevel_t level, alpm_pkg_t **pkg);
-
 # /** Find a package in a list by name.
 #  * @param haystack a list of alpm_pkg_t
 #  * @param needle the package name
 #  * @return a pointer to the package if found or NULL
 #
 # alpm_pkg_t *alpm_pkg_find(alpm_list_t *haystack, const char *needle);
-
-# /** Free a package.
-#  * @param pkg package pointer to free
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#
-# int alpm_pkg_free(alpm_pkg_t *pkg);
 
 # /** Check the integrity (with md5) of a package from the sync cache.
 #  * @param pkg package pointer
