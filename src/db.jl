@@ -134,6 +134,7 @@ function get_pkgcache(db::DB)
     list_to_array(Pkg, pkgs, p->Pkg(p, hdl))
 end
 
+# TODO
 # /** Get a group entry from a package database.
 #  * @param db pointer to the package database to get the group from
 #  * @param name of the group

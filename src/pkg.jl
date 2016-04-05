@@ -182,9 +182,6 @@ Set install reason for a package in the local database
 
 The provided package object must be from the local database or this method
 will fail. The write to the local database is performed immediately.
-#  * @param pkg the package to update
-#  * @param reason the new install reason
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
 """
 function set_reason(pkg::Pkg, reason)
     ret = ccall((:alpm_pkg_set_reason, libalpm),
@@ -206,42 +203,6 @@ function get_groups(pkg::Pkg)
                  (Ptr{Void},), pkg)
     list_to_array(UTF8String, list, ptr_to_utf8)
 end
-
-# /** Returns the list of package dependencies as alpm_depend_t.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of alpm_depend_t structures.
-#
-# alpm_list_t *alpm_pkg_get_depends(alpm_pkg_t *pkg);
-
-# /** Returns the list of package optional dependencies.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of alpm_depend_t structures.
-#
-# alpm_list_t *alpm_pkg_get_optdepends(alpm_pkg_t *pkg);
-
-# /** Returns the list of packages conflicting with pkg.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of alpm_depend_t structures.
-#
-# alpm_list_t *alpm_pkg_get_conflicts(alpm_pkg_t *pkg);
-
-# /** Returns the list of packages provided by pkg.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of alpm_depend_t structures.
-#
-# alpm_list_t *alpm_pkg_get_provides(alpm_pkg_t *pkg);
-
-# /** Returns the list of available deltas for pkg.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of strings.
-#
-# alpm_list_t *alpm_pkg_get_deltas(alpm_pkg_t *pkg);
-
-# /** Returns the list of packages to be replaced by pkg.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of alpm_depend_t structures.
-#
-# alpm_list_t *alpm_pkg_get_replaces(alpm_pkg_t *pkg);
 
 """
 Returns the list of files installed by pkg
@@ -288,5 +249,42 @@ Returns the size of the files that will be downloaded to install a package.
 """
 download_size(pkg::Pkg) =
     ccall((:alpm_pkg_download_size, libalpm), Int, (Ptr{Void},), pkg)
+
+# TODO
+# /** Returns the list of package dependencies as alpm_depend_t.
+#  * @param pkg a pointer to package
+#  * @return a reference to an internal list of alpm_depend_t structures.
+#
+# alpm_list_t *alpm_pkg_get_depends(alpm_pkg_t *pkg);
+
+# /** Returns the list of package optional dependencies.
+#  * @param pkg a pointer to package
+#  * @return a reference to an internal list of alpm_depend_t structures.
+#
+# alpm_list_t *alpm_pkg_get_optdepends(alpm_pkg_t *pkg);
+
+# /** Returns the list of packages conflicting with pkg.
+#  * @param pkg a pointer to package
+#  * @return a reference to an internal list of alpm_depend_t structures.
+#
+# alpm_list_t *alpm_pkg_get_conflicts(alpm_pkg_t *pkg);
+
+# /** Returns the list of packages provided by pkg.
+#  * @param pkg a pointer to package
+#  * @return a reference to an internal list of alpm_depend_t structures.
+#
+# alpm_list_t *alpm_pkg_get_provides(alpm_pkg_t *pkg);
+
+# /** Returns the list of packages to be replaced by pkg.
+#  * @param pkg a pointer to package
+#  * @return a reference to an internal list of alpm_depend_t structures.
+#
+# alpm_list_t *alpm_pkg_get_replaces(alpm_pkg_t *pkg);
+
+# /** Returns the list of available deltas for pkg.
+#  * @param pkg a pointer to package
+#  * @return a reference to an internal list of strings.
+#
+# alpm_list_t *alpm_pkg_get_deltas(alpm_pkg_t *pkg);
 
 # alpm_list_t *alpm_pkg_unused_deltas(alpm_pkg_t *pkg);

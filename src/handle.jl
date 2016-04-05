@@ -482,6 +482,7 @@ function unregister_all_syncdbs(hdl::Handle)
     nothing
 end
 
+# TODO
 # Accessors to the list of ignored dependencies.
 # These functions modify the list of dependencies that
 # should be ignored by a sysupgrade.

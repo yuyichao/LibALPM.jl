@@ -18,6 +18,7 @@ include("handle.jl")
 include("db.jl")
 include("pkg.jl")
 
+# TODO
 # typedef void (*alpm_cb_log)(alpm_loglevel_t, const char *, va_list);
 
 # int alpm_logaction(alpm_handle_t *handle, const char *prefix,
