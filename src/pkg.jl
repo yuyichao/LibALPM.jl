@@ -177,6 +177,22 @@ get_isize(pkg::Pkg) =
 get_reason(pkg::Pkg) =
     ccall((:alpm_pkg_get_reason, libalpm), pkgreason_t, (Ptr{Void},), pkg)
 
+"""
+Set install reason for a package in the local database
+
+The provided package object must be from the local database or this method
+will fail. The write to the local database is performed immediately.
+#  * @param pkg the package to update
+#  * @param reason the new install reason
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+"""
+function set_reason(pkg::Pkg, reason)
+    ret = ccall((:alpm_pkg_set_reason, libalpm),
+                Cint, (Ptr{Void}, pkgreason_t), pkg, reason)
+    ret == 0 || throw(Error(pkg.hdl, "set_reason"))
+    nothing
+end
+
 "Returns the list of package licenses"
 function get_licenses(pkg::Pkg)
     list = ccall((:alpm_pkg_get_licenses, libalpm), Ptr{list_t},
@@ -252,38 +268,25 @@ get_db(pkg::Pkg) =
     DB(ccall((:alpm_pkg_get_db, libalpm), Ptr{Void}, (Ptr{Void},), pkg),
        pkg.hdl)
 
-# /** Returns the base64 encoded package signature.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal string
-#
-# const char *alpm_pkg_get_base64_sig(alpm_pkg_t *pkg);
+"Returns the base64 encoded package signature"
+get_base64_sig(pkg::Pkg) =
+    ptr_to_ascii(ccall((:alpm_pkg_get_base64_sig, libalpm),
+                       Ptr{UInt8}, (Ptr{Void},), pkg))
 
-# /** Returns the method used to validate a package during install.
-#  * @param pkg a pointer to package
-#  * @return an enum member giving the validation method
-#
-# alpm_pkgvalidation_t alpm_pkg_get_validation(alpm_pkg_t *pkg);
+"Returns the method used to validate a package during install"
+get_validation(pkg::Pkg) =
+    ccall((:alpm_pkg_get_base64_sig, libalpm), UInt32, (Ptr{Void},), pkg)
 
-# /** Returns whether the package has an install scriptlet.
-#  * @return 0 if FALSE, TRUE otherwise
-#
-# int alpm_pkg_has_scriptlet(alpm_pkg_t *pkg);
+"Returns whether the package has an install scriptlet"
+has_scriptlet(pkg::Pkg) =
+    ccall((:alpm_pkg_has_scriptlet, libalpm), Cint, (Ptr{Void},), pkg) != 0
 
-# /** Returns the size of download.
-#  * Returns the size of the files that will be downloaded to install a
-#  * package.
-#  * @param newpkg the new package to upgrade to
-#  * @return the size of the download
-#
-# off_t alpm_pkg_download_size(alpm_pkg_t *newpkg);
+"""
+Returns the size of download
+
+Returns the size of the files that will be downloaded to install a package.
+"""
+download_size(pkg::Pkg) =
+    ccall((:alpm_pkg_download_size, libalpm), Int, (Ptr{Void},), pkg)
 
 # alpm_list_t *alpm_pkg_unused_deltas(alpm_pkg_t *pkg);
-
-# /** Set install reason for a package in the local database.
-#  * The provided package object must be from the local database or this method
-#  * will fail. The write to the local database is performed immediately.
-#  * @param pkg the package to update
-#  * @param reason the new install reason
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#
-# int alpm_pkg_set_reason(alpm_pkg_t *pkg, alpm_pkgreason_t reason);
