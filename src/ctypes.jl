@@ -330,3 +330,82 @@ end
 end
 
 end
+
+type Depend
+    name::UTF8String
+    version::UTF8String
+    dest::UTF8String
+    name_hash::Culong
+    mod::depmod_t
+    function Depend(ptr::Ptr{CTypes.Depend}, own=false)
+        # WARNING! Relies on alpm internal API
+        cdep = unsafe_load(ptr)
+        name = if cdep.name == C_NULL
+            UTF8String("")
+        else
+            ptr_to_utf8(Ptr{UInt8}(cdep.name), own)
+        end
+        version = if cdep.version == C_NULL
+            UTF8String("")
+        else
+            ptr_to_utf8(Ptr{UInt8}(cdep.version), own)
+        end
+        dest = if cdep.dest == C_NULL
+            UTF8String("")
+        else
+            ptr_to_utf8(Ptr{UInt8}(cdep.dest), own)
+        end
+        own && ccall(:free, Void, (Ptr{Void},), ptr)
+        new(name, version, dest, cdep.name_hash, cdep.mod)
+    end
+    Depend(str::AbstractString) =
+        Depend(ccall((:alpm_dep_from_string, libalpm), Ptr{CTypes.Depend},
+                     (Cstring,), str), true)
+end
+
+# WARNING! Relies on julia internal API:
+#     `cconvert(Cstring, ::UTF8String)` is no-op
+#     Base.RefValue
+Base.cconvert(::Type{Ptr{CTypes.Depend}}, dep::Depend) =
+    (dep, Ref{CTypes.Depend}())
+function Base.unsafe_convert(::Type{Ptr{CTypes.Depend}},
+                             tup::Tuple{Depend,Base.RefValue{CTypes.Depend}})
+    dep, ref = tup
+    cdep = CTypes.Depend(Base.unsafe_convert(Cstring, dep.name),
+                         Base.unsafe_convert(Cstring, dep.version),
+                         Base.unsafe_convert(Cstring, dep.dest),
+                         dep.name_hash, dep.mod)
+    ref[] = cdep
+    Base.unsafe_convert(Ptr{CTypes.Depend}, ref)
+end
+
+function to_c(dep::Depend)
+    name = Cstring(C_NULL)
+    version = Cstring(C_NULL)
+    dest = Cstring(C_NULL)
+    try
+        name = ccall(:strdup, Cstring, (Cstring,), dep.name)
+        version = ccall(:strdup, Cstring, (Cstring,), dep.version)
+        dest = ccall(:strdup, Cstring, (Cstring,), dep.dest)
+    catch
+        ccall(:free, Void, (Cstring,), name)
+        ccall(:free, Void, (Cstring,), version)
+        ccall(:free, Void, (Cstring,), dest)
+        rethrow()
+    end
+    cdep = CTypes(name, version, dest, dep.name_hash, dep.mod)
+    ptr = ccall(:malloc, Ptr{CType.Depend}, (Csize_t,), sizeof(Depend))
+    unsafe_store!(ptr, cdep)
+    ptr
+end
+
+"Returns a string representing the dependency information"
+compute_string(dep::Depend) =
+    ptr_to_utf8(ccall((:alpm_dep_compute_string, libalpm), Ptr{UInt8},
+                      (Ptr{CTypes.Depend},), dep), true)
+
+function Base.show(io::IO, dep::Depend)
+    print(io, "LibALPM.Depend(")
+    show(io, compute_string(dep))
+    print(io, ")")
+end

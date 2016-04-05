@@ -260,22 +260,6 @@ include("pkg.jl")
 
 # alpm_list_t *alpm_checkconflicts(alpm_handle_t *handle, alpm_list_t *pkglist);
 
-# /** Returns a newly allocated string representing the dependency information.
-#  * @param dep a dependency info structure
-#  * @return a formatted string, e.g. "glibc>=2.12"
-#
-# char *alpm_dep_compute_string(const alpm_depend_t *dep);
-
-# /** Return a newly allocated dependency information parsed from a string
-#  * @param depstring a formatted string, e.g. "glibc=2.12"
-#  * @return a dependency info structure
-#
-# alpm_depend_t *alpm_dep_from_string(const char *depstring);
-
-# /** Free a dependency info structure
-#  * @param dep struct to free
-#
-# void alpm_dep_free(alpm_depend_t *dep);
 # void alpm_fileconflict_free(alpm_fileconflict_t *conflict);
 # void alpm_depmissing_free(alpm_depmissing_t *miss);
 # void alpm_conflict_free(alpm_conflict_t *conflict);
