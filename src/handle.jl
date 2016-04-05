@@ -88,33 +88,35 @@ Fetch a remote pkg
 Returns the downloaded filepath on success.
 """
 function fetch_pkgurl(hdl::Handle, url)
-    utf8(ccall((:alpm_fetch_pkgurl, libalpm), Ptr{UInt8},
-               (Ptr{Void}, Cstring), hdl, url))
+    ptr = ccall((:alpm_fetch_pkgurl, libalpm), Ptr{UInt8},
+                (Ptr{Void}, Cstring), hdl, url)
+    ptr == C_NULL && throw(Error(hdl, "fetch_pkgurl"))
+    ptr_to_utf8(ptr)
 end
 
 "Returns the root of the destination filesystem"
 function get_root(hdl::Handle)
-    utf8(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
-               (Ptr{Void},), hdl))
+    ptr_to_utf8(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
+                      (Ptr{Void},), hdl))
 end
 
 "Returns the path to the database directory"
 function get_dbpath(hdl::Handle)
-    utf8(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
-               (Ptr{Void},), hdl))
+    ptr_to_utf8(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
+                      (Ptr{Void},), hdl))
 end
 
 "Get the name of the database lock file"
 function get_lockfile(hdl::Handle)
-    utf8(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
-               (Ptr{Void},), hdl))
+    ptr_to_utf8(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
+                      (Ptr{Void},), hdl))
 end
 
 # Accessors to the list of package cache directories
 function get_cachedirs(hdl::Handle)
     dirs = ccall((:alpm_option_get_cachedirs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(UTF8String, dirs, ptr_to_utf8)
 end
 function set_cachedirs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -143,7 +145,7 @@ end
 function get_hookdirs(hdl::Handle)
     dirs = ccall((:alpm_option_get_hookdirs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(UTF8String, dirs, ptr_to_utf8)
 end
 function set_hookdirs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -213,7 +215,7 @@ end
 function get_noupgrades(hdl::Handle)
     dirs = ccall((:alpm_option_get_noupgrades, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(UTF8String, dirs, ptr_to_utf8)
 end
 function set_noupgrades(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -253,7 +255,7 @@ end
 function get_noextracts(hdl::Handle)
     dirs = ccall((:alpm_option_get_noextracts, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(UTF8String, dirs, ptr_to_utf8)
 end
 function set_noextracts(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -293,7 +295,7 @@ end
 function get_ignorepkgs(hdl::Handle)
     dirs = ccall((:alpm_option_get_ignorepkgs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(UTF8String, dirs, ptr_to_utf8)
 end
 function set_ignorepkgs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -325,7 +327,7 @@ end
 function get_ignoregroups(hdl::Handle)
     dirs = ccall((:alpm_option_get_ignoregroups, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(UTF8String, dirs, ptr_to_utf8)
 end
 function set_ignoregroups(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -352,8 +354,8 @@ end
 
 "Returns the targeted architecture"
 function get_arch(hdl::Handle)
-    ascii(ccall((:alpm_option_get_arch, libalpm), Ptr{UInt8},
-                (Ptr{Void},), hdl))
+    ptr_to_ascii(ccall((:alpm_option_get_arch, libalpm), Ptr{UInt8},
+                       (Ptr{Void},), hdl))
 end
 "Sets the targeted architecture"
 function set_arch(hdl::Handle, arch)

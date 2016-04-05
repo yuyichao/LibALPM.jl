@@ -44,7 +44,7 @@ Get the name of a package database.
 function get_name(db::DB)
     name = ccall((:alpm_db_get_name, libalpm), Ptr{UInt8}, (Ptr{Void},), db)
     name == C_NULL && throw(Error(db.hdl, "get_name"))
-    utf8(name)
+    ptr_to_utf8(name)
 end
 
 """
@@ -74,7 +74,7 @@ end
 function get_servers(db::DB)
     servers = ccall((:alpm_db_get_servers, libalpm), Ptr{list_t},
                     (Ptr{Void},), db)
-    list_to_array(UTF8String, servers, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(UTF8String, servers, ptr_to_utf8)
 end
 function set_servers(db::DB, servers)
     list = array_to_list(servers,

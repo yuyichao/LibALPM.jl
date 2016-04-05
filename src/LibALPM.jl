@@ -9,11 +9,11 @@ else
     error("LibALPM not properly installed. Please run Pkg.build(\"LibALPM\")")
 end
 
+include("utils.jl")
 include("enums.jl")
 include("ctypes.jl")
 include("list.jl")
 include("weakdict.jl")
-include("utils.jl")
 include("handle.jl")
 include("db.jl")
 include("pkg.jl")
@@ -105,9 +105,6 @@ include("pkg.jl")
 #  * @return 0 on success, -1 on error (pm_errno is set accordingly)
 #
 # int alpm_pkg_checkmd5sum(alpm_pkg_t *pkg);
-
-# /** Compare two version strings and determine which one is 'newer'.
-# int alpm_pkg_vercmp(const char *a, const char *b);
 
 # /** Computes the list of packages requiring a given package.
 #  * The return value of this function is a newly allocated

@@ -1,7 +1,7 @@
 #!/usr/bin/julia -f
 
 module Errno
-import LibALPM.libalpm
+import LibALPM: libalpm, ptr_to_utf8
 @enum(errno_t,
       MEMORY = 1,
       SYSTEM,
@@ -69,7 +69,7 @@ import LibALPM.libalpm
       EXTERNAL_DOWNLOAD,
       GPGME)
 Base.strerror(err::errno_t) =
-    utf8(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
+    ptr_to_utf8(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
 end
 import .Errno.errno_t
 immutable Error
