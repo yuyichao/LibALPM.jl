@@ -28,6 +28,12 @@ type Handle
     end
 end
 
+function Base.show(io::IO, hdl::Handle)
+    print(io, "Handle(")
+    show(io, UInt(hdl.ptr))
+    print(io, ")")
+end
+
 const all_handlers = CObjMap()
 
 function _null_all_dbs(cmap::CObjMap)
