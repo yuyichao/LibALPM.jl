@@ -26,6 +26,14 @@ function Base.unsafe_convert(::Type{Ptr{Void}}, db::DB)
     ptr
 end
 
+function Base.show(io::IO, db::DB)
+    print(io, "LibALPM.DB(ptr=")
+    show(io, UInt(db.ptr))
+    print(io, ",name=")
+    show(io, get_name(db))
+    print(io, ")")
+end
+
 "Unregister a package database"
 function unregister(db::DB)
     ptr = db.ptr
@@ -42,9 +50,8 @@ end
 Get the name of a package database.
 """
 function get_name(db::DB)
-    name = ccall((:alpm_db_get_name, libalpm), Ptr{UInt8}, (Ptr{Void},), db)
-    name == C_NULL && throw(Error(db.hdl, "get_name"))
-    ptr_to_utf8(name)
+    ptr_to_utf8(ccall((:alpm_db_get_name, libalpm),
+                      Ptr{UInt8}, (Ptr{Void},), db))
 end
 
 """

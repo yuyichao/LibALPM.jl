@@ -29,7 +29,7 @@ type Handle
 end
 
 function Base.show(io::IO, hdl::Handle)
-    print(io, "Handle(")
+    print(io, "LibALPM.Handle(ptr=")
     show(io, UInt(hdl.ptr))
     print(io, ")")
 end
