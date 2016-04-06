@@ -7,12 +7,13 @@ type Handle
     ptr::Ptr{Void}
     dbs::CObjMap
     pkgs::CObjMap
+    transpkgs::Set
     function Handle(root, db)
         err = Ref{errno_t}()
         ptr = ccall((:alpm_initialize, libalpm), Ptr{Void},
                     (Cstring, Cstring, Ref{errno_t}), root, db, err)
         ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
-        self = new(ptr, CObjMap(), CObjMap())
+        self = new(ptr, CObjMap(), CObjMap(), Set{Pkg}())
         finalizer(self, release)
         all_handlers[ptr] = self
         self
@@ -51,6 +52,9 @@ function _null_all_pkgs(cmap::CObjMap)
         val = v.value
         val === nothing && continue
         pkg = val::Pkg
+        pkg.should_free && try
+            free(pkg)
+        end
         pkg.ptr = C_NULL
     end
     empty!(cmap.dict)
@@ -63,6 +67,7 @@ function release(hdl::Handle)
     ptr == C_NULL && return
     delete!(all_handlers, ptr)
     _null_all_dbs(dbs)
+    empty!(hdl.transpkgs)
     _null_all_pkgs(dbs)
     ccall((:alpm_release, libalpm), Cint, (Ptr{Void},), ptr)
     nothing
@@ -539,3 +544,115 @@ function remove_assumeinstalled(hdl::Handle, dep)
     ret < 0 && throw(Error(hdl, "remove_assumeinstalled"))
     ret != 0
 end
+
+# Transaction Functions
+# Functions to manipulate libalpm transactions
+
+"Returns the bitfield of flags for the current transaction"
+get_flags(hdl::Handle) =
+    ccall((:alpm_trans_get_flags, libalpm), UInt32, (Ptr{Void},), hdl)
+
+"Returns a list of packages added by the transaction"
+function get_add(hdl::Handle)
+    pkgs = ccall((:alpm_trans_get_add, libalpm),
+                 Ptr{list_t}, (Ptr{Void},), hdl)
+    list_to_array(Pkg, pkgs, p->Pkg(p, hdl))
+end
+
+"Returns the list of packages removed by the transaction"
+function get_remove(hdl::Handle)
+    pkgs = ccall((:alpm_trans_get_remove, libalpm),
+                 Ptr{list_t}, (Ptr{Void},), hdl)
+    list_to_array(Pkg, pkgs, p->Pkg(p, hdl))
+end
+
+"Initialize the transaction"
+function trans_init(hdl::Handle, flags)
+    ret = ccall((:alpm_trans_init, libalpm),
+                Cint, (Ptr{Void}, UInt32), hdl, flags)
+    ret == 0 || throw(Error(hdl, "init"))
+    nothing
+end
+
+# TODO
+# /** Prepare a transaction.
+#  * @param handle the context handle
+#  * @param data the address of an alpm_list where a list
+#  * of alpm_depmissing_t objects is dumped (conflicting packages)
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+#
+# int alpm_trans_prepare(alpm_handle_t *handle, alpm_list_t **data);
+
+# /** Commit a transaction.
+#  * @param handle the context handle
+#  * @param data the address of an alpm_list where detailed description
+#  * of an error can be dumped (i.e. list of conflicting files)
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+#
+# int alpm_trans_commit(alpm_handle_t *handle, alpm_list_t **data);
+
+"Interrupt a transaction"
+function trans_interrupt(hdl::Handle)
+    ret = ccall((:alpm_trans_interrupt, libalpm), Cint, (Ptr{Void},), hdl)
+    ret == 0 || throw(Error(hdl, "interrupt"))
+    nothing
+end
+
+"Release a transaction"
+function trans_release(hdl::Handle)
+    transpkg = hdl.transpkgs::Set{Pkg}
+    for pkg in transpkg
+        free(pkg)
+    end
+    empty!(transpkg)
+    ret = ccall((:alpm_trans_release, libalpm), Cint, (Ptr{Void},), hdl)
+    ret == 0 || throw(Error(hdl, "release"))
+    nothing
+end
+
+# Common Transactions
+
+"""
+Search for packages to upgrade and add them to the transaction
+
+`enable_downgrade`: allow downgrading of packages if the remote version is lower
+"""
+function sysupgrade(hdl::Handle, enable_downgrade)
+    ret = ccall((:alpm_sync_sysupgrade, libalpm),
+                Cint, (Ptr{Void}, Cint), hdl, enable_downgrade)
+    ret == 0 || throw(Error(hdl, "sysupgrade"))
+    nothing
+end
+
+"""
+Add a package to the transaction
+
+If the package was loaded by `LibALPM.load()`, it will be freed upon
+`LibALPM.trans_release()` invocation.
+"""
+function add_pkg(hdl::Handle, pkg)
+    ret = ccall((:alpm_add_pkg, libalpm),
+                Cint, (Ptr{Void}, Ptr{Void}), hdl, pkg)
+    ret == 0 || throw(Error(hdl, "add_pkg"))
+    if pkg.should_free
+        push!(hdl.transpkgs::Set{Pkg}, pkg)
+        pkg.should_free = false
+    end
+    nothing
+end
+
+"Add a package removal action to the transaction"
+function remove_pkg(hdl::Handle, pkg)
+    ret = ccall((:alpm_remove_pkg, libalpm),
+                Cint, (Ptr{Void}, Ptr{Void}), hdl, pkg)
+    ret == 0 || throw(Error(hdl, "remove_pkg"))
+    nothing
+end
+
+# alpm_list_t *alpm_checkdeps(alpm_handle_t *handle, alpm_list_t *pkglist,
+# alpm_list_t *remove, alpm_list_t *upgrade, int reversedeps);
+# alpm_pkg_t *alpm_find_satisfier(alpm_list_t *pkgs, const char *depstring);
+# alpm_pkg_t *alpm_find_dbs_satisfier(alpm_handle_t *handle,
+# alpm_list_t *dbs, const char *depstring);
+
+# alpm_list_t *alpm_checkconflicts(alpm_handle_t *handle, alpm_list_t *pkglist);
