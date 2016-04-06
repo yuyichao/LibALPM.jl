@@ -285,11 +285,20 @@ function get_replaces(pkg::Pkg)
     list_to_array(Depend, list, Depend)
 end
 
-# TODO
-# /** Returns the list of available deltas for pkg.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of strings.
-#
-# alpm_list_t *alpm_pkg_get_deltas(alpm_pkg_t *pkg);
+"Returns the list of available deltas for pkg"
+function get_deltas(pkg::Pkg)
+    list = ccall((:alpm_pkg_get_deltas, libalpm), Ptr{list_t},
+                 (Ptr{Void},), pkg)
+    list_to_array(UTF8String, list, ptr_to_utf8)
+end
 
-# alpm_list_t *alpm_pkg_unused_deltas(alpm_pkg_t *pkg);
+function unused_deltas(pkg::Pkg)
+    list = ccall((:alpm_pkg_unused_deltas, libalpm), Ptr{list_t},
+                 (Ptr{Void},), pkg)
+    try
+        list_to_array(UTF8String, list, ptr_to_utf8)
+    catch
+        free(list)
+        rethrow()
+    end
+end
