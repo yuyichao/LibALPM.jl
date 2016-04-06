@@ -250,37 +250,42 @@ Returns the size of the files that will be downloaded to install a package.
 download_size(pkg::Pkg) =
     ccall((:alpm_pkg_download_size, libalpm), Int, (Ptr{Void},), pkg)
 
+"Returns the list of package dependencies"
+function get_depends(pkg::Pkg)
+    list = ccall((:alpm_pkg_get_depends, libalpm),
+                 Ptr{list_t}, (Ptr{Void},), hdl)
+    list_to_array(Depend, list, Depend)
+end
+
+"Returns the list of package optional dependencies"
+function get_optdepends(pkg::Pkg)
+    list = ccall((:alpm_pkg_get_optdepends, libalpm),
+                 Ptr{list_t}, (Ptr{Void},), hdl)
+    list_to_array(Depend, list, Depend)
+end
+
+"Returns the list of packages conflicting with pkg"
+function get_conflicts(pkg::Pkg)
+    list = ccall((:alpm_pkg_get_conflicts, libalpm),
+                 Ptr{list_t}, (Ptr{Void},), hdl)
+    list_to_array(Depend, list, Depend)
+end
+
+"Returns the list of packages provided by pkg"
+function get_provides(pkg::Pkg)
+    list = ccall((:alpm_pkg_get_provides, libalpm),
+                 Ptr{list_t}, (Ptr{Void},), hdl)
+    list_to_array(Depend, list, Depend)
+end
+
+"Returns the list of packages to be replaced by pkg"
+function get_replaces(pkg::Pkg)
+    list = ccall((:alpm_pkg_get_replaces, libalpm),
+                 Ptr{list_t}, (Ptr{Void},), hdl)
+    list_to_array(Depend, list, Depend)
+end
+
 # TODO
-# /** Returns the list of package dependencies as alpm_depend_t.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of alpm_depend_t structures.
-#
-# alpm_list_t *alpm_pkg_get_depends(alpm_pkg_t *pkg);
-
-# /** Returns the list of package optional dependencies.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of alpm_depend_t structures.
-#
-# alpm_list_t *alpm_pkg_get_optdepends(alpm_pkg_t *pkg);
-
-# /** Returns the list of packages conflicting with pkg.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of alpm_depend_t structures.
-#
-# alpm_list_t *alpm_pkg_get_conflicts(alpm_pkg_t *pkg);
-
-# /** Returns the list of packages provided by pkg.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of alpm_depend_t structures.
-#
-# alpm_list_t *alpm_pkg_get_provides(alpm_pkg_t *pkg);
-
-# /** Returns the list of packages to be replaced by pkg.
-#  * @param pkg a pointer to package
-#  * @return a reference to an internal list of alpm_depend_t structures.
-#
-# alpm_list_t *alpm_pkg_get_replaces(alpm_pkg_t *pkg);
-
 # /** Returns the list of available deltas for pkg.
 #  * @param pkg a pointer to package
 #  * @return a reference to an internal list of strings.
