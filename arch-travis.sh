@@ -192,7 +192,7 @@ run_build_script() {
 
 # setup pacaur
 setup_pacaur() {
-  chroot_as_root "pacman -S pacaur"
+  chroot_as_root "pacman -S --noconfirm pacaur"
   # local cowerarchive="cower.tar.gz"
   # local aururl="https://aur.archlinux.org/cgit/aur.git/snapshot/"
   # # install cower
