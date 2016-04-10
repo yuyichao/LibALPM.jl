@@ -574,22 +574,131 @@ function trans_init(hdl::Handle, flags)
     nothing
 end
 
-# TODO
-# /** Prepare a transaction.
-#  * @param handle the context handle
-#  * @param data the address of an alpm_list where a list
-#  * of alpm_depmissing_t objects is dumped (conflicting packages)
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#
-# int alpm_trans_prepare(alpm_handle_t *handle, alpm_list_t **data);
+immutable TransPrepareError{T} <: AbstractError
+    errno::errno_t
+    list::Vector{T}
+end
+function Base.showerror(io::IO, err::TransPrepareError)
+    println(io, "ALPM Transaction Prepare Error: $(strerror(err.errno))")
+    if err.errno == Errno.PKG_INVALID_ARCH
+        println(io, "Packages with invalid archs:")
+    elseif errno == Errno.UNSATISFIED_DEPS
+        println(io, "Missing dependencies:")
+    elseif errno == Errno.CONFLICTING_DEPS
+        println(io, "Conflicts:")
+    end
+    for pkg in err.list
+        print(io, "    ")
+        show(io, pkg)
+        println()
+    end
+end
 
-# /** Commit a transaction.
-#  * @param handle the context handle
-#  * @param data the address of an alpm_list where detailed description
-#  * of an error can be dumped (i.e. list of conflicting files)
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#
-# int alpm_trans_commit(alpm_handle_t *handle, alpm_list_t **data);
+"Prepare a transaction"
+function trans_prepare(hdl::Handle)
+    list = Ref{Ptr{list_t}}(0)
+    ret = ccall((:alpm_trans_prepare, libalpm),
+                Cint, (Ptr{Void}, Ptr{Ptr{list_t}}), hdl, list)
+    if ret != 0
+        list[] == C_NULL && throw(Error(hdl, "trans_prepare"))
+        errno = Base.errno(hdl)
+        # The following part is not documented anyware AFAIK and
+        # is purely based on libalpm source code...
+        # What the list is for each error code
+        # PKG_INVALID_ARCH:
+        #     allocated string of format "<pkgname>-<pkgver>-<pkgarch>"
+        # UNSATISFIED_DEPS:
+        #     DepMissing with all internal pointer allocated (dup'd)
+        # CONFLICTING_DEPS:
+        #     Conflict with all internal pointer allocated (dup'd)
+        if errno == Errno.PKG_INVALID_ARCH
+            try
+                ary = list_to_array(UTF8String, list[], p->ptr_to_utf8(p, true))
+            catch
+                free(list[], cglobal(:free))
+                rethrow()
+            end
+            throw(TransPrepareError(errno, ary))
+        elseif errno == Errno.UNSATISFIED_DEPS
+            try
+                ary = list_to_array(DepMissing, list[], p->DepMissing(p, true))
+            catch
+                free(list[], cglobal((:alpm_depmissing_free, libalpm)))
+                rethrow()
+            end
+            throw(TransPrepareError(errno, ary))
+        elseif errno == Errno.CONFLICTING_DEPS
+            try
+                ary = list_to_array(Conflict, list[], p->Conflict(p, true))
+            catch
+                free(list[], cglobal((:alpm_conflict_free, libalpm)))
+                rethrow()
+            end
+            throw(TransPrepareError(errno, ary))
+        else
+            warn("LibALPM<trans_prepare>: ",
+                 "ignore unknown list return for error code $errno.")
+            free(list[])
+            throw(Error(hdl, "trans_prepare"))
+        end
+    end
+    nothing
+end
+
+immutable TransCommitError{T} <: AbstractError
+    errno::errno_t
+    list::Vector{T}
+end
+function Base.showerror(io::IO, err::TransCommitError)
+    println(io, "ALPM Transaction Commit Error: $(strerror(err.errno))")
+    if err.errno == Errno.FILE_CONFLICTS
+        println(io, "File conflicts:")
+    else
+        println(io, "Packages:")
+    end
+    for pkg in err.list
+        print(io, "    ")
+        show(io, pkg)
+        println()
+    end
+end
+
+"Commit a transaction"
+function trans_commit(hdl::Handle)
+    list = Ref{Ptr{list_t}}(0)
+    ret = ccall((:alpm_trans_commit, libalpm),
+                Cint, (Ptr{Void}, Ptr{Ptr{list_t}}), hdl, list)
+    if ret != 0
+        list[] == C_NULL && throw(Error(hdl, "trans_commit"))
+        errno = Base.errno(hdl)
+        # The following part is not documented anyware AFAIK and
+        # is purely based on libalpm source code...
+        # What the list is for each error code
+        # FILE_CONFLICTS:
+        #     fileconflict dup
+        # everything else:
+        #     pkgname dup
+        if errno == Errno.FILE_CONFLICTS
+            try
+                ary = list_to_array(Fileconflict, list[],
+                                    p->Fileconflict(p, true))
+            catch
+                free(list[], cglobal((:alpm_fileconflict_free, libalpm)))
+                rethrow()
+            end
+            throw(TransCommitError(errno, ary))
+        else
+            try
+                ary = list_to_array(UTF8String, list[], p->ptr_to_utf8(p, true))
+            catch
+                free(list[], cglobal(:free))
+                rethrow()
+            end
+            throw(TransCommitError(errno, ary))
+        end
+    end
+    nothing
+end
 
 "Interrupt a transaction"
 function trans_interrupt(hdl::Handle)
@@ -649,6 +758,7 @@ function remove_pkg(hdl::Handle, pkg)
     nothing
 end
 
+# TODO
 # alpm_list_t *alpm_checkdeps(alpm_handle_t *handle, alpm_list_t *pkglist,
 # alpm_list_t *remove, alpm_list_t *upgrade, int reversedeps);
 # alpm_pkg_t *alpm_find_satisfier(alpm_list_t *pkgs, const char *depstring);

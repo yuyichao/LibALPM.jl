@@ -32,7 +32,7 @@ end
 "File conflict"
 immutable FileConflict
     target::Cstring
-    _type::LibALPM.fileconflicttype_t
+    conflicttype::LibALPM.fileconflicttype_t
     file::Cstring
     ctarget::Cstring
 end
@@ -408,4 +408,81 @@ function Base.show(io::IO, dep::Depend)
     print(io, "LibALPM.Depend(")
     show(io, compute_string(dep))
     print(io, ")")
+end
+
+type DepMissing
+    target::UTF8String
+    depend::Depend
+    causingpkg::UTF8String
+    function DepMissing(ptr::Ptr{CTypes.DepMissing}, own=false)
+        # WARNING! Relies on alpm internal API
+        cdepmissing = unsafe_load(ptr)
+        target = if cdepmissing.target == C_NULL
+            UTF8String("")
+        else
+            ptr_to_utf8(Ptr{UInt8}(cdepmissing.target), own)
+        end
+        depend = Depend(cdepmissing.depend, own)
+        causingpkg = if cdepmissing.causingpkg == C_NULL
+            UTF8String("")
+        else
+            ptr_to_utf8(Ptr{UInt8}(cdepmissing.causingpkg), own)
+        end
+        own && ccall(:free, Void, (Ptr{Void},), ptr)
+        new(target, depend, causingpkg)
+    end
+end
+
+type Conflict
+    package1_hash::Culong
+    package2_hash::Culong
+    package1::UTF8String
+    package2::UTF8String
+    reason::Depend
+    function Conflict(ptr::Ptr{CTypes.Conflict}, own=false)
+        # WARNING! Relies on alpm internal API
+        cconflict = unsafe_load(ptr)
+        package1 = if cconflict.package1 == C_NULL
+            UTF8String("")
+        else
+            ptr_to_utf8(Ptr{UInt8}(cconflict.package1), own)
+        end
+        package2 = if cconflict.package2 == C_NULL
+            UTF8String("")
+        else
+            ptr_to_utf8(Ptr{UInt8}(cconflict.package2), own)
+        end
+        reason = Depend(cconflict.reason, own)
+        own && ccall(:free, Void, (Ptr{Void},), ptr)
+        new(cconflict.package1_hash, cconflict.package2_hash,
+            package1, package2, reason)
+    end
+end
+
+type FileConflict
+    target::UTF8String
+    conflicttype::LibALPM.fileconflicttype_t
+    file::UTF8String
+    ctarget::UTF8String
+    function FileConflict(ptr::Ptr{CTypes.FileConflict}, own=false)
+        # WARNING! Relies on alpm internal API
+        cfileconflict = unsafe_load(ptr)
+        target = if cfileconflict.target == C_NULL
+            UTF8String("")
+        else
+            ptr_to_utf8(Ptr{UInt8}(cfileconflict.target), own)
+        end
+        file = if cfileconflict.file == C_NULL
+            UTF8String("")
+        else
+            ptr_to_utf8(Ptr{UInt8}(cfileconflict.file), own)
+        end
+        ctarget = if cfileconflict.ctarget == C_NULL
+            UTF8String("")
+        else
+            ptr_to_utf8(Ptr{UInt8}(cfileconflict.ctarget), own)
+        end
+        own && ccall(:free, Void, (Ptr{Void},), ptr)
+        new(target, cfileconflict.conflicttype, file, ctarget)
+    end
 end

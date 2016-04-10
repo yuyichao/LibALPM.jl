@@ -72,7 +72,8 @@ Base.strerror(err::errno_t) =
     ptr_to_utf8(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
 end
 import .Errno.errno_t
-immutable Error
+abstract AbstractError <: Exception
+immutable Error <: AbstractError
     errno::errno_t
     msg
 end

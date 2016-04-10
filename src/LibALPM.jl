@@ -79,8 +79,6 @@ include("pkg.jl")
 
 
 # void alpm_fileconflict_free(alpm_fileconflict_t *conflict);
-# void alpm_depmissing_free(alpm_depmissing_t *miss);
-# void alpm_conflict_free(alpm_conflict_t *conflict);
 
 # typedef void (*alpm_cb_log)(alpm_loglevel_t, const char *, va_list);
 
