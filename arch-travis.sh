@@ -193,7 +193,7 @@ run_build_script() {
 # setup pacaur
 setup_pacaur() {
   # Check if pacaur is available in the added repos
-  if chroot_as_normal "pacman -Si pacaur" &> /dev/null
+  if chroot_as_normal "pacman -Si pacaur" &> /dev/null; then
     chroot_as_root "pacman -S --noconfirm pacaur"
   else
     local cowerarchive="cower.tar.gz"
