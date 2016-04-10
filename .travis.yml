@@ -1,0 +1,14 @@
+sudo: required
+language: c
+arch:
+  repos:
+    - archlinuxcn=http://repo.archlinuxcn.org/$arch
+  packages:
+    - julia-git
+  script:
+    - julia -e 'Pkg.clone(pwd())'
+    - julia -e 'Pkg.build("LibALPM")'
+    - julia --check-bounds=yes -e 'Pkg.test("LibALPM", coverage=true)'
+
+script:
+  - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
