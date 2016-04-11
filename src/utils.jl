@@ -13,10 +13,9 @@
 end
 
 @inline ptr_to_utf8(p::Ptr, own=false) = UTF8String(pchar_to_array(p, own))
-@inline ptr_to_ascii(p::Ptr, own=false) = ASCIIString(pchar_to_array(p, own))
 
 version() =
-    VersionNumber(ptr_to_ascii(ccall((:alpm_version, libalpm), Ptr{UInt8}, ())))
+    VersionNumber(ascii(ccall((:alpm_version, libalpm), Ptr{UInt8}, ())))
 capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
 
 # checksums

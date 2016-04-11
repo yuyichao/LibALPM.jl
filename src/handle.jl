@@ -365,8 +365,8 @@ end
 
 "Returns the targeted architecture"
 function get_arch(hdl::Handle)
-    ptr_to_ascii(ccall((:alpm_option_get_arch, libalpm), Ptr{UInt8},
-                       (Ptr{Void},), hdl))
+    ascii(ccall((:alpm_option_get_arch, libalpm),
+                Ptr{UInt8}, (Ptr{Void},), hdl))
 end
 "Sets the targeted architecture"
 function set_arch(hdl::Handle, arch)

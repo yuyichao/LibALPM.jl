@@ -234,8 +234,8 @@ get_db(pkg::Pkg) =
 
 "Returns the base64 encoded package signature"
 get_base64_sig(pkg::Pkg) =
-    ptr_to_ascii(ccall((:alpm_pkg_get_base64_sig, libalpm),
-                       Ptr{UInt8}, (Ptr{Void},), pkg))
+    ascii(ccall((:alpm_pkg_get_base64_sig, libalpm),
+                Ptr{UInt8}, (Ptr{Void},), pkg))
 
 "Returns the method used to validate a package during install"
 get_validation(pkg::Pkg) =
