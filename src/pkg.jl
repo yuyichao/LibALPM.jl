@@ -297,6 +297,7 @@ function unused_deltas(pkg::Pkg)
     end
 end
 
+# TODO
 #  * Groups
 # alpm_list_t *alpm_find_group_pkgs(alpm_list_t *dbs, const char *name);
 

@@ -11,12 +11,6 @@ type DB
         hdl.dbs[ptr] = self
         self
     end
-    function DB(ptr::Ptr{Void})
-        ptr == C_NULL && throw(UndefRefError())
-        # WARNING! Internal libalpm API used
-        hdlptr = unsafe_load(Ptr{Ptr{Void}}(ptr))
-        DB(ptr, Handle(hdlptr))
-    end
 end
 
 Base.cconvert(::Type{Ptr{Void}}, db::DB) = db

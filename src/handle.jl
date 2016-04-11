@@ -15,16 +15,6 @@ type Handle
         ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
         self = new(ptr, CObjMap(), CObjMap(), Set{Pkg}())
         finalizer(self, release)
-        all_handlers[ptr] = self
-        self
-    end
-    function Handle(ptr::Ptr{Void})
-        ptr == C_NULL && throw(UndefRefError())
-        cached = all_handlers[ptr, Handle]
-        isnull(cached) || return get(cached)
-        self = new(ptr, CObjMap())
-        finalizer(self, release)
-        all_handlers[ptr] = self
         self
     end
 end
@@ -34,8 +24,6 @@ function Base.show(io::IO, hdl::Handle)
     show(io, UInt(hdl.ptr))
     print(io, ")")
 end
-
-const all_handlers = CObjMap()
 
 function _null_all_dbs(cmap::CObjMap)
     for (k, v) in cmap.dict
@@ -65,7 +53,6 @@ function release(hdl::Handle)
     hdl.ptr = C_NULL
     dbs = hdl.dbs
     ptr == C_NULL && return
-    delete!(all_handlers, ptr)
     _null_all_dbs(dbs)
     empty!(hdl.transpkgs)
     _null_all_pkgs(dbs)
