@@ -130,22 +130,24 @@ end
                                      LibALPM.SigLevel.PACKAGE_OPTIONAL |
                                      LibALPM.SigLevel.DATABASE_OPTIONAL)
 
-    glibcpkg = LibALPM.get_pkg(coredb, "glibc")
+    glibcpkg2 = LibALPM.get_pkg(coredb, "glibc")
     # this might assume the package file is available, let's see...
-    @test !isempty(LibALPM.get_filename(glibcpkg))
-    @test !isempty(LibALPM.get_md5sum(glibcpkg))
-    @test !isempty(LibALPM.get_sha256sum(glibcpkg))
-    @test LibALPM.get_size(glibcpkg) > 0
-    @test LibALPM.get_db(glibcpkg) === coredb
-    @test !isempty(LibALPM.get_base64_sig(glibcpkg))
-    @test LibALPM.download_size(glibcpkg) > 0
+    @test !isempty(LibALPM.get_filename(glibcpkg2))
+    @test !isempty(LibALPM.get_md5sum(glibcpkg2))
+    @test !isempty(LibALPM.get_sha256sum(glibcpkg2))
+    @test LibALPM.get_size(glibcpkg2) > 0
+    @test LibALPM.get_db(glibcpkg2) === coredb
+    @test !isempty(LibALPM.get_base64_sig(glibcpkg2))
+    @test LibALPM.download_size(glibcpkg2) > 0
     # Not sure what to expect ...
-    LibALPM.get_deltas(glibcpkg)
-    LibALPM.unused_deltas(glibcpkg)
+    LibALPM.get_deltas(glibcpkg2)
+    LibALPM.unused_deltas(glibcpkg2)
 
     LibALPM.unregister(coredb)
     @test coredb.ptr == C_NULL
-    @test glibcpkg.ptr == C_NULL
+    @test glibcpkg2.ptr == C_NULL
+    @test glibcpkg.ptr != C_NULL
+    @test LibALPM.get_name(glibcpkg) == "glibc"
 
     LibALPM.release(hdl)
 end
