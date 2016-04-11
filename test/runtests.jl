@@ -54,6 +54,8 @@ end
     pacmanpkg = LibALPM.get_pkg(localdb, "pacman")
     @test LibALPM.get_pkg(localdb, "pacman") === pacmanpkg
     @test !isempty(LibALPM.get_pkgcache(localdb))
+    # Only syncdb can be updated
+    @test_throws LibALPM.Error LibALPM.update(localdb, false)
 
     coredb = LibALPM.register_syncdb(hdl, "core",
                                      LibALPM.SigLevel.PACKAGE_OPTIONAL |
@@ -134,8 +136,16 @@ end
 
 @testset "Pkgroot" begin
     mktempdir() do dir
-        dbpath = joinpath(dir, "/var/lib/pacman/")
+        dbpath = joinpath(dir, "var/lib/pacman/")
         mkpath(dbpath)
         hdl = LibALPM.Handle(dir, dbpath)
+        coredb = LibALPM.register_syncdb(hdl, "core",
+                                         LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                         LibALPM.SigLevel.DATABASE_OPTIONAL)
+
+        @test LibALPM.get_servers(coredb) == []
+        mirrorurl = "http://mirrors.kernel.org/archlinux/core/os/$(Base.ARCH)"
+        LibALPM.set_servers(coredb, [mirrorurl])
+        LibALPM.update(coredb, false)
     end
 end
