@@ -146,6 +146,8 @@ end
         @test LibALPM.get_servers(coredb) == []
         mirrorurl = "http://mirrors.kernel.org/archlinux/core/os/$(Base.ARCH)"
         LibALPM.set_servers(coredb, [mirrorurl])
-        LibALPM.update(coredb, false)
+        @test !LibALPM.update(coredb, false)
+        # This can fail if the remote is updated right in between the two calls
+        @test LibALPM.update(coredb, false)
     end
 end
