@@ -13,6 +13,17 @@ type DB
     end
 end
 
+function _null_all_pkgs(db::DB)
+    db.ptr == C_NULL && return
+    hdl = db.hdl
+    for ptr in list_iter(ccall((:alpm_db_get_pkgcache, libalpm),
+                               Ptr{list_t}, (Ptr{Void},), db))
+        cached = hdl.pkgs[ptr, Pkg]
+        isnull(cached) && continue
+        free(get(cached))
+    end
+end
+
 Base.cconvert(::Type{Ptr{Void}}, db::DB) = db
 function Base.unsafe_convert(::Type{Ptr{Void}}, db::DB)
     ptr = db.ptr
@@ -32,9 +43,9 @@ end
 function unregister(db::DB)
     ptr = db.ptr
     ptr == C_NULL && throw(UndefRefError())
+    _null_all_pkgs(db)
     hdl = db.hdl
     db.ptr = C_NULL
-    # TODO handle pkgs?
     delete!(hdl.dbs, ptr)
     ret = ccall((:alpm_db_unregister, libalpm), Cint, (Ptr{Void},), ptr)
     ret == 0 || throw(Error(hdl, "unregister"))

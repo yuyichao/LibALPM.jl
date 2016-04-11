@@ -145,6 +145,7 @@ end
 
     LibALPM.unregister(coredb)
     @test coredb.ptr == C_NULL
+    @test glibcpkg.ptr == C_NULL
 
     LibALPM.release(hdl)
 end
