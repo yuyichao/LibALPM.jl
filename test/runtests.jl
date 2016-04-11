@@ -7,15 +7,23 @@ const thisdir = dirname(@__FILE__)
 
 include("list.jl")
 
-for err in instances(LibALPM.errno_t)
-    strerror(err)::UTF8String
+@testset "Errno" begin
+    for err in instances(LibALPM.errno_t)
+        @test isa(strerror(err), UTF8String)
+    end
 end
 
-@test isa(LibALPM.version(), VersionNumber)
-@test LibALPM.capabilities() != 0
+@testset "Utils" begin
+    @test isa(LibALPM.version(), VersionNumber)
+    @test LibALPM.capabilities() != 0
 
-@test LibALPM.compute_md5sum(joinpath(thisdir, "test_file")) == "95f50f74390e8e4c60ac55b17d5d0e93"
-@test LibALPM.compute_sha256sum(joinpath(thisdir, "test_file")) == "4e22afc956e83e884362343cb2e264f8fafe350768f321ea9d0f41ca7261975c"
+    @test LibALPM.compute_md5sum(joinpath(thisdir, "test_file")) == "95f50f74390e8e4c60ac55b17d5d0e93"
+    @test LibALPM.compute_sha256sum(joinpath(thisdir, "test_file")) == "4e22afc956e83e884362343cb2e264f8fafe350768f321ea9d0f41ca7261975c"
+
+    @test LibALPM.vercmp("1.2", "1.2") == 0
+    @test LibALPM.vercmp("1.1", "1.2") == -1
+    @test LibALPM.vercmp("1.2", "1.1") == 1
+end
 
 hdl = LibALPM.Handle("/", "/var/lib/pacman/")
 @test LibALPM.get_root(hdl) == "/"
