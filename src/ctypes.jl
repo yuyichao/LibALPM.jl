@@ -7,7 +7,7 @@ import LibALPM: LibALPM, EventType
 immutable Depend
     name::Cstring
     version::Cstring
-    dest::Cstring
+    desc::Cstring
     name_hash::Culong
     mod::LibALPM.depmod_t
 end
@@ -337,10 +337,10 @@ function cstr_to_utf8(cstr, own)
     utf8(Ptr{UInt8}(cstr))
 end
 
-type Depend
+immutable Depend
     name::UTF8String
     version::UTF8String
-    dest::UTF8String
+    desc::UTF8String
     name_hash::Culong
     mod::depmod_t
     function Depend(_ptr::Ptr, own=false)
@@ -350,13 +350,18 @@ type Depend
         own && ccall(:free, Void, (Ptr{Void},), ptr)
         name = cstr_to_utf8(cdep.name, own)
         version = cstr_to_utf8(cdep.version, own)
-        dest = cstr_to_utf8(cdep.dest, own)
-        new(name, version, dest, cdep.name_hash, cdep.mod)
+        desc = cstr_to_utf8(cdep.desc, own)
+        new(name, version, desc, cdep.name_hash, cdep.mod)
     end
     Depend(str::AbstractString) =
         Depend(ccall((:alpm_dep_from_string, libalpm), Ptr{CTypes.Depend},
                      (Cstring,), str), true)
 end
+
+# Mainly for testing, no hash yet.
+Base.(:(==))(dep1::Depend, dep2::Depend) =
+    (dep1.name == dep2.name && dep1.version == dep2.version &&
+     dep1.desc == dep2.desc && dep1.mod == dep2.mod)
 
 # WARNING! Relies on julia internal API:
 #     `cconvert(Cstring, ::UTF8String)` is no-op
@@ -368,7 +373,7 @@ function Base.unsafe_convert(::Type{Ptr{CTypes.Depend}},
     dep, ref = tup
     cdep = CTypes.Depend(Base.unsafe_convert(Cstring, dep.name),
                          Base.unsafe_convert(Cstring, dep.version),
-                         Base.unsafe_convert(Cstring, dep.dest),
+                         Base.unsafe_convert(Cstring, dep.desc),
                          dep.name_hash, dep.mod)
     ref[] = cdep
     Base.unsafe_convert(Ptr{CTypes.Depend}, ref)
@@ -377,19 +382,19 @@ end
 function to_c(dep::Depend)
     name = Cstring(C_NULL)
     version = Cstring(C_NULL)
-    dest = Cstring(C_NULL)
+    desc = Cstring(C_NULL)
     try
         name = ccall(:strdup, Cstring, (Cstring,), dep.name)
         version = ccall(:strdup, Cstring, (Cstring,), dep.version)
-        dest = ccall(:strdup, Cstring, (Cstring,), dep.dest)
+        desc = ccall(:strdup, Cstring, (Cstring,), dep.desc)
     catch
         ccall(:free, Void, (Cstring,), name)
         ccall(:free, Void, (Cstring,), version)
-        ccall(:free, Void, (Cstring,), dest)
+        ccall(:free, Void, (Cstring,), desc)
         rethrow()
     end
-    cdep = CTypes(name, version, dest, dep.name_hash, dep.mod)
-    ptr = ccall(:malloc, Ptr{CType.Depend}, (Csize_t,), sizeof(Depend))
+    cdep = CTypes.Depend(name, version, desc, dep.name_hash, dep.mod)
+    ptr = ccall(:malloc, Ptr{CTypes.Depend}, (Csize_t,), sizeof(Depend))
     unsafe_store!(ptr, cdep)
     ptr
 end

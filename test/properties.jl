@@ -95,6 +95,21 @@ LibALPM.add_ignoregroup(hdl, "xorg")
 @test !LibALPM.remove_ignoregroup(hdl, "base")
 @test LibALPM.get_ignoregroups(hdl) == ["base-devel", "xorg"]
 
+@test LibALPM.get_assumeinstalled(hdl) == []
+LibALPM.set_assumeinstalled(hdl, ["linux=4.4", "glibc"])
+@test LibALPM.get_assumeinstalled(hdl) == [LibALPM.Depend("linux=4.4"),
+                                           LibALPM.Depend("glibc")]
+LibALPM.add_assumeinstalled(hdl, "pacman=5.0")
+@test LibALPM.get_assumeinstalled(hdl) == [LibALPM.Depend("linux=4.4"),
+                                           LibALPM.Depend("glibc"),
+                                           LibALPM.Depend("pacman=5.0")]
+@test LibALPM.remove_assumeinstalled(hdl, "glibc")
+@test LibALPM.get_assumeinstalled(hdl) == [LibALPM.Depend("linux=4.4"),
+                                           LibALPM.Depend("pacman=5.0")]
+@test !LibALPM.remove_assumeinstalled(hdl, "glibc")
+@test LibALPM.get_assumeinstalled(hdl) == [LibALPM.Depend("linux=4.4"),
+                                           LibALPM.Depend("pacman=5.0")]
+
 @test_throws ArgumentError LibALPM.get_arch(hdl)
 LibALPM.set_arch(hdl, Base.ARCH)
 @test LibALPM.get_arch(hdl) == string(Base.ARCH)

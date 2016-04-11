@@ -518,15 +518,15 @@ function get_assumeinstalled(hdl::Handle)
 end
 function add_assumeinstalled(hdl::Handle, dep)
     ret = ccall((:alpm_option_add_assumeinstalled, libalpm),
-                Ptr{list_t}, (Ptr{Void}, Ptr{CType.Depend}), hdl, Depend(dep))
+                Cint, (Ptr{Void}, Ptr{CTypes.Depend}), hdl, Depend(dep))
     ret == 0 || throw(Error(hdl, "add_assumeinstalled"))
     nothing
 end
 function set_assumeinstalled(hdl::Handle, deps)
-    list = array_to_list(deps, dep->to_c(Depend(dep)),
+    list = array_to_list(deps, dep->Ptr{Void}(to_c(Depend(dep))),
                          cglobal((:alpm_dep_free, libalpm)))
     ret = ccall((:alpm_option_set_assumeinstalled, libalpm),
-                Ptr{list_t}, (Ptr{Void}, Ptr{list_t}), hdl, list)
+                Cint, (Ptr{Void}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal((:alpm_dep_free, libalpm)))
         throw(Error(hdl, "set_assumeinstalled"))
@@ -535,7 +535,7 @@ function set_assumeinstalled(hdl::Handle, deps)
 end
 function remove_assumeinstalled(hdl::Handle, dep)
     ret = ccall((:alpm_option_remove_assumeinstalled, libalpm),
-                Ptr{list_t}, (Ptr{Void}, Ptr{CType.Depend}), hdl, Depend(dep))
+                Cint, (Ptr{Void}, Ptr{CTypes.Depend}), hdl, Depend(dep))
     ret < 0 && throw(Error(hdl, "remove_assumeinstalled"))
     ret != 0
 end
