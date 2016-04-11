@@ -149,4 +149,7 @@ localdb = LibALPM.get_localdb(hdl)
 syncdbs = LibALPM.get_syncdbs(hdl)
 
 LibALPM.unlock(hdl)
+
+@test_throws LibALPM.Error LibALPM.fetch_pkgurl(hdl, "http://not-exist-url.abcd")
+
 LibALPM.release(hdl)
