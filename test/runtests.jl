@@ -160,20 +160,46 @@ end
     @test glibcpkg.ptr == C_NULL
 end
 
+function get_default_url(repo)
+    open("/etc/pacman.d/mirrorlist") do fd
+        for line in eachline(fd)
+            line[1] == '#' && continue
+            isempty(line) && continue
+            line = strip(line)
+            m = match(r"^ *Server *= *([^ ]*)", line)
+            m === nothing && continue
+            m = m::RegexMatch
+            urltemplate = m.captures[1]
+            return replace(replace(urltemplate, "\$repo", repo),
+                           "\$arch", string(Base.ARCH))
+        end
+        warn("Cannot find default server, use mirrors.kernel.org instead")
+        return "http://mirrors.kernel.org/archlinux/$repo/os/$(Base.ARCH)"
+    end
+end
+
 @testset "Pkgroot" begin
     mktempdir() do dir
         dbpath = joinpath(dir, "var/lib/pacman/")
+        cachepath = joinpath(dir, "var/cache/pacman/pkg/")
         mkpath(dbpath)
+        mkpath(cachepath)
         hdl = LibALPM.Handle(dir, dbpath)
+        LibALPM.set_cachedirs(hdl, [cachepath])
         coredb = LibALPM.register_syncdb(hdl, "core",
                                          LibALPM.SigLevel.PACKAGE_OPTIONAL |
                                          LibALPM.SigLevel.DATABASE_OPTIONAL)
 
         @test LibALPM.get_servers(coredb) == []
-        mirrorurl = "http://mirrors.kernel.org/archlinux/core/os/$(Base.ARCH)"
+        mirrorurl = get_default_url("core")
+        info("Mirror used: \"$mirrorurl\"")
         LibALPM.set_servers(coredb, [mirrorurl])
         @test !LibALPM.update(coredb, false)
         # This can fail if the remote is updated right in between the two calls
         @test LibALPM.update(coredb, false)
+
+        glibcpkg = LibALPM.get_pkg(coredb, "glibc")
+        glibcfname = LibALPM.get_filename(glibcpkg)
+        glibcpath = LibALPM.fetch_pkgurl(hdl, "$mirrorurl/$glibcfname")
     end
 end
