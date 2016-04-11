@@ -41,3 +41,14 @@ end
     end
     LibALPM.release(hdl)
 end
+
+@testset "DB" begin
+    hdl = LibALPM.Handle("/", "/var/lib/pacman/")
+    localdb = LibALPM.get_localdb(hdl)
+    str = sprint(io->show(io, localdb))
+    @test contains(str, "LibALPM.DB(ptr=")
+    @test contains(str, "name=\"local\"")
+    LibALPM.get_siglevel(localdb)
+    LibALPM.get_valid(localdb)
+    LibALPM.release(hdl)
+end
