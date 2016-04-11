@@ -53,10 +53,11 @@ function release(hdl::Handle)
     ptr = hdl.ptr
     hdl.ptr = C_NULL
     dbs = hdl.dbs
+    pkgs = hdl.pkgs
     ptr == C_NULL && return
-    _null_all_dbs(dbs)
     empty!(hdl.transpkgs)
-    _null_all_pkgs(dbs)
+    _null_all_pkgs(pkgs)
+    _null_all_dbs(dbs)
     ccall((:alpm_release, libalpm), Cint, (Ptr{Void},), ptr)
     nothing
 end

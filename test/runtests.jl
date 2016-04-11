@@ -150,6 +150,7 @@ end
     @test LibALPM.get_name(glibcpkg) == "glibc"
 
     LibALPM.release(hdl)
+    @test glibcpkg.ptr == C_NULL
 end
 
 @testset "Pkgroot" begin
