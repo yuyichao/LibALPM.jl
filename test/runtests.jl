@@ -5,6 +5,8 @@ using Base.Test
 
 const thisdir = dirname(@__FILE__)
 
+include("list.jl")
+
 for err in instances(LibALPM.errno_t)
     strerror(err)::UTF8String
 end
