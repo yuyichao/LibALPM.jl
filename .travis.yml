@@ -12,7 +12,7 @@ arch:
     - cmake
     - mbedtls
   script:
-    - julia -e 'Pkg.clone(pwd(), "LibALPM")'
+    - julia -e 'Pkg.clone(pwd())'
     - julia -e 'Pkg.build("LibALPM")'
     - julia --check-bounds=yes -e 'Pkg.test("LibALPM", coverage=true)'
     - julia -e 'cd(Pkg.dir("LibALPM")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
