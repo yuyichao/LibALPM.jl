@@ -455,3 +455,14 @@ type FileConflict
         new(target, cfileconflict.conflicttype, file, ctarget)
     end
 end
+
+type File
+    name::UTF8String
+    size::Int64
+    mode::Cint # mode_t
+    function File(ptr::Ptr{CTypes.File})
+        cfile = unsafe_load(ptr)
+        name = utf8(Ptr{UInt8}(cfile.name))
+        new(name, cfile.size, cfile.mode)
+    end
+end

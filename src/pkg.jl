@@ -203,9 +203,14 @@ The filenames are relative to the install root,
 and do not include leading slashes.
 """
 function get_files(pkg::Pkg)
-    list = ccall((:alpm_pkg_get_files, libalpm), Ptr{list_t},
-                 (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
+    listptr = ccall((:alpm_pkg_get_files, libalpm), Ptr{CTypes.FileList},
+                    (Ptr{Void},), pkg)
+    list = unsafe_load(listptr)
+    ary = Vector{File}(list.count)
+    for i in 1:list.count
+        @inbounds ary[i] = File(list.files + sizeof(CTypes.File) * (i - 1))
+    end
+    ary
 end
 
 "Returns the list of files backed up when installing pkg"
