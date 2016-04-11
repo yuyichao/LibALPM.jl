@@ -46,9 +46,8 @@ end
 function compute_requiredby(pkg::Pkg)
     list = ccall((:alpm_pkg_compute_requiredby, libalpm),
                  Ptr{list_t}, (Ptr{Void},), pkg)
-    list == C_NULL && throw(Error(pkg.hdl, "compute_requiredby"))
-    try
-        ary = list_to_array(UTF8String, list, ptr_to_utf8)
+    ary = try
+        list_to_array(UTF8String, list, ptr_to_utf8)
     catch
         free(list, cglobal(:free))
         rethrow()
@@ -61,9 +60,8 @@ end
 function compute_optionalfor(pkg::Pkg)
     list = ccall((:alpm_pkg_compute_optionalfor, libalpm),
                  Ptr{list_t}, (Ptr{Void},), pkg)
-    list == C_NULL && throw(Error(pkg.hdl, "compute_optionalfor"))
-    try
-        ary = list_to_array(UTF8String, list, ptr_to_utf8)
+    ary = try
+        list_to_array(UTF8String, list, ptr_to_utf8)
     catch
         free(list, cglobal(:free))
         rethrow()
@@ -290,10 +288,9 @@ function unused_deltas(pkg::Pkg)
     list = ccall((:alpm_pkg_unused_deltas, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
     try
-        list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
-    catch
+        return list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
+    finally
         free(list)
-        rethrow()
     end
 end
 

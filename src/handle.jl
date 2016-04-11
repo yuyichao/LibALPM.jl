@@ -599,24 +599,24 @@ function trans_prepare(hdl::Handle)
         # CONFLICTING_DEPS:
         #     Conflict with all internal pointer allocated (dup'd)
         if errno == Errno.PKG_INVALID_ARCH
-            try
-                ary = list_to_array(UTF8String, list[], ptr_to_utf8)
+            ary = try
+                list_to_array(UTF8String, list[], ptr_to_utf8)
             catch
                 free(list[], cglobal(:free))
                 rethrow()
             end
             throw(TransPrepareError(errno, ary))
         elseif errno == Errno.UNSATISFIED_DEPS
-            try
-                ary = list_to_array(DepMissing, list[], DepMissing)
+            ary = try
+                list_to_array(DepMissing, list[], DepMissing)
             catch
                 free(list[], cglobal((:alpm_depmissing_free, libalpm)))
                 rethrow()
             end
             throw(TransPrepareError(errno, ary))
         elseif errno == Errno.CONFLICTING_DEPS
-            try
-                ary = list_to_array(Conflict, list[], Conflict)
+            ary = try
+                list_to_array(Conflict, list[], Conflict)
             catch
                 free(list[], cglobal((:alpm_conflict_free, libalpm)))
                 rethrow()
@@ -666,16 +666,16 @@ function trans_commit(hdl::Handle)
         # everything else:
         #     pkgname dup
         if errno == Errno.FILE_CONFLICTS
-            try
-                ary = list_to_array(FileConflict, list[], FileConflict)
+            ary = try
+                list_to_array(FileConflict, list[], FileConflict)
             catch
                 free(list[], cglobal((:alpm_fileconflict_free, libalpm)))
                 rethrow()
             end
             throw(TransCommitError(errno, ary))
         else
-            try
-                ary = list_to_array(UTF8String, list[], ptr_to_utf8)
+            ary = try
+                list_to_array(UTF8String, list[], ptr_to_utf8)
             catch
                 free(list[], cglobal(:free))
                 rethrow()
