@@ -6,6 +6,7 @@ arch:
   packages:
     - julia-git
     - cmake
+    - mbedtls
   script:
     - julia -e 'Pkg.clone(pwd(), "LibALPM")'
     - julia -e 'Pkg.build("LibALPM")'
