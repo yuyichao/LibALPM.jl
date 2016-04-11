@@ -31,6 +31,13 @@ end
 
 @testset "Fetch" begin
     hdl = LibALPM.Handle("/", "/var/lib/pacman/")
-    @test_throws LibALPM.Error LibALPM.fetch_pkgurl(hdl, "not-exist-url.abcd")
+    try
+        LibALPM.fetch_pkgurl(hdl, "not-exist-url.abcd")
+    catch ex
+        @test isa(ex, LibALPM.Error)
+        str = sprint(io->Base.showerror(io, ex))
+        @test contains(str, "ALPM Error:")
+        @test contains(str, "fetch_pkgurl")
+    end
     LibALPM.release(hdl)
 end

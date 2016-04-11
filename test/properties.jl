@@ -1,6 +1,9 @@
 #!/usr/bin/julia -f
 
 hdl = LibALPM.Handle("/", "/var/lib/pacman/")
+str = sprint(io->show(io, hdl))
+@test contains(str, "LibALPM.Handle(ptr=")
+
 @test LibALPM.get_root(hdl) == "/"
 @test LibALPM.get_dbpath(hdl) == "/var/lib/pacman/"
 @test LibALPM.get_lockfile(hdl) == "/var/lib/pacman/db.lck"
