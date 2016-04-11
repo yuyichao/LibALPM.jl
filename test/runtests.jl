@@ -54,6 +54,24 @@ end
     pacmanpkg = LibALPM.get_pkg(localdb, "pacman")
     @test LibALPM.get_pkg(localdb, "pacman") === pacmanpkg
     @test !isempty(LibALPM.get_pkgcache(localdb))
+
+    coredb = LibALPM.register_syncdb(hdl, "core",
+                                     LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                     LibALPM.SigLevel.DATABASE_OPTIONAL)
+
+    @test LibALPM.get_servers(coredb) == []
+    mirrorurl = "http://mirrors.kernel.org/archlinux/core/os/$(Base.ARCH)"
+    mirrorurl2 = "http://mirror.rit.edu/archlinux/core/os/$(Base.ARCH)"
+    LibALPM.set_servers(coredb, [mirrorurl])
+    @test LibALPM.get_servers(coredb) == [mirrorurl]
+    LibALPM.add_server(coredb, mirrorurl2)
+    @test LibALPM.get_servers(coredb) == [mirrorurl, mirrorurl2]
+    LibALPM.remove_server(coredb, mirrorurl)
+    @test LibALPM.get_servers(coredb) == [mirrorurl2]
+
+    LibALPM.unregister(coredb)
+    @test coredb.ptr == C_NULL
+
     LibALPM.release(hdl)
 end
 
@@ -61,7 +79,7 @@ end
     hdl = LibALPM.Handle("/", "/var/lib/pacman/")
     localdb = LibALPM.get_localdb(hdl)
     glibcpkg = LibALPM.get_pkg(localdb, "glibc")
-    # checkmd5sum is only for package from sync db
+    # checkmd5sum is only for package from local file?
     @test_throws LibALPM.Error LibALPM.checkmd5sum(glibcpkg)
     @test !isempty(LibALPM.compute_requiredby(glibcpkg))
     # no known package that optionally depend on glibc...
@@ -95,5 +113,29 @@ end
     @test !isempty(LibALPM.get_files(glibcpkg))
     @test !isempty(LibALPM.get_backup(glibcpkg))
     @test LibALPM.get_db(glibcpkg) === localdb
+
+    coredb = LibALPM.register_syncdb(hdl, "core",
+                                     LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                     LibALPM.SigLevel.DATABASE_OPTIONAL)
+
+    glibcpkg = LibALPM.get_pkg(coredb, "glibc")
+    # this might assume the package file is available, let's see...
+    @test !isempty(LibALPM.get_filename(glibcpkg))
+    @test !isempty(LibALPM.get_md5sum(glibcpkg))
+    @test !isempty(LibALPM.get_sha256sum(glibcpkg))
+    @test LibALPM.get_size(glibcpkg) > 0
+    @test LibALPM.get_db(glibcpkg) === coredb
+
+    LibALPM.unregister(coredb)
+    @test coredb.ptr == C_NULL
+
     LibALPM.release(hdl)
+end
+
+@testset "Pkgroot" begin
+    mktempdir() do dir
+        dbpath = joinpath(dir, "/var/lib/pacman/")
+        mkpath(dbpath)
+        hdl = LibALPM.Handle(dir, dbpath)
+    end
 end

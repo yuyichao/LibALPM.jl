@@ -34,6 +34,7 @@ function unregister(db::DB)
     ptr == C_NULL && throw(UndefRefError())
     hdl = db.hdl
     db.ptr = C_NULL
+    # TODO handle pkgs?
     delete!(hdl.dbs, ptr)
     ret = ccall((:alpm_db_unregister, libalpm), Cint, (Ptr{Void},), ptr)
     ret == 0 || throw(Error(hdl, "unregister"))

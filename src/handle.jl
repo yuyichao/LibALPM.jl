@@ -468,6 +468,7 @@ end
 "Unregister all package databases"
 function unregister_all_syncdbs(hdl::Handle)
     # This covers local db too
+    # TODO handle pkgs?
     _null_all_dbs(hdl.dbs)
     ret = ccall((:alpm_unregister_all_syncdbs, libalpm), Cint, (Ptr{Void},), hdl)
     ret == 0 || throw(Error(hdl, "unregister_all_syncdbs"))
