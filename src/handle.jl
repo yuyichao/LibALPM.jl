@@ -102,32 +102,32 @@ function fetch_pkgurl(hdl::Handle, url)
     ptr = ccall((:alpm_fetch_pkgurl, libalpm), Ptr{UInt8},
                 (Ptr{Void}, Cstring), hdl, url)
     ptr == C_NULL && throw(Error(hdl, "fetch_pkgurl"))
-    ptr_to_utf8(ptr)
+    utf8(ptr)
 end
 
 "Returns the root of the destination filesystem"
 function get_root(hdl::Handle)
-    ptr_to_utf8(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
-                      (Ptr{Void},), hdl))
+    utf8(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
+               (Ptr{Void},), hdl))
 end
 
 "Returns the path to the database directory"
 function get_dbpath(hdl::Handle)
-    ptr_to_utf8(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
-                      (Ptr{Void},), hdl))
+    utf8(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
+               (Ptr{Void},), hdl))
 end
 
 "Get the name of the database lock file"
 function get_lockfile(hdl::Handle)
-    ptr_to_utf8(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
-                      (Ptr{Void},), hdl))
+    utf8(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
+               (Ptr{Void},), hdl))
 end
 
 # Accessors to the list of package cache directories
 function get_cachedirs(hdl::Handle)
     dirs = ccall((:alpm_option_get_cachedirs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, ptr_to_utf8)
+    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 function set_cachedirs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -156,7 +156,7 @@ end
 function get_hookdirs(hdl::Handle)
     dirs = ccall((:alpm_option_get_hookdirs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, ptr_to_utf8)
+    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 function set_hookdirs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -226,7 +226,7 @@ end
 function get_noupgrades(hdl::Handle)
     dirs = ccall((:alpm_option_get_noupgrades, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, ptr_to_utf8)
+    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 function set_noupgrades(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -266,7 +266,7 @@ end
 function get_noextracts(hdl::Handle)
     dirs = ccall((:alpm_option_get_noextracts, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, ptr_to_utf8)
+    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 function set_noextracts(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -306,7 +306,7 @@ end
 function get_ignorepkgs(hdl::Handle)
     dirs = ccall((:alpm_option_get_ignorepkgs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, ptr_to_utf8)
+    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 function set_ignorepkgs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -338,7 +338,7 @@ end
 function get_ignoregroups(hdl::Handle)
     dirs = ccall((:alpm_option_get_ignoregroups, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, ptr_to_utf8)
+    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 function set_ignoregroups(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -613,7 +613,7 @@ function trans_prepare(hdl::Handle)
         #     Conflict with all internal pointer allocated (dup'd)
         if errno == Errno.PKG_INVALID_ARCH
             try
-                ary = list_to_array(UTF8String, list[], p->ptr_to_utf8(p, true))
+                ary = list_to_array(UTF8String, list[], ptr_to_utf8)
             catch
                 free(list[], cglobal(:free))
                 rethrow()
@@ -621,7 +621,7 @@ function trans_prepare(hdl::Handle)
             throw(TransPrepareError(errno, ary))
         elseif errno == Errno.UNSATISFIED_DEPS
             try
-                ary = list_to_array(DepMissing, list[], p->DepMissing(p, true))
+                ary = list_to_array(DepMissing, list[], DepMissing)
             catch
                 free(list[], cglobal((:alpm_depmissing_free, libalpm)))
                 rethrow()
@@ -629,7 +629,7 @@ function trans_prepare(hdl::Handle)
             throw(TransPrepareError(errno, ary))
         elseif errno == Errno.CONFLICTING_DEPS
             try
-                ary = list_to_array(Conflict, list[], p->Conflict(p, true))
+                ary = list_to_array(Conflict, list[], Conflict)
             catch
                 free(list[], cglobal((:alpm_conflict_free, libalpm)))
                 rethrow()
@@ -680,8 +680,7 @@ function trans_commit(hdl::Handle)
         #     pkgname dup
         if errno == Errno.FILE_CONFLICTS
             try
-                ary = list_to_array(Fileconflict, list[],
-                                    p->Fileconflict(p, true))
+                ary = list_to_array(FileConflict, list[], FileConflict)
             catch
                 free(list[], cglobal((:alpm_fileconflict_free, libalpm)))
                 rethrow()
@@ -689,7 +688,7 @@ function trans_commit(hdl::Handle)
             throw(TransCommitError(errno, ary))
         else
             try
-                ary = list_to_array(UTF8String, list[], p->ptr_to_utf8(p, true))
+                ary = list_to_array(UTF8String, list[], ptr_to_utf8)
             catch
                 free(list[], cglobal(:free))
                 rethrow()

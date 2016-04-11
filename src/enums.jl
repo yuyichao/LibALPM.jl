@@ -1,7 +1,7 @@
 #!/usr/bin/julia -f
 
 module Errno
-import LibALPM: libalpm, ptr_to_utf8
+import LibALPM: libalpm
 @enum(errno_t,
       MEMORY = 1,
       SYSTEM,
@@ -69,7 +69,7 @@ import LibALPM: libalpm, ptr_to_utf8
       EXTERNAL_DOWNLOAD,
       GPGME)
 Base.strerror(err::errno_t) =
-    ptr_to_utf8(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
+    utf8(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
 end
 import .Errno.errno_t
 abstract AbstractError <: Exception

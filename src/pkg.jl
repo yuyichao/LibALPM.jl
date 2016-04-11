@@ -48,7 +48,7 @@ function compute_requiredby(pkg::Pkg)
                  Ptr{list_t}, (Ptr{Void},), pkg)
     list == C_NULL && throw(Error(pkg.hdl, "compute_requiredby"))
     try
-        ary = list_to_array(UTF8String, list, p->ptr_to_utf8(p, true))
+        ary = list_to_array(UTF8String, list, ptr_to_utf8)
     catch
         free(list, cglobal(:free))
         rethrow()
@@ -63,7 +63,7 @@ function compute_optionalfor(pkg::Pkg)
                  Ptr{list_t}, (Ptr{Void},), pkg)
     list == C_NULL && throw(Error(pkg.hdl, "compute_optionalfor"))
     try
-        ary = list_to_array(UTF8String, list, p->ptr_to_utf8(p, true))
+        ary = list_to_array(UTF8String, list, ptr_to_utf8)
     catch
         free(list, cglobal(:free))
         rethrow()
@@ -84,20 +84,17 @@ should_ignore(pkg::Pkg) =
 
 "Gets the name of the file from which the package was loaded"
 function get_filename(pkg::Pkg)
-    ptr_to_utf8(ccall((:alpm_pkg_get_filename, libalpm),
-                      Ptr{UInt8}, (Ptr{Void},), pkg))
+    utf8(ccall((:alpm_pkg_get_filename, libalpm), Ptr{UInt8}, (Ptr{Void},), pkg))
 end
 
 "Returns the package base name"
 function get_base(pkg::Pkg)
-    ptr_to_utf8(ccall((:alpm_pkg_get_base, libalpm),
-                      Ptr{UInt8}, (Ptr{Void},), pkg))
+    utf8(ccall((:alpm_pkg_get_base, libalpm), Ptr{UInt8}, (Ptr{Void},), pkg))
 end
 
 "Returns the package name"
 function get_name(pkg::Pkg)
-    ptr_to_utf8(ccall((:alpm_pkg_get_name, libalpm),
-                      Ptr{UInt8}, (Ptr{Void},), pkg))
+    utf8(ccall((:alpm_pkg_get_name, libalpm), Ptr{UInt8}, (Ptr{Void},), pkg))
 end
 
 """
@@ -107,8 +104,7 @@ This includes all available epoch, version, and pkgrel components. Use
 `LibALPM.vercmp()` to compare version strings if necessary.
 """
 function get_version(pkg::Pkg)
-    ptr_to_utf8(ccall((:alpm_pkg_get_version, libalpm),
-                      Ptr{UInt8}, (Ptr{Void},), pkg))
+    utf8(ccall((:alpm_pkg_get_version, libalpm), Ptr{UInt8}, (Ptr{Void},), pkg))
 end
 
 "Returns the origin of the package"
@@ -121,14 +117,12 @@ end
 
 "Returns the package description"
 function get_desc(pkg::Pkg)
-    ptr_to_utf8(ccall((:alpm_pkg_get_desc, libalpm),
-                      Ptr{UInt8}, (Ptr{Void},), pkg))
+    utf8(ccall((:alpm_pkg_get_desc, libalpm), Ptr{UInt8}, (Ptr{Void},), pkg))
 end
 
 "Returns the package URL"
 function get_url(pkg::Pkg)
-    ptr_to_utf8(ccall((:alpm_pkg_get_url, libalpm),
-                      Ptr{UInt8}, (Ptr{Void},), pkg))
+    utf8(ccall((:alpm_pkg_get_url, libalpm), Ptr{UInt8}, (Ptr{Void},), pkg))
 end
 
 "Returns the build timestamp of the package"
@@ -141,26 +135,23 @@ get_installdate(pkg::Pkg) =
 
 "Returns the packager's name"
 function get_packager(pkg::Pkg)
-    ptr_to_utf8(ccall((:alpm_pkg_get_packager, libalpm),
-                      Ptr{UInt8}, (Ptr{Void},), pkg))
+    utf8(ccall((:alpm_pkg_get_packager, libalpm), Ptr{UInt8}, (Ptr{Void},), pkg))
 end
 
 "Returns the package's MD5 checksum as a string"
 function get_md5sum(pkg::Pkg)
-    ptr_to_utf8(ccall((:alpm_pkg_get_md5sum, libalpm),
-                      Ptr{UInt8}, (Ptr{Void},), pkg))
+    utf8(ccall((:alpm_pkg_get_md5sum, libalpm), Ptr{UInt8}, (Ptr{Void},), pkg))
 end
 
 "Returns the package's SHA256 checksum as a string"
 function get_sha256sum(pkg::Pkg)
-    ptr_to_utf8(ccall((:alpm_pkg_get_sha256sum, libalpm),
-                      Ptr{UInt8}, (Ptr{Void},), pkg))
+    utf8(ccall((:alpm_pkg_get_sha256sum, libalpm),
+               Ptr{UInt8}, (Ptr{Void},), pkg))
 end
 
 "Returns the architecture for which the package was built"
 function get_arch(pkg::Pkg)
-    ptr_to_utf8(ccall((:alpm_pkg_get_arch, libalpm),
-                      Ptr{UInt8}, (Ptr{Void},), pkg))
+    utf8(ccall((:alpm_pkg_get_arch, libalpm), Ptr{UInt8}, (Ptr{Void},), pkg))
 end
 
 """
@@ -197,14 +188,14 @@ end
 function get_licenses(pkg::Pkg)
     list = ccall((:alpm_pkg_get_licenses, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, ptr_to_utf8)
+    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
 end
 
 "Returns the list of package groups"
 function get_groups(pkg::Pkg)
     list = ccall((:alpm_pkg_get_groups, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, ptr_to_utf8)
+    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
 end
 
 """
@@ -216,14 +207,14 @@ and do not include leading slashes.
 function get_files(pkg::Pkg)
     list = ccall((:alpm_pkg_get_files, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, ptr_to_utf8)
+    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
 end
 
 "Returns the list of files backed up when installing pkg"
 function get_backup(pkg::Pkg)
     list = ccall((:alpm_pkg_get_backup, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, ptr_to_utf8)
+    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
 end
 
 
@@ -292,14 +283,14 @@ end
 function get_deltas(pkg::Pkg)
     list = ccall((:alpm_pkg_get_deltas, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, ptr_to_utf8)
+    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
 end
 
 function unused_deltas(pkg::Pkg)
     list = ccall((:alpm_pkg_unused_deltas, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
     try
-        list_to_array(UTF8String, list, ptr_to_utf8)
+        list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
     catch
         free(list)
         rethrow()

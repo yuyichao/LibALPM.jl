@@ -331,6 +331,12 @@ end
 
 end
 
+function cstr_to_utf8(cstr, own)
+    cstr == C_NULL && return UTF8String("")
+    own && return ptr_to_utf8(Ptr{UInt8}(cstr))
+    utf8(Ptr{UInt8}(cstr))
+end
+
 type Depend
     name::UTF8String
     version::UTF8String
@@ -338,24 +344,12 @@ type Depend
     name_hash::Culong
     mod::depmod_t
     function Depend(ptr::Ptr{CTypes.Depend}, own=false)
-        # WARNING! Relies on alpm internal API
+        # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cdep = unsafe_load(ptr)
-        name = if cdep.name == C_NULL
-            UTF8String("")
-        else
-            ptr_to_utf8(Ptr{UInt8}(cdep.name), own)
-        end
-        version = if cdep.version == C_NULL
-            UTF8String("")
-        else
-            ptr_to_utf8(Ptr{UInt8}(cdep.version), own)
-        end
-        dest = if cdep.dest == C_NULL
-            UTF8String("")
-        else
-            ptr_to_utf8(Ptr{UInt8}(cdep.dest), own)
-        end
         own && ccall(:free, Void, (Ptr{Void},), ptr)
+        name = cstr_to_utf8(cdep.name, own)
+        version = cstr_to_utf8(cdep.version, own)
+        dest = cstr_to_utf8(cdep.dest, own)
         new(name, version, dest, cdep.name_hash, cdep.mod)
     end
     Depend(str::AbstractString) =
@@ -402,7 +396,7 @@ end
 "Returns a string representing the dependency information"
 compute_string(dep::Depend) =
     ptr_to_utf8(ccall((:alpm_dep_compute_string, libalpm), Ptr{UInt8},
-                      (Ptr{CTypes.Depend},), dep), true)
+                      (Ptr{CTypes.Depend},), dep))
 
 function Base.show(io::IO, dep::Depend)
     print(io, "LibALPM.Depend(")
@@ -414,21 +408,14 @@ type DepMissing
     target::UTF8String
     depend::Depend
     causingpkg::UTF8String
-    function DepMissing(ptr::Ptr{CTypes.DepMissing}, own=false)
-        # WARNING! Relies on alpm internal API
+    # Take ownership of the pointer
+    function DepMissing(ptr::Ptr{CTypes.DepMissing})
+        # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cdepmissing = unsafe_load(ptr)
-        target = if cdepmissing.target == C_NULL
-            UTF8String("")
-        else
-            ptr_to_utf8(Ptr{UInt8}(cdepmissing.target), own)
-        end
-        depend = Depend(cdepmissing.depend, own)
-        causingpkg = if cdepmissing.causingpkg == C_NULL
-            UTF8String("")
-        else
-            ptr_to_utf8(Ptr{UInt8}(cdepmissing.causingpkg), own)
-        end
-        own && ccall(:free, Void, (Ptr{Void},), ptr)
+        ccall(:free, Void, (Ptr{Void},), ptr)
+        target = cstr_to_utf8(cdepmissing.target, true)
+        depend = Depend(cdepmissing.depend, true)
+        causingpkg = cstr_to_utf8(cdepmissing.causingpkg, true)
         new(target, depend, causingpkg)
     end
 end
@@ -439,21 +426,14 @@ type Conflict
     package1::UTF8String
     package2::UTF8String
     reason::Depend
-    function Conflict(ptr::Ptr{CTypes.Conflict}, own=false)
-        # WARNING! Relies on alpm internal API
+    # Take ownership of the pointer
+    function Conflict(ptr::Ptr{CTypes.Conflict})
+        # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cconflict = unsafe_load(ptr)
-        package1 = if cconflict.package1 == C_NULL
-            UTF8String("")
-        else
-            ptr_to_utf8(Ptr{UInt8}(cconflict.package1), own)
-        end
-        package2 = if cconflict.package2 == C_NULL
-            UTF8String("")
-        else
-            ptr_to_utf8(Ptr{UInt8}(cconflict.package2), own)
-        end
-        reason = Depend(cconflict.reason, own)
-        own && ccall(:free, Void, (Ptr{Void},), ptr)
+        ccall(:free, Void, (Ptr{Void},), ptr)
+        package1 = cstr_to_utf8(cconflict.package1, true)
+        package2 = cstr_to_utf8(cconflict.package2, true)
+        reason = Depend(cconflict.reason, true)
         new(cconflict.package1_hash, cconflict.package2_hash,
             package1, package2, reason)
     end
@@ -464,25 +444,14 @@ type FileConflict
     conflicttype::LibALPM.fileconflicttype_t
     file::UTF8String
     ctarget::UTF8String
-    function FileConflict(ptr::Ptr{CTypes.FileConflict}, own=false)
-        # WARNING! Relies on alpm internal API
+    # Take ownership of the pointer
+    function FileConflict(ptr::Ptr{CTypes.FileConflict})
+        # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cfileconflict = unsafe_load(ptr)
-        target = if cfileconflict.target == C_NULL
-            UTF8String("")
-        else
-            ptr_to_utf8(Ptr{UInt8}(cfileconflict.target), own)
-        end
-        file = if cfileconflict.file == C_NULL
-            UTF8String("")
-        else
-            ptr_to_utf8(Ptr{UInt8}(cfileconflict.file), own)
-        end
-        ctarget = if cfileconflict.ctarget == C_NULL
-            UTF8String("")
-        else
-            ptr_to_utf8(Ptr{UInt8}(cfileconflict.ctarget), own)
-        end
-        own && ccall(:free, Void, (Ptr{Void},), ptr)
+        ccall(:free, Void, (Ptr{Void},), ptr)
+        target = cstr_to_utf8(cfileconflict.target, true)
+        file = cstr_to_utf8(cfileconflict.file, true)
+        ctarget = cstr_to_utf8(cfileconflict.ctarget, true)
         new(target, cfileconflict.conflicttype, file, ctarget)
     end
 end
