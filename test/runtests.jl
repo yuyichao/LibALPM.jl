@@ -149,6 +149,13 @@ end
     @test glibcpkg.ptr != C_NULL
     @test LibALPM.get_name(glibcpkg) == "glibc"
 
+    coredb = LibALPM.register_syncdb(hdl, "core",
+                                     LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                     LibALPM.SigLevel.DATABASE_OPTIONAL)
+    LibALPM.unregister_all_syncdbs(hdl)
+    @test glibcpkg.ptr != C_NULL
+    @test LibALPM.get_name(glibcpkg) == "glibc"
+
     LibALPM.release(hdl)
     @test glibcpkg.ptr == C_NULL
 end

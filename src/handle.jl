@@ -469,8 +469,14 @@ end
 
 "Unregister all package databases"
 function unregister_all_syncdbs(hdl::Handle)
-    # This covers local db too
-    _null_all_dbs(hdl.dbs)
+    for ptr in list_iter(ccall((:alpm_get_syncdbs, libalpm),
+                               Ptr{list_t}, (Ptr{Void},), hdl))
+        cached = hdl.dbs[ptr, DB]
+        isnull(cached) && continue
+        db = get(cached)
+        _null_all_pkgs(db)
+        db.ptr = C_NULL
+    end
     ret = ccall((:alpm_unregister_all_syncdbs, libalpm), Cint, (Ptr{Void},), hdl)
     ret == 0 || throw(Error(hdl, "unregister_all_syncdbs"))
     nothing
