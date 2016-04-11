@@ -115,6 +115,16 @@ end
     @test !isempty(LibALPM.get_files(glibcpkg))
     @test !isempty(LibALPM.get_backup(glibcpkg))
     @test LibALPM.get_db(glibcpkg) === localdb
+    # Not really sure what to expect yet...
+    LibALPM.get_validation(glibcpkg)
+    @test LibALPM.download_size(glibcpkg) == 0
+    # These relies on the detail about the glibc package
+    @test LibALPM.has_scriptlet(glibcpkg)
+    @test !isempty(LibALPM.get_depends(glibcpkg))
+    @test isempty(LibALPM.get_optdepends(glibcpkg))
+    @test isempty(LibALPM.get_conflicts(glibcpkg))
+    @test isempty(LibALPM.get_provides(glibcpkg))
+    @test isempty(LibALPM.get_replaces(glibcpkg))
 
     coredb = LibALPM.register_syncdb(hdl, "core",
                                      LibALPM.SigLevel.PACKAGE_OPTIONAL |
@@ -127,6 +137,11 @@ end
     @test !isempty(LibALPM.get_sha256sum(glibcpkg))
     @test LibALPM.get_size(glibcpkg) > 0
     @test LibALPM.get_db(glibcpkg) === coredb
+    @test !isempty(LibALPM.get_base64_sig(glibcpkg))
+    @test LibALPM.download_size(glibcpkg) > 0
+    # Not sure what to expect ...
+    LibALPM.get_deltas(glibcpkg)
+    LibALPM.unused_deltas(glibcpkg)
 
     LibALPM.unregister(coredb)
     @test coredb.ptr == C_NULL

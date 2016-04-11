@@ -250,35 +250,35 @@ download_size(pkg::Pkg) =
 "Returns the list of package dependencies"
 function get_depends(pkg::Pkg)
     list = ccall((:alpm_pkg_get_depends, libalpm),
-                 Ptr{list_t}, (Ptr{Void},), hdl)
+                 Ptr{list_t}, (Ptr{Void},), pkg)
     list_to_array(Depend, list, Depend)
 end
 
 "Returns the list of package optional dependencies"
 function get_optdepends(pkg::Pkg)
     list = ccall((:alpm_pkg_get_optdepends, libalpm),
-                 Ptr{list_t}, (Ptr{Void},), hdl)
+                 Ptr{list_t}, (Ptr{Void},), pkg)
     list_to_array(Depend, list, Depend)
 end
 
 "Returns the list of packages conflicting with pkg"
 function get_conflicts(pkg::Pkg)
     list = ccall((:alpm_pkg_get_conflicts, libalpm),
-                 Ptr{list_t}, (Ptr{Void},), hdl)
+                 Ptr{list_t}, (Ptr{Void},), pkg)
     list_to_array(Depend, list, Depend)
 end
 
 "Returns the list of packages provided by pkg"
 function get_provides(pkg::Pkg)
     list = ccall((:alpm_pkg_get_provides, libalpm),
-                 Ptr{list_t}, (Ptr{Void},), hdl)
+                 Ptr{list_t}, (Ptr{Void},), pkg)
     list_to_array(Depend, list, Depend)
 end
 
 "Returns the list of packages to be replaced by pkg"
 function get_replaces(pkg::Pkg)
     list = ccall((:alpm_pkg_get_replaces, libalpm),
-                 Ptr{list_t}, (Ptr{Void},), hdl)
+                 Ptr{list_t}, (Ptr{Void},), pkg)
     list_to_array(Depend, list, Depend)
 end
 
