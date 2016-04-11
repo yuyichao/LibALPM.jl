@@ -201,5 +201,17 @@ end
         glibcpkg = LibALPM.get_pkg(coredb, "glibc")
         glibcfname = LibALPM.get_filename(glibcpkg)
         glibcpath = LibALPM.fetch_pkgurl(hdl, "$mirrorurl/$glibcfname")
+        glibcpath_sig = LibALPM.fetch_pkgurl(hdl, "$mirrorurl/$glibcfname.sig")
+        @test isfile(glibcpath)
+        @test isfile(glibcpath_sig)
+        glibcpkg_load = LibALPM.load(hdl, glibcpath, true,
+                                     LibALPM.SigLevel.PACKAGE_OPTIONAL)
+
+        LibALPM.trans_init(hdl, 0)
+        LibALPM.add_pkg(hdl, glibcpkg_load)
+        LibALPM.sysupgrade(hdl, true)
+        LibALPM.trans_prepare(hdl)
+        LibALPM.trans_commit(hdl)
+        LibALPM.trans_release(hdl)
     end
 end
