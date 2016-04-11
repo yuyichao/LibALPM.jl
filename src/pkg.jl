@@ -217,7 +217,7 @@ end
 function get_backup(pkg::Pkg)
     list = ccall((:alpm_pkg_get_backup, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(Backup, list, Backup)
 end
 
 

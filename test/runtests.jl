@@ -93,5 +93,7 @@ end
     @test LibALPM.get_licenses(glibcpkg) == ["GPL", "LGPL"]
     @test LibALPM.get_groups(glibcpkg) == ["base"]
     @test !isempty(LibALPM.get_files(glibcpkg))
+    @test !isempty(LibALPM.get_backup(glibcpkg))
+    @test LibALPM.get_db(glibcpkg) === localdb
     LibALPM.release(hdl)
 end

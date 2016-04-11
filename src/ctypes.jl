@@ -343,7 +343,8 @@ type Depend
     dest::UTF8String
     name_hash::Culong
     mod::depmod_t
-    function Depend(ptr::Ptr{CTypes.Depend}, own=false)
+    function Depend(_ptr::Ptr, own=false)
+        ptr = Ptr{CTypes.Depend}(_ptr)
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cdep = unsafe_load(ptr)
         own && ccall(:free, Void, (Ptr{Void},), ptr)
@@ -409,7 +410,8 @@ type DepMissing
     depend::Depend
     causingpkg::UTF8String
     # Take ownership of the pointer
-    function DepMissing(ptr::Ptr{CTypes.DepMissing})
+    function DepMissing(_ptr::Ptr)
+        ptr = Ptr{CTypes.DepMissing}(_ptr)
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cdepmissing = unsafe_load(ptr)
         ccall(:free, Void, (Ptr{Void},), ptr)
@@ -427,7 +429,8 @@ type Conflict
     package2::UTF8String
     reason::Depend
     # Take ownership of the pointer
-    function Conflict(ptr::Ptr{CTypes.Conflict})
+    function Conflict(_ptr::Ptr)
+        ptr = Ptr{CTypes.Conflict}(_ptr)
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cconflict = unsafe_load(ptr)
         ccall(:free, Void, (Ptr{Void},), ptr)
@@ -445,7 +448,8 @@ type FileConflict
     file::UTF8String
     ctarget::UTF8String
     # Take ownership of the pointer
-    function FileConflict(ptr::Ptr{CTypes.FileConflict})
+    function FileConflict(_ptr::Ptr)
+        _ptr = Ptr{CTypes.FileConflict}(_ptr)
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cfileconflict = unsafe_load(ptr)
         ccall(:free, Void, (Ptr{Void},), ptr)
@@ -460,9 +464,22 @@ type File
     name::UTF8String
     size::Int64
     mode::Cint # mode_t
-    function File(ptr::Ptr{CTypes.File})
+    function File(_ptr::Ptr)
+        ptr = Ptr{CTypes.File}(_ptr)
         cfile = unsafe_load(ptr)
         name = utf8(Ptr{UInt8}(cfile.name))
         new(name, cfile.size, cfile.mode)
+    end
+end
+
+type Backup
+    name::UTF8String
+    hash::UTF8String
+    function Backup(_ptr::Ptr)
+        ptr = Ptr{CTypes.Backup}(_ptr)
+        cbackup = unsafe_load(ptr)
+        name = utf8(Ptr{UInt8}(cbackup.name))
+        hash = utf8(Ptr{UInt8}(cbackup.hash))
+        new(name, hash)
     end
 end
