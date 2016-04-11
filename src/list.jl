@@ -6,12 +6,20 @@ immutable list_t
     next::Ptr{list_t} # pointer to the next node
 end
 
+immutable list_iter
+    ptr::Ptr{list_t}
+end
+
+Base.start(iter::list_iter) = iter.ptr
+@inline Base.next(::list_iter, ptr::Ptr{list_t}) =
+    unsafe_load(ptr).data, ccall((:alpm_list_next, libalpm),
+                                 Ptr{list_t}, (Ptr{list_t},), ptr)
+Base.done(::list_iter, ptr::Ptr{list_t}) = ptr == C_NULL
+
 function list_to_array{T}(::Type{T}, list::Ptr{list_t}, cb)
     res = T[]
-    while list != C_NULL
-        push!(res, cb(unsafe_load(list).data))
-        list = ccall((:alpm_list_next, libalpm),
-                     Ptr{list_t}, (Ptr{list_t},), list)
+    for data in list_iter(list)
+        push!(res, cb(data))
     end
     res
 end
