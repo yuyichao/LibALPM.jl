@@ -50,5 +50,9 @@ end
     @test contains(str, "name=\"local\"")
     LibALPM.get_siglevel(localdb)
     LibALPM.get_valid(localdb)
+    @test LibALPM.get_servers(localdb) == UTF8String[]
+    pacmanpkg = LibALPM.get_pkg(localdb, "pacman")
+    @test LibALPM.get_pkg(localdb, "pacman") === pacmanpkg
+    @test !isempty(LibALPM.get_pkgcache(localdb))
     LibALPM.release(hdl)
 end
