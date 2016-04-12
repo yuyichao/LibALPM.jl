@@ -8,12 +8,13 @@ type Handle
     dbs::CObjMap
     pkgs::CObjMap
     transpkgs::Set
+    rmpkgs::Set
     function Handle(root, db)
         err = Ref{errno_t}()
         ptr = ccall((:alpm_initialize, libalpm), Ptr{Void},
                     (Cstring, Cstring, Ref{errno_t}), root, db, err)
         ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
-        self = new(ptr, CObjMap(), CObjMap(), Set{Pkg}())
+        self = new(ptr, CObjMap(), CObjMap(), Set{Pkg}(), Set{Pkg}())
         finalizer(self, release)
         self
     end
@@ -55,7 +56,8 @@ function release(hdl::Handle)
     dbs = hdl.dbs
     pkgs = hdl.pkgs
     ptr == C_NULL && return
-    empty!(hdl.transpkgs)
+    empty!(hdl.transpkgs::Set{Pkg})
+    empty!(hdl.rmpkgs::Set{Pkg})
     _null_all_pkgs(pkgs)
     _null_all_dbs(dbs)
     ccall((:alpm_release, libalpm), Cint, (Ptr{Void},), ptr)
@@ -558,7 +560,9 @@ end
 function get_remove(hdl::Handle)
     pkgs = ccall((:alpm_trans_get_remove, libalpm),
                  Ptr{list_t}, (Ptr{Void},), hdl)
-    list_to_array(Pkg, pkgs, p->Pkg(p, hdl))
+    list_to_array(Pkg, pkgs, p->(pkg = Pkg(p, hdl);
+                                 push!(hdl.rmpkgs::Set{Pkg}, pkg);
+                                 pkg.should_free = false; pkg))
 end
 
 "Initialize the transaction"
@@ -660,6 +664,11 @@ end
 
 "Commit a transaction"
 function trans_commit(hdl::Handle)
+    rmpkgs = hdl.rmpkgs::Set{Pkg}
+    for pkg in rmpkgs
+        free(pkg)
+    end
+    empty!(rmpkgs)
     list = Ref{Ptr{list_t}}(0)
     ret = ccall((:alpm_trans_commit, libalpm),
                 Cint, (Ptr{Void}, Ptr{Ptr{list_t}}), hdl, list)
@@ -749,6 +758,8 @@ function remove_pkg(hdl::Handle, pkg)
     ret = ccall((:alpm_remove_pkg, libalpm),
                 Cint, (Ptr{Void}, Ptr{Void}), hdl, pkg)
     ret == 0 || throw(Error(hdl, "remove_pkg"))
+    push!(hdl.rmpkgs::Set{Pkg}, pkg)
+    pkg.should_free = false
     nothing
 end
 

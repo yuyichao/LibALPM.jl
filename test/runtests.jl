@@ -186,6 +186,7 @@ end
         mkpath(cachepath)
         hdl = LibALPM.Handle(dir, dbpath)
         LibALPM.set_cachedirs(hdl, [cachepath])
+        localdb = LibALPM.get_localdb(hdl)
         coredb = LibALPM.register_syncdb(hdl, "core",
                                          LibALPM.SigLevel.PACKAGE_OPTIONAL |
                                          LibALPM.SigLevel.DATABASE_OPTIONAL)
@@ -210,8 +211,27 @@ end
         LibALPM.trans_init(hdl, 0)
         LibALPM.add_pkg(hdl, glibcpkg_load)
         LibALPM.sysupgrade(hdl, true)
+        @test LibALPM.get_flags(hdl) == 0
+        @test LibALPM.get_remove(hdl) == []
+        @test LibALPM.get_add(hdl) == [glibcpkg_load]
         LibALPM.trans_prepare(hdl)
         LibALPM.trans_commit(hdl)
+        @test_throws LibALPM.Error LibALPM.trans_interrupt(hdl)
+        LibALPM.trans_release(hdl)
+
+        LibALPM.trans_init(hdl, 0)
+        glibcpkg_local = LibALPM.get_pkg(localdb, "glibc")
+        LibALPM.remove_pkg(hdl, glibcpkg_local)
+        @test LibALPM.get_flags(hdl) == 0
+        # The package returned from `get_remove` is somehow different
+        # from the localdb one...
+        @test [LibALPM.get_name(pkg)
+               for pkg in LibALPM.get_remove(hdl)] == ["glibc"]
+        @test LibALPM.get_add(hdl) == []
+        LibALPM.trans_prepare(hdl)
+        @test LibALPM.get_name(glibcpkg_local) == "glibc"
+        LibALPM.trans_commit(hdl)
+        @test glibcpkg_local.ptr == C_NULL
         LibALPM.trans_release(hdl)
     end
 end
