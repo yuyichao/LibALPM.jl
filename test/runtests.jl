@@ -116,8 +116,8 @@ end
     @test !isempty(LibALPM.get_files(glibcpkg))
     @test !isempty(LibALPM.get_backup(glibcpkg))
     @test LibALPM.get_db(glibcpkg) === localdb
-    # Not really sure what to expect yet...
-    LibALPM.get_validation(glibcpkg)
+    @test LibALPM.get_validation(glibcpkg) != 0
+    @test LibALPM.get_validation(glibcpkg) < 16
     @test LibALPM.download_size(glibcpkg) == 0
     # These relies on the detail about the glibc package
     @test LibALPM.has_scriptlet(glibcpkg)
@@ -186,6 +186,14 @@ end
         mkpath(dbpath)
         mkpath(cachepath)
         hdl = LibALPM.Handle(dir, dbpath)
+        logcb = (level, msg)->begin
+            if level < LibALPM.LogLevel.WARNING
+                println("ALPM($level): $msg")
+            end
+        end
+        LibALPM.set_logcb(hdl, logcb)
+        # AFAIK this log goes directly to the log file or syslog
+        LibALPM.logaction(hdl, "LibALPM.jl", "Message")
         LibALPM.set_cachedirs(hdl, [cachepath])
         localdb = LibALPM.get_localdb(hdl)
         coredb = LibALPM.register_syncdb(hdl, "core",

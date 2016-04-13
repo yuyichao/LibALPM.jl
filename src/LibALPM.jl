@@ -77,11 +77,6 @@ include("pkg.jl")
 # const unsigned char *sig, const size_t len, alpm_list_t **keys);
 
 
-# typedef void (*alpm_cb_log)(alpm_loglevel_t, const char *, va_list);
-
-# int alpm_logaction(alpm_handle_t *handle, const char *prefix,
-# const char *fmt, ...) __attribute__((format(printf, 3, 4)));
-
 # Event callback.
 # typedef void (*alpm_cb_event)(alpm_event_t *);
 
@@ -114,11 +109,6 @@ include("pkg.jl")
 # int force);
 
 #  * Libalpm option getters and setters
-
-# /** Returns the callback used for logging.
-# alpm_cb_log alpm_option_get_logcb(alpm_handle_t *handle);
-# /** Sets the callback used for logging.
-# int alpm_option_set_logcb(alpm_handle_t *handle, alpm_cb_log cb);
 
 # /** Returns the callback used to report download progress.
 # alpm_cb_download alpm_option_get_dlcb(alpm_handle_t *handle);

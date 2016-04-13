@@ -61,7 +61,7 @@ end
     end_task_context_slow(ctx, curtask)
 end
 
-function with_task_context{T}(f, ctx::LazyTaskContext{T}, t::T)
+@inline function with_task_context{T}(f, ctx::LazyTaskContext{T}, t::T)
     curtask = current_task()
     start_task_context(ctx, t, curtask)
     try

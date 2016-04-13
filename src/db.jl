@@ -14,6 +14,7 @@ type DB
 end
 
 function _null_all_pkgs(db::DB)
+    # Must be called in a handle context
     db.ptr == C_NULL && return
     hdl = db.hdl
     for ptr in list_iter(ccall((:alpm_db_get_pkgcache, libalpm),
@@ -43,12 +44,14 @@ end
 function unregister(db::DB)
     ptr = db.ptr
     ptr == C_NULL && throw(UndefRefError())
-    _null_all_pkgs(db)
     hdl = db.hdl
-    db.ptr = C_NULL
-    delete!(hdl.dbs, ptr)
-    ret = ccall((:alpm_db_unregister, libalpm), Cint, (Ptr{Void},), ptr)
-    ret == 0 || throw(Error(hdl, "unregister"))
+    with_handle(hdl) do
+        _null_all_pkgs(db)
+        db.ptr = C_NULL
+        delete!(hdl.dbs, ptr)
+        ret = ccall((:alpm_db_unregister, libalpm), Cint, (Ptr{Void},), ptr)
+        ret == 0 || throw(Error(hdl, "unregister"))
+    end
     nothing
 end
 
@@ -56,6 +59,7 @@ end
 Get the name of a package database.
 """
 function get_name(db::DB)
+    # Should not trigger callback
     utf8(ccall((:alpm_db_get_name, libalpm), Ptr{UInt8}, (Ptr{Void},), db))
 end
 
@@ -66,6 +70,7 @@ Will return the default verification level if this database is set up
 with ALPM_SIG_USE_DEFAULT.
 """
 get_siglevel(db::DB) =
+    # Should not trigger callback
     ccall((:alpm_db_get_siglevel, libalpm), UInt32, (Ptr{Void},), db)
 
 """
@@ -75,8 +80,9 @@ This is most useful for sync databases and verifying signature status.
 If invalid, the handle error code will be set accordingly.
 Return 0 if valid, -1 if invalid (errno is set accordingly)
 """
-get_valid(db::DB) =
+get_valid(db::DB) = with_handle(db.hdl) do
     ccall((:alpm_db_get_valid, libalpm), Cint, (Ptr{Void},), db)
+end
 function check_valid(db::DB)
     get_valid(db) == 0 || throw(Error(db.hdl, "check_valid"))
     nothing
@@ -84,11 +90,13 @@ end
 
 # Accessors to the list of servers for a database.
 function get_servers(db::DB)
+    # Should not trigger callback
     servers = ccall((:alpm_db_get_servers, libalpm), Ptr{list_t},
                     (Ptr{Void},), db)
     list_to_array(UTF8String, servers, p->utf8(Ptr{UInt8}(p)))
 end
 function set_servers(db::DB, servers)
+    # Should not trigger callback
     list = array_to_list(servers,
                          str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
                          cglobal(:free))
@@ -99,13 +107,13 @@ function set_servers(db::DB, servers)
         throw(Error(db.hdl, "set_servers"))
     end
 end
-function add_server(db::DB, server)
+add_server(db::DB, server) = with_handle(db.hdl) do
     ret = ccall((:alpm_db_add_server, libalpm), Cint,
                 (Ptr{Void}, Cstring), db, server)
     ret == 0 || throw(Error(db.hdl, "add_server"))
     nothing
 end
-function remove_server(db::DB, server)
+remove_server(db::DB, server) = with_handle(db.hdl) do
     ret = ccall((:alpm_db_remove_server, libalpm), Cint,
                 (Ptr{Void}, Cstring), db, server)
     ret < 0 && throw(Error(db.hdl, "remove_server"))
@@ -113,7 +121,7 @@ function remove_server(db::DB, server)
 end
 
 "Return true if db is already up to date."
-function update(db::DB, force)
+update(db::DB, force) = with_handle(db.hdl) do
     ret = ccall((:alpm_db_update, libalpm), Cint, (Cint, Ptr{Void}), force, db)
     ret < 0 && throw(Error(db.hdl, "update"))
     ret != 0
@@ -124,7 +132,7 @@ Get a package entry from a package database.
 
 `name`: of the package
 """
-function get_pkg(db::DB, name)
+get_pkg(db::DB, name) = with_handle(db.hdl) do
     pkg = ccall((:alpm_db_get_pkg, libalpm), Ptr{Void}, (Ptr{Void}, Cstring),
                 db, name)
     hdl = db.hdl
@@ -133,7 +141,7 @@ function get_pkg(db::DB, name)
 end
 
 "Get the package cache of a package database"
-function get_pkgcache(db::DB)
+get_pkgcache(db::DB) = with_handle(db.hdl) do
     pkgs = ccall((:alpm_db_get_pkgcache, libalpm), Ptr{list_t}, (Ptr{Void},), db)
     hdl = db.hdl
     list_to_array(Pkg, pkgs, p->Pkg(p, hdl))
