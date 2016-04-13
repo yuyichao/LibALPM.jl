@@ -3,7 +3,7 @@
 ##
 # handle
 
-use_generic_strbuf = true
+generic_printf_len = true
 if Base.ARCH === :x86_64 && Base.OS_NAME !== :Windows
     immutable __va_list_tag
         gp_offset::Cuint
@@ -12,17 +12,12 @@ if Base.ARCH === :x86_64 && Base.OS_NAME !== :Windows
         reg_save_area::Ptr{Void}
     end
     typealias va_list_arg_t Ptr{__va_list_tag}
-    use_generic_strbuf = false
-    function log_get_strbuf(fmt::Ptr{UInt8}, ap::va_list_arg_t)
-        aq = unsafe_load(ap)
-        len = ccall(:vsnprintf, Cint,
-                    (Ptr{Void}, Csize_t, Ptr{UInt8}, va_list_arg_t),
-                    C_NULL, 0, fmt, ap)
-        buf = zeros(UInt8, len - 1)
+    generic_printf_len = false
+    function printf_len(fmt::Ptr{UInt8}, ap::va_list_arg_t)
+        aq = unsafe_load(ap) # va_copy
         ccall(:vsnprintf, Cint,
-              (Ptr{UInt8}, Csize_t, Ptr{UInt8}, va_list_arg_t),
-              buf, len, fmt, &aq)
-        buf
+              (Ptr{Void}, Csize_t, Ptr{UInt8}, va_list_arg_t),
+              C_NULL, 0, fmt, &aq)
     end
 elseif Base.ARCH === :i686 || (Base.ARCH === :x86_64 &&
                                Base.OS_NAME === :Windows)
@@ -38,20 +33,19 @@ elseif Base.ARCH === :aarch64
 elseif startswith(string(Base.ARCH), "arm")
     typealias va_list_arg_t Tuple{Ptr{Void}}
 end
-if use_generic_strbuf
-    function log_get_strbuf(fmt::Ptr{UInt8}, ap::va_list_arg_t)
-        len = ccall(:vsnprintf, Cint,
-                    (Ptr{Void}, Csize_t, Ptr{UInt8}, va_list_arg_t),
-                    C_NULL, 0, fmt, ap)
-        buf = zeros(UInt8, len - 1)
+if generic_printf_len
+    function printf_len(fmt::Ptr{UInt8}, ap::va_list_arg_t)
         ccall(:vsnprintf, Cint,
-              (Ptr{UInt8}, Csize_t, Ptr{UInt8}, va_list_arg_t),
-              buf, len, fmt, ap)
-        buf
+              (Ptr{Void}, Csize_t, Ptr{UInt8}, va_list_arg_t),
+              C_NULL, 0, fmt, ap)
     end
 end
 function libalpm_log_cb(level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
-    buf = log_get_strbuf(fmt, ap)
+    len = printf_len(fmt, ap)
+    buf = zeros(UInt8, len - 1)
+    ccall(:vsnprintf, Cint,
+          (Ptr{UInt8}, Csize_t, Ptr{UInt8}, va_list_arg_t),
+          buf, len, fmt, ap)
     str = UTF8String(buf)
     if level < LogLevel.WARNING
         # Dummy logic for now
