@@ -736,33 +736,6 @@ function sysupgrade(hdl::Handle, enable_downgrade)
     nothing
 end
 
-"""
-Add a package to the transaction
-
-If the package was loaded by `LibALPM.load()`, it will be freed upon
-`LibALPM.trans_release()` invocation.
-"""
-function add_pkg(hdl::Handle, pkg)
-    ret = ccall((:alpm_add_pkg, libalpm),
-                Cint, (Ptr{Void}, Ptr{Void}), hdl, pkg)
-    ret == 0 || throw(Error(hdl, "add_pkg"))
-    if pkg.should_free
-        push!(hdl.transpkgs::Set{Pkg}, pkg)
-        pkg.should_free = false
-    end
-    nothing
-end
-
-"Add a package removal action to the transaction"
-function remove_pkg(hdl::Handle, pkg)
-    ret = ccall((:alpm_remove_pkg, libalpm),
-                Cint, (Ptr{Void}, Ptr{Void}), hdl, pkg)
-    ret == 0 || throw(Error(hdl, "remove_pkg"))
-    push!(hdl.rmpkgs::Set{Pkg}, pkg)
-    pkg.should_free = false
-    nothing
-end
-
 # TODO
 # alpm_list_t *alpm_checkdeps(alpm_handle_t *handle, alpm_list_t *pkglist,
 # alpm_list_t *remove, alpm_list_t *upgrade, int reversedeps);
