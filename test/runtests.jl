@@ -208,6 +208,9 @@ end
         @test isfile(glibcpath_sig)
         glibcpkg_load = LibALPM.load(hdl, glibcpath, true,
                                      LibALPM.SigLevel.PACKAGE_OPTIONAL)
+        LibALPM.free(glibcpkg_load)
+        glibcpkg_load = LibALPM.load(hdl, glibcpath, true,
+                                     LibALPM.SigLevel.PACKAGE_OPTIONAL)
 
         LibALPM.trans_init(hdl, 0)
         LibALPM.add_pkg(hdl, glibcpkg_load)
@@ -220,8 +223,11 @@ end
         @test_throws LibALPM.Error LibALPM.trans_interrupt(hdl)
         LibALPM.trans_release(hdl)
 
-        LibALPM.trans_init(hdl, 0)
         glibcpkg_local = LibALPM.get_pkg(localdb, "glibc")
+        @test LibALPM.get_reason(glibcpkg_local) == LibALPM.PkgReason.EXPLICIT
+        LibALPM.set_reason(glibcpkg_local, LibALPM.PkgReason.DEPEND)
+        @test LibALPM.get_reason(glibcpkg_local) == LibALPM.PkgReason.DEPEND
+        LibALPM.trans_init(hdl, 0)
         LibALPM.remove_pkg(hdl, glibcpkg_local)
         @test LibALPM.get_flags(hdl) == 0
         # The package returned from `get_remove` is somehow different
