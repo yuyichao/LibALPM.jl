@@ -51,7 +51,7 @@ function libalpm_log_cb(level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
           buf, len, fmt, ap)
     str = UTF8String(buf)
     try
-        cb(level, str)
+        cb(hdl, level, str)
     catch ex
         try
             # Good enough for now...

@@ -186,7 +186,8 @@ end
         mkpath(dbpath)
         mkpath(cachepath)
         hdl = LibALPM.Handle(dir, dbpath)
-        logcb = (level, msg)->begin
+        logcb = (cbhdl, level, msg)->begin
+            @test cbhdl === hdl
             if level < LibALPM.LogLevel.WARNING
                 println("ALPM($level): $msg")
             end
