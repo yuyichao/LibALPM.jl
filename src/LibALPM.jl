@@ -77,9 +77,6 @@ include("pkg.jl")
 # const unsigned char *sig, const size_t len, alpm_list_t **keys);
 
 
-
-# void alpm_fileconflict_free(alpm_fileconflict_t *conflict);
-
 # typedef void (*alpm_cb_log)(alpm_loglevel_t, const char *, va_list);
 
 # int alpm_logaction(alpm_handle_t *handle, const char *prefix,

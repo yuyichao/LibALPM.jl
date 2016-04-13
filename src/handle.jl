@@ -3,6 +3,63 @@
 ##
 # handle
 
+use_generic_strbuf = true
+if Base.ARCH === :x86_64 && Base.OS_NAME !== :Windows
+    immutable __va_list_tag
+        gp_offset::Cuint
+        fp_offset::Cuint
+        overflow_arg_area::Ptr{Void}
+        reg_save_area::Ptr{Void}
+    end
+    typealias va_list_arg_t Ptr{__va_list_tag}
+    use_generic_strbuf = false
+    function log_get_strbuf(fmt::Ptr{UInt8}, ap::va_list_arg_t)
+        aq = unsafe_load(ap)
+        len = ccall(:vsnprintf, Cint,
+                    (Ptr{Void}, Csize_t, Ptr{UInt8}, va_list_arg_t),
+                    C_NULL, 0, fmt, ap)
+        buf = zeros(UInt8, len - 1)
+        ccall(:vsnprintf, Cint,
+              (Ptr{UInt8}, Csize_t, Ptr{UInt8}, va_list_arg_t),
+              buf, len, fmt, &aq)
+        buf
+    end
+elseif Base.ARCH === :i686 || (Base.ARCH === :x86_64 &&
+                               Base.OS_NAME === :Windows)
+    typealias va_list_arg_t Ptr{Void}
+elseif Base.ARCH === :aarch64
+    immutable va_list_arg_t
+        __stack::Ptr{Void}
+        __gr_top::Ptr{Void}
+        __vr_top::Ptr{Void}
+        __gr_offs::Cint
+        __vr_offs::Cint
+    end
+elseif startswith(string(Base.ARCH), "arm")
+    typealias va_list_arg_t Tuple{Ptr{Void}}
+end
+if use_generic_strbuf
+    function log_get_strbuf(fmt::Ptr{UInt8}, ap::va_list_arg_t)
+        len = ccall(:vsnprintf, Cint,
+                    (Ptr{Void}, Csize_t, Ptr{UInt8}, va_list_arg_t),
+                    C_NULL, 0, fmt, ap)
+        buf = zeros(UInt8, len - 1)
+        ccall(:vsnprintf, Cint,
+              (Ptr{UInt8}, Csize_t, Ptr{UInt8}, va_list_arg_t),
+              buf, len, fmt, ap)
+        buf
+    end
+end
+function libalpm_log_cb(level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
+    buf = log_get_strbuf(fmt, ap)
+    str = UTF8String(buf)
+    if level < LogLevel.WARNING
+        # Dummy logic for now
+        println("Level ($level): $str")
+    end
+    nothing
+end
+
 type Handle
     ptr::Ptr{Void}
     dbs::CObjMap
@@ -16,6 +73,9 @@ type Handle
         ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
         self = new(ptr, CObjMap(), CObjMap(), Set{Pkg}(), Set{Pkg}())
         finalizer(self, release)
+        ccall((:alpm_option_set_logcb, libalpm), Cint, (Ptr{Void}, Ptr{Void}),
+              self, cfunction(libalpm_log_cb, Void,
+                              Tuple{UInt32,Ptr{UInt8},va_list_arg_t}))
         self
     end
 end
