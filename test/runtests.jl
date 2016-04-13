@@ -181,13 +181,19 @@ function get_default_url(repo)
     end
 end
 
+function setup_handle(dir)
+    dbpath = joinpath(dir, "var/lib/pacman/")
+    cachepath = joinpath(dir, "var/cache/pacman/pkg/")
+    mkpath(dbpath)
+    mkpath(cachepath)
+    hdl = LibALPM.Handle(dir, dbpath)
+    LibALPM.set_cachedirs(hdl, [cachepath])
+    hdl
+end
+
 @testset "Pkgroot" begin
     mktempdir() do dir
-        dbpath = joinpath(dir, "var/lib/pacman/")
-        cachepath = joinpath(dir, "var/cache/pacman/pkg/")
-        mkpath(dbpath)
-        mkpath(cachepath)
-        hdl = LibALPM.Handle(dir, dbpath)
+        hdl = setup_handle(dir)
         logcb = (cbhdl, level, msg)->begin
             @test cbhdl === hdl
             if level < LibALPM.LogLevel.WARNING
@@ -197,7 +203,6 @@ end
         LibALPM.set_logcb(hdl, logcb)
         # AFAIK this log goes directly to the log file or syslog
         LibALPM.logaction(hdl, "LibALPM.jl", "Message")
-        LibALPM.set_cachedirs(hdl, [cachepath])
         localdb = LibALPM.get_localdb(hdl)
         coredb = LibALPM.register_syncdb(hdl, "core",
                                          LibALPM.SigLevel.PACKAGE_OPTIONAL |
@@ -250,6 +255,46 @@ end
         @test LibALPM.get_name(glibcpkg_local) == "glibc"
         LibALPM.trans_commit(hdl)
         @test glibcpkg_local.ptr == C_NULL
+        LibALPM.trans_release(hdl)
+    end
+end
+
+function makepkg(pkgbuild, dest, arch=string(Base.ARCH))
+    mktempdir() do dir
+        cd(dir) do
+            cp(pkgbuild, "PKGBUILD")
+            run(setenv(`makepkg`, "PKGEXT"=>".pkg.tar", "CARCH"=>arch))
+            pkgs = UTF8String[]
+            mkpath(dest)
+            for fname in readdir()
+                endswith(fname, ".pkg.tar") || continue
+                pkgdest = joinpath(dest, fname)
+                push!(pkgs, pkgdest)
+                cp(fname, pkgdest)
+            end
+            pkgs
+        end
+    end
+end
+
+@testset "Invalid Arch" begin
+    mktempdir() do dir
+        pkgbuild = joinpath(thisdir, "pkgs", "PKGBUILD.invalid-arch")
+        pkgdir = joinpath(dir, "pkgdir")
+        pkgpath = makepkg(pkgbuild, pkgdir, "invalid")[1]
+        hdl = setup_handle(dir)
+        LibALPM.set_arch(hdl, Base.ARCH)
+        pkg_load = LibALPM.load(hdl, pkgpath, true,
+                                LibALPM.SigLevel.PACKAGE_OPTIONAL)
+
+        LibALPM.trans_init(hdl, 0)
+        LibALPM.add_pkg(hdl, pkg_load)
+        try
+            LibALPM.trans_prepare(hdl)
+        catch ex
+            @test isa(ex, LibALPM.TransPrepareError{UTF8String})
+            @test ex.errno == LibALPM.Errno.PKG_INVALID_ARCH
+        end
         LibALPM.trans_release(hdl)
     end
 end

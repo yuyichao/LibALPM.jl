@@ -1,0 +1,12 @@
+# Maintainer:  <yuyichao@yyc2.yyc-arch.org>
+pkgname=invalid-arch
+pkgver=0.1
+pkgrel=1
+pkgdesc="nothing"
+arch=('invalid')
+license=('GPL')
+source=()
+
+package() {
+  touch "$pkgdir/invalid-arch"
+}
