@@ -82,6 +82,8 @@ end
     hdl = LibALPM.Handle("/", "/var/lib/pacman/")
     localdb = LibALPM.get_localdb(hdl)
     glibcpkg = LibALPM.get_pkg(localdb, "glibc")
+    str = sprint(io->show(io, glibcpkg))
+    @test contains(str, "name=\"glibc\"")
     # checkmd5sum is only for package from local file?
     @test_throws LibALPM.Error LibALPM.checkmd5sum(glibcpkg)
     @test !isempty(LibALPM.compute_requiredby(glibcpkg))

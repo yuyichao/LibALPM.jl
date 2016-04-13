@@ -33,6 +33,14 @@ function Base.unsafe_convert(::Type{Ptr{Void}}, pkg::Pkg)
     ptr
 end
 
+function Base.show(io::IO, pkg::Pkg)
+    print(io, "LibALPM.Pkg(ptr=")
+    show(io, UInt(pkg.ptr))
+    print(io, ",name=")
+    show(io, get_name(pkg))
+    print(io, ")")
+end
+
 "Check the integrity (with md5) of a package from the sync cache"
 checkmd5sum(pkg::Pkg) = with_handle(pkg.hdl) do
     ret = ccall((:alpm_pkg_checkmd5sum, libalpm), Cint, (Ptr{Void},), pkg)
