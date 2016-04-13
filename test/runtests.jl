@@ -5,6 +5,7 @@ using Base.Test
 
 const thisdir = dirname(@__FILE__)
 
+include("lazycontext.jl")
 include("list.jl")
 
 @testset "Errno" begin
