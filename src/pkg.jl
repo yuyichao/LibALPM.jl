@@ -305,7 +305,7 @@ end
 unused_deltas(pkg::Pkg) = with_handle(pkg.hdl) do
     list = ccall((:alpm_pkg_unused_deltas, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)), C_NULL)
+    list_to_array(Delta, list, Delta, C_NULL)
 end
 
 """
