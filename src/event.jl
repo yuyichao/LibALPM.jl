@@ -101,16 +101,14 @@ end
 
 immutable PacsaveCreated <: AbstractEvent
     event_type::event_type_t
-    # Whether the creation was result of a NoUpgrade or not
-    from_noupgrade::Cint
     # Old package.
     oldpkg::Nullable{Pkg}
     # Filename of the file without the .pacsave suffix.
     file::UTF8String
     function PacsaveCreated(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.PacsaveCreated}(ptr))
-        new(cevent._type, cevent.from_noupgrade,
-            Nullable{Pkg}(cevent.oldpkg, hdl), utf8(Ptr{UInt8}(cevent.file)))
+        new(cevent._type, Nullable{Pkg}(cevent.oldpkg, hdl),
+            utf8(Ptr{UInt8}(cevent.file)))
     end
 end
 

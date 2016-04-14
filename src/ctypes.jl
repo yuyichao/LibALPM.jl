@@ -177,8 +177,6 @@ end
 
 immutable PacsaveCreated <: AbstractEvent
     _type::event_type_t
-    # Whether the creation was result of a NoUpgrade or not
-    from_noupgrade::Cint
     # Old package.
     oldpkg::Ptr{Void} # alpm_pkg_t*
     # Filename of the file without the .pacsave suffix.
