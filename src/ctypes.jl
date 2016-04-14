@@ -343,6 +343,8 @@ immutable Depend
     desc::UTF8String
     name_hash::Culong
     mod::depmod_t
+    # We don't allow constructing Depend with arbitrary strings
+    # Change the `to_c` to include error handling if we do
     function Depend(_ptr::Ptr, own=false)
         ptr = Ptr{CTypes.Depend}(_ptr)
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
@@ -383,16 +385,9 @@ function to_c(dep::Depend)
     name = Cstring(C_NULL)
     version = Cstring(C_NULL)
     desc = Cstring(C_NULL)
-    try
-        name = ccall(:strdup, Cstring, (Cstring,), dep.name)
-        version = ccall(:strdup, Cstring, (Cstring,), dep.version)
-        desc = ccall(:strdup, Cstring, (Cstring,), dep.desc)
-    catch
-        ccall(:free, Void, (Cstring,), name)
-        ccall(:free, Void, (Cstring,), version)
-        ccall(:free, Void, (Cstring,), desc)
-        rethrow()
-    end
+    name = ccall(:strdup, Cstring, (Ptr{UInt8},), dep.name)
+    version = ccall(:strdup, Cstring, (Ptr{UInt8},), dep.version)
+    desc = ccall(:strdup, Cstring, (Ptr{UInt8},), dep.desc)
     cdep = CTypes.Depend(name, version, desc, dep.name_hash, dep.mod)
     ptr = ccall(:malloc, Ptr{CTypes.Depend}, (Csize_t,), sizeof(Depend))
     unsafe_store!(ptr, cdep)
