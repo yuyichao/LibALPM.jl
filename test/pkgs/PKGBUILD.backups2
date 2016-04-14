@@ -1,0 +1,13 @@
+# Maintainer: Yichao Yu
+pkgname=backups
+pkgver=0.2
+pkgrel=1
+pkgdesc="nothing"
+arch=('armv7l' 'aarch64' 'i686' 'x86_64')
+license=('GPL')
+source=()
+backup=('backups')
+
+package() {
+  echo 2 > "$pkgdir/backups"
+}

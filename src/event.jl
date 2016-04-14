@@ -91,8 +91,8 @@ immutable PacnewCreated <: AbstractEvent
     newpkg::Nullable{Pkg}
     # Filename of the file without the .pacnew suffix
     file::UTF8String
-    function PkgnewCreated(hdl::Handle, ptr::Ptr{Void})
-        cevent = unsafe_load(Ptr{CEvent.PkgnewCreated}(ptr))
+    function PacnewCreated(hdl::Handle, ptr::Ptr{Void})
+        cevent = unsafe_load(Ptr{CEvent.PacnewCreated}(ptr))
         new(cevent._type, cevent.from_noupgrade,
             Nullable{Pkg}(cevent.oldpkg, hdl),
             Nullable{Pkg}(cevent.newpkg, hdl), utf8(Ptr{UInt8}(cevent.file)))
@@ -107,8 +107,8 @@ immutable PacsaveCreated <: AbstractEvent
     oldpkg::Nullable{Pkg}
     # Filename of the file without the .pacsave suffix.
     file::UTF8String
-    function PkgsaveCreated(hdl::Handle, ptr::Ptr{Void})
-        cevent = unsafe_load(Ptr{CEvent.PkgsaveCreated}(ptr))
+    function PacsaveCreated(hdl::Handle, ptr::Ptr{Void})
+        cevent = unsafe_load(Ptr{CEvent.PacsaveCreated}(ptr))
         new(cevent._type, cevent.from_noupgrade,
             Nullable{Pkg}(cevent.oldpkg, hdl), utf8(Ptr{UInt8}(cevent.file)))
     end
