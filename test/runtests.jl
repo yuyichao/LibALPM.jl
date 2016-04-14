@@ -329,3 +329,32 @@ end
         LibALPM.trans_release(hdl)
     end
 end
+
+@testset "Conflicts" begin
+    mktempdir() do dir
+        pkgbuild = joinpath(thisdir, "pkgs", "PKGBUILD.conflict")
+        pkgdir = joinpath(dir, "pkgdir")
+        pkgpaths = makepkg(pkgbuild, pkgdir)
+        hdl = setup_handle(dir)
+        LibALPM.set_arch(hdl, Base.ARCH)
+        LibALPM.trans_init(hdl, 0)
+
+        for path in pkgpaths
+            pkg = LibALPM.load(hdl, path, true,
+                               LibALPM.SigLevel.PACKAGE_OPTIONAL)
+            LibALPM.add_pkg(hdl, pkg)
+        end
+
+        try
+            LibALPM.trans_prepare(hdl)
+        catch ex
+            @test isa(ex, LibALPM.TransPrepareError{LibALPM.Conflict})
+            @test ex.errno == LibALPM.Errno.CONFLICTING_DEPS
+            str = sprint(io->Base.showerror(io, ex))
+            @test contains(str, "Conflicts:")
+            @test contains(str, "conflict1")
+            @test contains(str, "conflict2")
+        end
+        LibALPM.trans_release(hdl)
+    end
+end

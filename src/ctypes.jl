@@ -442,7 +442,9 @@ type Conflict
         ccall(:free, Void, (Ptr{Void},), ptr)
         package1 = cstr_to_utf8(cconflict.package1, true)
         package2 = cstr_to_utf8(cconflict.package2, true)
-        reason = Depend(cconflict.reason, true)
+        # But don't take the ownership of the reason.
+        # This is the internal API.
+        reason = Depend(cconflict.reason)
         new(cconflict.package1_hash, cconflict.package2_hash,
             package1, package2, reason)
     end
