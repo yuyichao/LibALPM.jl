@@ -414,6 +414,7 @@ type DepMissing
     target::UTF8String
     depend::Depend
     causingpkg::UTF8String
+    DepMissing(target, depend, causingpkg="") = new(target, depend, causingpkg)
     # Take ownership of the pointer
     function DepMissing(_ptr::Ptr)
         ptr = Ptr{CTypes.DepMissing}(_ptr)
@@ -426,6 +427,11 @@ type DepMissing
         new(target, depend, causingpkg)
     end
 end
+
+# Mainly for testing, no hash yet.
+Base.(:(==))(obj1::DepMissing, obj2::DepMissing) =
+    (obj1.target == obj2.target && obj1.depend == obj2.depend &&
+     obj1.causingpkg == obj2.causingpkg)
 
 type Conflict
     package1_hash::Culong

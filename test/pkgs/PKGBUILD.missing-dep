@@ -1,0 +1,13 @@
+# Maintainer: Yichao Yu
+pkgname=missing-dep
+pkgver=0.1
+pkgrel=1
+pkgdesc="nothing"
+arch=('armv7l' 'aarch64' 'i686' 'x86_64')
+license=('GPL')
+source=()
+
+package() {
+  depends=('does-not-exist: Just for fun')
+  touch "$pkgdir/missing-dep"
+}

@@ -32,6 +32,8 @@ elseif Base.ARCH === :aarch64
     end
 elseif startswith(string(Base.ARCH), "arm")
     typealias va_list_arg_t Tuple{Ptr{Void}}
+else
+    error("Unsupported arch $(Base.ARCH)")
 end
 if generic_printf_len
     function printf_len(fmt::Ptr{UInt8}, ap::va_list_arg_t)
@@ -700,9 +702,9 @@ function Base.showerror(io::IO, err::TransPrepareError)
     println(io, "ALPM Transaction Prepare Error: $(strerror(err.errno))")
     if err.errno == Errno.PKG_INVALID_ARCH
         println(io, "Packages with invalid archs:")
-    elseif errno == Errno.UNSATISFIED_DEPS
+    elseif err.errno == Errno.UNSATISFIED_DEPS
         println(io, "Missing dependencies:")
-    elseif errno == Errno.CONFLICTING_DEPS
+    elseif err.errno == Errno.CONFLICTING_DEPS
         println(io, "Conflicts:")
     end
     for pkg in err.list
