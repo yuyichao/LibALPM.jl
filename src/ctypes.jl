@@ -369,7 +369,7 @@ function Base.show(io::IO, dep::Depend)
     print(io, ")")
 end
 
-type DepMissing
+immutable DepMissing
     target::UTF8String
     depend::Depend
     causingpkg::UTF8String
@@ -392,7 +392,7 @@ Base.(:(==))(obj1::DepMissing, obj2::DepMissing) =
     (obj1.target == obj2.target && obj1.depend == obj2.depend &&
      obj1.causingpkg == obj2.causingpkg)
 
-type Conflict
+immutable Conflict
     package1_hash::Culong
     package2_hash::Culong
     package1::UTF8String
@@ -414,7 +414,7 @@ type Conflict
     end
 end
 
-type FileConflict
+immutable FileConflict
     target::UTF8String
     conflicttype::LibALPM.fileconflicttype_t
     file::UTF8String
@@ -432,7 +432,7 @@ type FileConflict
     end
 end
 
-type File
+immutable File
     name::UTF8String
     size::Int64
     mode::Cint # mode_t
@@ -444,7 +444,7 @@ type File
     end
 end
 
-type Backup
+immutable Backup
     name::UTF8String
     hash::UTF8String
     function Backup(_ptr::Ptr)
