@@ -101,10 +101,6 @@ logaction(hdl::Handle, prefix, msg) = with_handle(hdl) do
           hdl, prefix, "%s", msg)
 end
 
-# TODO
-# int alpm_logaction(alpm_handle_t *handle, const char *prefix,
-# const char *fmt, ...) __attribute__((format(printf, 3, 4)));
-
 @inline function with_handle(f, hdl::Handle)
     # TODO: maybe propagate exceptions too
     with_task_context(f, hdlctx, hdl)

@@ -1,5 +1,7 @@
 #!/usr/bin/julia -f
 
+__precompile__(true)
+
 module LibALPM
 
 const depfile = joinpath(dirname(@__FILE__), "..", "deps", "deps.jl")
