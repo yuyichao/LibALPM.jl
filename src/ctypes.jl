@@ -457,7 +457,7 @@ type FileConflict
     ctarget::UTF8String
     # Take ownership of the pointer
     function FileConflict(_ptr::Ptr)
-        _ptr = Ptr{CTypes.FileConflict}(_ptr)
+        ptr = Ptr{CTypes.FileConflict}(_ptr)
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cfileconflict = unsafe_load(ptr)
         ccall(:free, Void, (Ptr{Void},), ptr)

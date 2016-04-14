@@ -43,6 +43,9 @@ end
 
 "Check the integrity (with md5) of a package from the sync cache"
 checkmd5sum(pkg::Pkg) = with_handle(pkg.hdl) do
+    # Can't really find a way to test this
+    # (this seems to require the package validation to be not using signatures?)
+    # Apparently not used by pacman either...
     ret = ccall((:alpm_pkg_checkmd5sum, libalpm), Cint, (Ptr{Void},), pkg)
     ret == 0 || throw(Error(pkg.hdl, "checkmd5sum"))
     nothing

@@ -1,0 +1,16 @@
+# Maintainer: Yichao Yu
+pkgname=(fileconflict1 fileconflict2)
+pkgver=0.1
+pkgrel=1
+pkgdesc="nothing"
+arch=('armv7l' 'aarch64' 'i686' 'x86_64')
+license=('GPL')
+source=()
+
+package_fileconflict1() {
+  touch "$pkgdir/fileconflict"
+}
+
+package_fileconflict2() {
+  touch "$pkgdir/fileconflict"
+}
