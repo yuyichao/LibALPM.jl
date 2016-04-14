@@ -294,6 +294,9 @@ end
         catch ex
             @test isa(ex, LibALPM.TransPrepareError{UTF8String})
             @test ex.errno == LibALPM.Errno.PKG_INVALID_ARCH
+            str = sprint(io->Base.showerror(io, ex))
+            @test contains(str, "with invalid archs:")
+            @test contains(str, "invalid-arch-0.1-1-invalid")
         end
         LibALPM.trans_release(hdl)
     end
