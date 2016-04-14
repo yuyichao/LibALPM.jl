@@ -19,6 +19,7 @@ include("weakdict.jl")
 include("handle.jl")
 include("db.jl")
 include("pkg.jl")
+include("event.jl")
 
 # TODO
 

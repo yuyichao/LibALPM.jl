@@ -15,6 +15,9 @@ type Pkg
     end
 end
 
+(::Type{Nullable{Pkg}})(ptr::Ptr{Void}, hdl::Handle) =
+    ptr == C_NULL ? Nullable{Pkg}() : Nullable(Pkg(ptr, hdl))
+
 function free(pkg::Pkg)
     # Should not trigger callback and should not fail
     ptr = pkg.ptr

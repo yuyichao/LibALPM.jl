@@ -42,6 +42,15 @@ if generic_printf_len
               C_NULL, 0, fmt, ap)
     end
 end
+
+function cb_show_error(ex)
+    try
+        # Good enough for now...
+        Base.showerror(STDERR, ex, catch_backtrace())
+        println(STDERR)
+    end
+end
+
 function libalpm_log_cb(level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
     hdl = get_task_context(hdlctx)
     cb = get(hdl.cbs, :log, nothing)
@@ -55,11 +64,19 @@ function libalpm_log_cb(level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
     try
         cb(hdl, level, str)
     catch ex
-        try
-            # Good enough for now...
-            Base.showerror(STDERR, ex, catch_backtrace())
-            println(STDERR)
-        end
+        cb_show_error(ex)
+    end
+    nothing
+end
+
+function libalpm_event_cb(eventptr::Ptr{Void})
+    hdl = get_task_context(hdlctx)
+    cb = get(hdl.cbs, :event, nothing)
+    cb === nothing && return
+    try
+        dispatch_event(cb, hdl, eventptr)
+    catch ex
+        cb_show_error(ex)
     end
     nothing
 end
@@ -84,14 +101,22 @@ type Handle
                   Cint, (Ptr{Void}, Ptr{Void}),
                   self, cfunction(libalpm_log_cb, Void,
                                   Tuple{UInt32,Ptr{UInt8},va_list_arg_t}))
+            ccall((:alpm_option_set_eventcb, libalpm),
+                  Cint, (Ptr{Void}, Ptr{Void}),
+                  self, cfunction(libalpm_event_cb, Void, Tuple{Ptr{Void}}))
         end
         self
     end
 end
 const hdlctx = LibALPM.LazyTaskContext{Handle}()
 
-function set_logcb(hdl::Handle, f)
+function set_logcb(hdl::Handle, f::ANY)
     hdl.cbs[:log] = f
+    nothing
+end
+
+function set_eventcb(hdl::Handle, f::ANY)
+    hdl.cbs[:event] = f
     nothing
 end
 

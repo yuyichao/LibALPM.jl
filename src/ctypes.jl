@@ -145,7 +145,7 @@ immutable DeltaPatch <: AbstractEvent
     delta::Ptr{CTypes.Delta}
 end
 
-immutable ScripletInfo <: AbstractEvent
+immutable ScriptletInfo <: AbstractEvent
     _type::event_type_t
     # Line of scriptlet output.
     line::Cstring
@@ -204,42 +204,6 @@ immutable HookRun <: AbstractEvent
 end
 end
 import .Event.AbstractEvent
-
-function dispatch_event(ptr::Ptr{Void}, cb)
-    event_type = unsafe_load(Ptr{event_type_t}(ptr))
-    if (event_type == EventType.PACKAGE_OPERATION_START ||
-        event_type == EventType.PACKAGE_OPERATION_DONE)
-        cb(event_type, unsafe_load(Ptr{Event.PackageOperation}(ptr)))
-    elseif event_type == EventType.OPTDEP_REMOVAL
-        cb(event_type, unsafe_load(Ptr{Event.OptdepRemoval}(ptr)))
-    elseif (event_type == EventType.DELTA_PATCHES_START ||
-            event_type == EventType.DELTA_PATCH_START ||
-            event_type == EventType.DELTA_PATCH_DONE ||
-            event_type == EventType.DELTA_PATCH_FAILED ||
-            event_type == EventType.DELTA_PATCHES_DONE)
-        cb(event_type, unsafe_load(Ptr{Event.DeltaPatch}(ptr)))
-    elseif event_type == EventType.SCRIPTLET_INFO
-        cb(event_type, unsafe_load(Ptr{Event.ScriptletInfo}(ptr)))
-    elseif event_type == EventType.DATABASE_MISSING
-        cb(event_type, unsafe_load(Ptr{Event.DatabaseMissing}(ptr)))
-    elseif (event_type == EventType.PKGDOWNLOAD_START ||
-            event_type == EventType.PKGDOWNLOAD_DONE ||
-            event_type == EventType.PKGDOWNLOAD_FAILED)
-        cb(event_type, unsafe_load(Ptr{Event.PkgDownload}(ptr)))
-    elseif event_type == EventType.PACNEW_CREATED
-        cb(event_type, unsafe_load(Ptr{Event.PacnewCreated}(ptr)))
-    elseif event_type == EventType.PACSAVE_CREATED
-        cb(event_type, unsafe_load(Ptr{Event.PacsaveCreated}(ptr)))
-    elseif (event_type == EventType.HOOK_START ||
-            event_type == EventType.HOOK_DONE)
-        cb(event_type, unsafe_load(Ptr{Event.Hook}(ptr)))
-    elseif (event_type == EventType.HOOK_RUN_START ||
-            event_type == EventType.HOOK_RUN_DONE)
-        cb(event_type, unsafe_load(Ptr{Event.HookRun}(ptr)))
-    else
-        cb(event_type, unsafe_load(Ptr{Event.AnyEvent}(ptr)))
-    end
-end
 
 module Question
 import LibALPM
@@ -489,5 +453,29 @@ type Backup
         name = utf8(Ptr{UInt8}(cbackup.name))
         hash = utf8(Ptr{UInt8}(cbackup.hash))
         new(name, hash)
+    end
+end
+
+immutable Delta
+    # filename of the delta patch
+    delta::UTF8String
+    # md5sum of the delta file
+    delta_md5::UTF8String
+    # filename of the 'before' file
+    from::UTF8String
+    # filename of the 'after' file
+    to::UTF8String
+    # filesize of the delta file
+    delta_size::Int64
+    # download filesize of the delta file
+    download_size::Int64
+    function Delta(_ptr::Ptr)
+        ptr = Ptr{CTypes.Delta}(_ptr)
+        cdelta = unsafe_load(ptr)
+        delta = utf8(Ptr{UInt8}(cdelta.delta))
+        delta_md5 = utf8(Ptr{UInt8}(cdelta.delta_md5))
+        from = utf8(Ptr{UInt8}(cdelta.from))
+        to = utf8(Ptr{UInt8}(cdelta.to))
+        new(delta, delta_md5, from, to, cdelta.delta_size, cdelta.download_size)
     end
 end

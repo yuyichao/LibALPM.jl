@@ -201,6 +201,10 @@ end
             end
         end
         LibALPM.set_logcb(hdl, logcb)
+        LibALPM.set_eventcb(hdl,
+                            (cbhdl, event)->(@test cbhdl === hdl;
+                                             @test isa(event,
+                                                       LibALPM.AbstractEvent)))
         # AFAIK this log goes directly to the log file or syslog
         LibALPM.logaction(hdl, "LibALPM.jl", "Message")
         localdb = LibALPM.get_localdb(hdl)
