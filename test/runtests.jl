@@ -358,3 +358,80 @@ include("pkgerror.jl")
         LibALPM.release(hdl)
     end
 end
+
+function repo_add(repodir, reponame, pkg)
+    mkpath(repodir)
+    cd(repodir) do
+        run(`repo-add "$reponame.db.tar.gz" $pkg`)
+    end
+end
+
+@testset "Delta" begin
+    mktempdir() do dir
+        pkgdir = joinpath(dir, "pkgdir")
+        hdl = setup_handle(dir)
+        LibALPM.set_arch(hdl, Base.ARCH)
+        delta_event = false
+        delta_event_nonnull = false
+        eventcb = (cbhdl::LibALPM.Handle, event::LibALPM.AbstractEvent) -> begin
+            @test cbhdl === hdl
+            if isa(event, LibALPM.Event.DeltaPatch)
+                event = event::LibALPM.Event.DeltaPatch
+                delta_event = true
+                !isnull(event.delta) && (delta_event_nonnull = true)
+            end
+        end
+        LibALPM.set_eventcb(hdl, eventcb)
+        LibALPM.set_deltaratio(hdl, 2.0)
+
+        pkg1 = makepkg(joinpath(thisdir, "pkgs", "PKGBUILD.backups"),
+                       pkgdir)[1]
+        repo_add(pkgdir, "alpmtest", pkg1)
+
+        testdb = LibALPM.register_syncdb(hdl, "alpmtest",
+                                         LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                         LibALPM.SigLevel.DATABASE_OPTIONAL)
+
+        LibALPM.set_servers(testdb, ["file://$pkgdir"])
+        @test !LibALPM.update(testdb, false)
+        @test LibALPM.update(testdb, false)
+        pkg_load = LibALPM.get_pkg(testdb, "backups")
+
+        LibALPM.trans_init(hdl, 0)
+        LibALPM.add_pkg(hdl, pkg_load)
+        LibALPM.trans_prepare(hdl)
+        LibALPM.trans_commit(hdl)
+        LibALPM.trans_release(hdl)
+
+        @test !delta_event
+        @test !delta_event_nonnull
+
+        pkg2 = makepkg(joinpath(thisdir, "pkgs", "PKGBUILD.backups2"),
+                       pkgdir)[1]
+        cd(pkgdir) do
+            run(`pkgdelta --min-pkg-size=0 $pkg1 $pkg2`)
+        end
+        deltapath = joinpath(pkgdir,
+                             "backups-0.1-1_to_0.2-1-$(Base.ARCH).delta")
+        # Wait 2 second so that the timestamp changes...
+        sleep(2)
+        repo_add(pkgdir, "alpmtest", [deltapath, pkg2])
+
+        @test !LibALPM.update(testdb, false)
+        @test LibALPM.update(testdb, false)
+        pkg_load = LibALPM.get_pkg(testdb, "backups")
+        @test !isempty(LibALPM.get_deltas(pkg_load))
+        @test isempty(LibALPM.unused_deltas(pkg_load))
+
+        LibALPM.trans_init(hdl, 0)
+        LibALPM.sysupgrade(hdl, false)
+        LibALPM.trans_prepare(hdl)
+        LibALPM.trans_commit(hdl)
+        LibALPM.trans_release(hdl)
+
+        @test delta_event
+        @test delta_event_nonnull
+
+        LibALPM.release(hdl)
+    end
+end

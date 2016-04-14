@@ -11,6 +11,7 @@ arch:
     - julia-git
     - cmake
     - mbedtls
+    - xdelta3
   script:
     - julia -e 'Pkg.clone(pwd())'
     - julia -e 'Pkg.build("LibALPM")'

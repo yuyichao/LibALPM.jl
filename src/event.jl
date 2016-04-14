@@ -44,10 +44,12 @@ end
 immutable DeltaPatch <: AbstractEvent
     event_type::event_type_t
     # Delta info
-    delta::LibALPM.Delta
+    delta::Nullable{LibALPM.Delta}
     function DeltaPatch(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.DeltaPatch}(ptr))
-        new(cevent._type, LibALPM.Delta(cevent.delta))
+        delta = (cevent.delta == C_NULL ? Nullable{LibALPM.Delta}() :
+                 Nullable(LibALPM.Delta(cevent.delta)))
+        new(cevent._type, delta)
     end
 end
 
