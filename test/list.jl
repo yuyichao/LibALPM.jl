@@ -20,7 +20,7 @@ using LibALPM
     LibALPM.free(list)
     @test ary == ["1", "3", "44"]
 
-    list = LibALPM.array_to_list(["1", "3", "44"],
+    list = LibALPM.array_to_list(["1", "44", "3"],
                                  s->ccall(:strdup, Ptr{Void}, (Cstring,), s),
                                  cglobal(:free))
     @test_throws(ErrorException,
