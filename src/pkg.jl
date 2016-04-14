@@ -52,28 +52,14 @@ end
 compute_requiredby(pkg::Pkg) = with_handle(pkg.hdl) do
     list = ccall((:alpm_pkg_compute_requiredby, libalpm),
                  Ptr{list_t}, (Ptr{Void},), pkg)
-    ary = try
-        list_to_array(UTF8String, list, ptr_to_utf8)
-    catch
-        free(list, cglobal(:free))
-        rethrow()
-    end
-    free(list)
-    ary
+    list_to_array(UTF8String, list, ptr_to_utf8, cglobal(:free))
 end
 
 "Computes the list of packages optionally requiring a given package"
 compute_optionalfor(pkg::Pkg) = with_handle(pkg.hdl) do
     list = ccall((:alpm_pkg_compute_optionalfor, libalpm),
                  Ptr{list_t}, (Ptr{Void},), pkg)
-    ary = try
-        list_to_array(UTF8String, list, ptr_to_utf8)
-    catch
-        free(list, cglobal(:free))
-        rethrow()
-    end
-    free(list)
-    ary
+    list_to_array(UTF8String, list, ptr_to_utf8, cglobal(:free))
 end
 
 """
@@ -313,11 +299,7 @@ end
 unused_deltas(pkg::Pkg) = with_handle(pkg.hdl) do
     list = ccall((:alpm_pkg_unused_deltas, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
-    try
-        return list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
-    finally
-        free(list)
-    end
+    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)), C_NULL)
 end
 
 """

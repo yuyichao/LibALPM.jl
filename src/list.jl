@@ -24,6 +24,31 @@ function list_to_array{T}(::Type{T}, list::Ptr{list_t}, cb)
     res
 end
 
+# The callback should always consume the pointer, even if it throws
+# an error.
+function list_to_array{T}(::Type{T}, list::Ptr{list_t}, cb, freecb::Ptr{Void})
+    res = T[]
+    iter = list_iter(list)
+    i = start(iter)
+    try
+        while !done(iter, i)
+            data, i = next(iter, i)
+            push!(res, cb(data))
+        end
+    catch
+        if freecb != C_NULL
+            while !done(iter, i)
+                data, i = next(iter, i)
+                ccall(freecb, Void, (Ptr{Void},), data)
+            end
+        end
+        free(list)
+        rethrow()
+    end
+    free(list)
+    res
+end
+
 function free(list::Ptr{list_t}, freecb::Ptr{Void}=C_NULL)
     if freecb != C_NULL
         ccall((:alpm_list_free_inner, libalpm), Void,

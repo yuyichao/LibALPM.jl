@@ -732,28 +732,15 @@ trans_prepare(hdl::Handle) = with_handle(hdl) do
         # CONFLICTING_DEPS:
         #     Conflict with all internal pointer allocated (dup'd)
         if errno == Errno.PKG_INVALID_ARCH
-            ary = try
-                list_to_array(UTF8String, list[], ptr_to_utf8)
-            catch
-                free(list[], cglobal(:free))
-                rethrow()
-            end
+            ary = list_to_array(UTF8String, list[], ptr_to_utf8, cglobal(:free))
             throw(TransPrepareError(errno, ary))
         elseif errno == Errno.UNSATISFIED_DEPS
-            ary = try
-                list_to_array(DepMissing, list[], DepMissing)
-            catch
-                free(list[], cglobal((:alpm_depmissing_free, libalpm)))
-                rethrow()
-            end
+            ary = list_to_array(DepMissing, list[], DepMissing,
+                                cglobal((:alpm_depmissing_free, libalpm)))
             throw(TransPrepareError(errno, ary))
         elseif errno == Errno.CONFLICTING_DEPS
-            ary = try
-                list_to_array(Conflict, list[], Conflict)
-            catch
-                free(list[], cglobal((:alpm_conflict_free, libalpm)))
-                rethrow()
-            end
+            ary = list_to_array(Conflict, list[], Conflict,
+                                cglobal((:alpm_conflict_free, libalpm)))
             throw(TransPrepareError(errno, ary))
         else
             warn("LibALPM<trans_prepare>: ",
@@ -804,20 +791,11 @@ trans_commit(hdl::Handle) = with_handle(hdl) do
         # everything else:
         #     pkgname dup
         if errno == Errno.FILE_CONFLICTS
-            ary = try
-                list_to_array(FileConflict, list[], FileConflict)
-            catch
-                free(list[], cglobal((:alpm_fileconflict_free, libalpm)))
-                rethrow()
-            end
+            ary = list_to_array(FileConflict, list[], FileConflict,
+                                cglobal((:alpm_fileconflict_free, libalpm)))
             throw(TransCommitError(errno, ary))
         else
-            ary = try
-                list_to_array(UTF8String, list[], ptr_to_utf8)
-            catch
-                free(list[], cglobal(:free))
-                rethrow()
-            end
+            ary = list_to_array(UTF8String, list[], ptr_to_utf8, cglobal(:free))
             throw(TransCommitError(errno, ary))
         end
     end
