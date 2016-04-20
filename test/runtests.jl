@@ -209,6 +209,49 @@ end
     @test glibcpkg.ptr == C_NULL
 end
 
+@testset "Finalize" begin
+    mktempdir() do dir
+        hdl = setup_handle(dir)
+        hdl2 = LibALPM.Handle("/", "/var/lib/pacman/")
+        hdl2_finalized = false
+        freehdl2 = ()->begin
+            h = hdl2
+            hdl2 = nothing
+            h === nothing && return
+            LibALPM.release(h::LibALPM.Handle)
+            hdl2_finalized = true
+        end
+        logcb = (cbhdl, level, msg)->begin
+            freehdl2()
+            @test cbhdl === hdl
+            if level < LibALPM.LogLevel.WARNING
+                println("ALPM($level): $msg")
+            end
+        end
+        LibALPM.set_logcb(hdl, logcb)
+        LibALPM.set_eventcb(hdl,
+                            (cbhdl, event)->(@test cbhdl === hdl;
+                                             freehdl2();
+                                             @test isa(event,
+                                                       LibALPM.AbstractEvent)))
+        # AFAIK this log goes directly to the log file or syslog
+        LibALPM.logaction(hdl, "LibALPM.jl", "Message")
+        localdb = LibALPM.get_localdb(hdl)
+        coredb = LibALPM.register_syncdb(hdl, "core",
+                                         LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                         LibALPM.SigLevel.DATABASE_OPTIONAL)
+
+        mirrorurl = get_default_url("core")
+        LibALPM.set_servers(coredb, [mirrorurl])
+        @test !LibALPM.update(coredb, false)
+        # This can fail if the remote is updated right in between the two calls
+        @test LibALPM.update(coredb, false)
+        @test hdl2 === nothing
+        @test hdl2_finalized
+        LibALPM.release(hdl)
+    end
+end
+
 @testset "Pkgroot" begin
     mktempdir() do dir
         hdl = setup_handle(dir)

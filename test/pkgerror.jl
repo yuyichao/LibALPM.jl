@@ -1,6 +1,5 @@
 #!/usr/bin/julia -f
 
-
 @testset "Invalid Arch" begin
     mktempdir() do dir
         pkgbuild = joinpath(thisdir, "pkgs", "PKGBUILD.invalid-arch")

@@ -165,8 +165,7 @@ function release(hdl::Handle)
     dbs = hdl.dbs
     pkgs = hdl.pkgs
     ptr == C_NULL && return
-    # TODO handle nested call due to finalizer
-    with_handle(hdl) do
+    with_task_context_nested(hdlctx, hdl) do
         empty!(hdl.transpkgs::Set{Pkg})
         empty!(hdl.rmpkgs::Set{Pkg})
         _null_all_pkgs(pkgs)

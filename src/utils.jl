@@ -71,6 +71,26 @@ end
     end
 end
 
+@inline function with_task_context_nested{T}(f, ctx::LazyTaskContext{T}, t::T)
+    # Not very efficient when actually called nested but should be good enough.
+    curtask = current_task()
+    nested = false
+    try
+        start_task_context(ctx, t, curtask)
+    catch
+        t′ = get_task_context(ctx)
+        end_task_context(ctx, curtask)
+        with_task_context(f, ctx, t)
+        start_task_context(ctx, t′, curtask)
+        return
+    end
+    try
+        f()
+    finally
+        end_task_context(ctx, curtask)
+    end
+end
+
 function get_task_context{T}(ctx::LazyTaskContext{T})
     taskslot = pointer_from_objref(ctx) + sizeof(Int) * 2
     taskptr = unsafe_load(Ptr{Ptr{Void}}(taskslot))
