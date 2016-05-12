@@ -104,7 +104,7 @@ function ptr_to_utf8(p::Ptr)
     len = ccall(:strlen, Csize_t, (Ptr{Void},), p)
     ary = ccall(:jl_ptr_to_array_1d, Ref{Vector{UInt8}},
                 (Any, Ptr{Void}, Csize_t, Cint), Vector{UInt8}, p, len, 1)
-    UTF8String(ary)
+    String(ary)
 end
 
 version() =

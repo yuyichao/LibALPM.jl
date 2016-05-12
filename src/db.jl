@@ -93,7 +93,7 @@ function get_servers(db::DB)
     # Should not trigger callback
     servers = ccall((:alpm_db_get_servers, libalpm), Ptr{list_t},
                     (Ptr{Void},), db)
-    list_to_array(UTF8String, servers, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, servers, p->utf8(Ptr{UInt8}(p)))
 end
 function set_servers(db::DB, servers)
     # Should not trigger callback

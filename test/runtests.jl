@@ -38,7 +38,7 @@ function makepkg(pkgbuild, dest, arch=string(Base.ARCH))
         cd(dir) do
             cp(pkgbuild, "PKGBUILD")
             run(setenv(`makepkg`, "PKGEXT"=>".pkg.tar", "CARCH"=>arch))
-            pkgs = UTF8String[]
+            pkgs = String[]
             mkpath(dest)
             for fname in readdir()
                 endswith(fname, ".pkg.tar") || continue
@@ -56,7 +56,7 @@ include("list.jl")
 
 @testset "Errno" begin
     for err in instances(LibALPM.errno_t)
-        @test isa(strerror(err), UTF8String)
+        @test isa(strerror(err), String)
     end
 end
 
@@ -141,14 +141,14 @@ end
     # no pkgbase for localdb package
     @test_throws ArgumentError LibALPM.get_base(glibcpkg)
     @test LibALPM.get_name(glibcpkg) == "glibc"
-    @test isa(LibALPM.get_version(glibcpkg), UTF8String)
+    @test isa(LibALPM.get_version(glibcpkg), String)
     @test LibALPM.get_origin(glibcpkg) == LibALPM.PkgFrom.LOCALDB
     # GNU C Library
     @test contains(LibALPM.get_desc(glibcpkg), "Library")
     @test contains(LibALPM.get_url(glibcpkg), "http")
     @test LibALPM.get_builddate(glibcpkg) > 0
     @test LibALPM.get_installdate(glibcpkg) > 0
-    @test isa(LibALPM.get_packager(glibcpkg), UTF8String)
+    @test isa(LibALPM.get_packager(glibcpkg), String)
     # Apparently local package doesn't have checksum...
     @test_throws ArgumentError LibALPM.get_md5sum(glibcpkg)
     @test_throws ArgumentError LibALPM.get_sha256sum(glibcpkg)

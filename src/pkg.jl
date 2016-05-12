@@ -58,14 +58,14 @@ end
 compute_requiredby(pkg::Pkg) = with_handle(pkg.hdl) do
     list = ccall((:alpm_pkg_compute_requiredby, libalpm),
                  Ptr{list_t}, (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, ptr_to_utf8, cglobal(:free))
+    list_to_array(String, list, ptr_to_utf8, cglobal(:free))
 end
 
 "Computes the list of packages optionally requiring a given package"
 compute_optionalfor(pkg::Pkg) = with_handle(pkg.hdl) do
     list = ccall((:alpm_pkg_compute_optionalfor, libalpm),
                  Ptr{list_t}, (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, ptr_to_utf8, cglobal(:free))
+    list_to_array(String, list, ptr_to_utf8, cglobal(:free))
 end
 
 """
@@ -194,14 +194,14 @@ end
 get_licenses(pkg::Pkg) = with_handle(pkg.hdl) do
     list = ccall((:alpm_pkg_get_licenses, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, list, p->utf8(Ptr{UInt8}(p)))
 end
 
 "Returns the list of package groups"
 get_groups(pkg::Pkg) = with_handle(pkg.hdl) do
     list = ccall((:alpm_pkg_get_groups, libalpm), Ptr{list_t},
                  (Ptr{Void},), pkg)
-    list_to_array(UTF8String, list, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, list, p->utf8(Ptr{UInt8}(p)))
 end
 
 """

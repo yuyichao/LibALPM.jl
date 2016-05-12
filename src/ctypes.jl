@@ -294,15 +294,15 @@ end
 end
 
 function cstr_to_utf8(cstr, own)
-    cstr == C_NULL && return UTF8String("")
+    cstr == C_NULL && return String("")
     own && return ptr_to_utf8(Ptr{UInt8}(cstr))
     utf8(Ptr{UInt8}(cstr))
 end
 
 immutable Depend
-    name::UTF8String
-    version::UTF8String
-    desc::UTF8String
+    name::String
+    version::String
+    desc::String
     name_hash::Culong
     mod::depmod_t
     # We don't allow constructing Depend with arbitrary strings
@@ -328,7 +328,7 @@ Base.(:(==))(dep1::Depend, dep2::Depend) =
      dep1.desc == dep2.desc && dep1.mod == dep2.mod)
 
 # WARNING! Relies on julia internal API:
-#     `cconvert(Cstring, ::UTF8String)` is no-op
+#     `cconvert(Cstring, ::String)` is no-op
 #     Base.RefValue
 Base.cconvert(::Type{Ptr{CTypes.Depend}}, dep::Depend) =
     (dep, Ref{CTypes.Depend}())
@@ -368,9 +368,9 @@ function Base.show(io::IO, dep::Depend)
 end
 
 immutable DepMissing
-    target::UTF8String
+    target::String
     depend::Depend
-    causingpkg::UTF8String
+    causingpkg::String
     DepMissing(target, depend, causingpkg="") = new(target, depend, causingpkg)
     # Take ownership of the pointer
     function DepMissing(_ptr::Ptr)
@@ -393,8 +393,8 @@ Base.(:(==))(obj1::DepMissing, obj2::DepMissing) =
 immutable Conflict
     package1_hash::Culong
     package2_hash::Culong
-    package1::UTF8String
-    package2::UTF8String
+    package1::String
+    package2::String
     reason::Depend
     # Take ownership of the pointer
     function Conflict(_ptr::Ptr)
@@ -413,10 +413,10 @@ immutable Conflict
 end
 
 immutable FileConflict
-    target::UTF8String
+    target::String
     conflicttype::LibALPM.fileconflicttype_t
-    file::UTF8String
-    ctarget::UTF8String
+    file::String
+    ctarget::String
     # Take ownership of the pointer
     function FileConflict(_ptr::Ptr)
         ptr = Ptr{CTypes.FileConflict}(_ptr)
@@ -431,7 +431,7 @@ immutable FileConflict
 end
 
 immutable File
-    name::UTF8String
+    name::String
     size::Int64
     mode::Cint # mode_t
     function File(_ptr::Ptr)
@@ -443,8 +443,8 @@ immutable File
 end
 
 immutable Backup
-    name::UTF8String
-    hash::UTF8String
+    name::String
+    hash::String
     function Backup(_ptr::Ptr)
         ptr = Ptr{CTypes.Backup}(_ptr)
         cbackup = unsafe_load(ptr)
@@ -456,13 +456,13 @@ end
 
 immutable Delta
     # filename of the delta patch
-    delta::UTF8String
+    delta::String
     # md5sum of the delta file
-    delta_md5::UTF8String
+    delta_md5::String
     # filename of the 'before' file
-    from::UTF8String
+    from::String
     # filename of the 'after' file
-    to::UTF8String
+    to::String
     # filesize of the delta file
     delta_size::Int64
     # download filesize of the delta file

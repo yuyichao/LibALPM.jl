@@ -56,7 +56,7 @@ end
 immutable ScriptletInfo <: AbstractEvent
     event_type::event_type_t
     # Line of scriptlet output.
-    line::UTF8String
+    line::String
     function ScriptletInfo(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.ScriptletInfo}(ptr))
         new(cevent._type, utf8(Ptr{UInt8}(cevent.line)))
@@ -66,7 +66,7 @@ end
 immutable DatabaseMissing <: AbstractEvent
     event_type::event_type_t
     # Name of the database.
-    dbname::UTF8String
+    dbname::String
     function DatabaseMissing(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.DatabaseMissing}(ptr))
         new(cevent._type, utf8(Ptr{UInt8}(cevent.dbname)))
@@ -76,7 +76,7 @@ end
 immutable PkgDownload <: AbstractEvent
     event_type::event_type_t
     # Name of the file
-    file::UTF8String
+    file::String
     function PkgDownload(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.PkgDownload}(ptr))
         new(cevent._type, utf8(Ptr{UInt8}(cevent.file)))
@@ -92,7 +92,7 @@ immutable PacnewCreated <: AbstractEvent
     # New Package.
     newpkg::Nullable{Pkg}
     # Filename of the file without the .pacnew suffix
-    file::UTF8String
+    file::String
     function PacnewCreated(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.PacnewCreated}(ptr))
         new(cevent._type, cevent.from_noupgrade,
@@ -106,7 +106,7 @@ immutable PacsaveCreated <: AbstractEvent
     # Old package.
     oldpkg::Nullable{Pkg}
     # Filename of the file without the .pacsave suffix.
-    file::UTF8String
+    file::String
     function PacsaveCreated(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.PacsaveCreated}(ptr))
         new(cevent._type, Nullable{Pkg}(cevent.oldpkg, hdl),
@@ -127,9 +127,9 @@ end
 immutable HookRun <: AbstractEvent
     event_type::event_type_t
     # Name of hook
-    name::UTF8String
+    name::String
     # Description of hook to be outputted
-    desc::UTF8String
+    desc::String
     # position of hook being run
     position::Csize_t
     # total hooks being run

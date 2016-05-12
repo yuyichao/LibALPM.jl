@@ -60,7 +60,7 @@ function libalpm_log_cb(level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
     ccall(:vsnprintf, Cint,
           (Ptr{UInt8}, Csize_t, Ptr{UInt8}, va_list_arg_t),
           buf, len, fmt, ap)
-    str = UTF8String(buf)
+    str = String(buf)
     try
         cb(hdl, level, str)
     catch ex
@@ -234,7 +234,7 @@ function get_cachedirs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_cachedirs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 set_cachedirs(hdl::Handle, dirs) = with_handle(hdl) do
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -264,7 +264,7 @@ function get_hookdirs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_hookdirs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 set_hookdirs(hdl::Handle, dirs) = with_handle(hdl) do
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -338,7 +338,7 @@ function get_noupgrades(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_noupgrades, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 function set_noupgrades(hdl::Handle, dirs)
     # Should not trigger callback
@@ -381,7 +381,7 @@ function get_noextracts(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_noextracts, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 function set_noextracts(hdl::Handle, dirs)
     # Should not trigger callback
@@ -424,7 +424,7 @@ function get_ignorepkgs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_ignorepkgs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 function set_ignorepkgs(hdl::Handle, dirs)
     # Should not trigger callback
@@ -458,7 +458,7 @@ function get_ignoregroups(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_ignoregroups, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(UTF8String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
 end
 function set_ignoregroups(hdl::Handle, dirs)
     # Should not trigger callback
@@ -753,7 +753,7 @@ trans_prepare(hdl::Handle) = with_handle(hdl) do
         # CONFLICTING_DEPS:
         #     Conflict with all internal pointer allocated (dup'd)
         if errno == Errno.PKG_INVALID_ARCH
-            ary = list_to_array(UTF8String, list[], ptr_to_utf8, cglobal(:free))
+            ary = list_to_array(String, list[], ptr_to_utf8, cglobal(:free))
             throw(TransPrepareError(errno, ary))
         elseif errno == Errno.UNSATISFIED_DEPS
             ary = list_to_array(DepMissing, list[], DepMissing,
@@ -816,7 +816,7 @@ trans_commit(hdl::Handle) = with_handle(hdl) do
                                 cglobal((:alpm_fileconflict_free, libalpm)))
             throw(TransCommitError(errno, ary))
         else
-            ary = list_to_array(UTF8String, list[], ptr_to_utf8, cglobal(:free))
+            ary = list_to_array(String, list[], ptr_to_utf8, cglobal(:free))
             throw(TransCommitError(errno, ary))
         end
     end

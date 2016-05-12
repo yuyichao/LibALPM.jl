@@ -15,7 +15,7 @@
         try
             LibALPM.trans_prepare(hdl)
         catch ex
-            @test isa(ex, LibALPM.TransPrepareError{UTF8String})
+            @test isa(ex, LibALPM.TransPrepareError{String})
             @test ex.errno == LibALPM.Errno.PKG_INVALID_ARCH
             @test ex.list == ["invalid-arch-0.1-1-invalid"]
             str = sprint(io->Base.showerror(io, ex))
