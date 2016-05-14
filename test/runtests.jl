@@ -497,6 +497,9 @@ end
                                 LibALPM.SigLevel.PACKAGE_OPTIONAL)
 
         clog = LibALPM.ChangeLog(pkg_load)
+        clog_str = string(clog)
+        @test contains(clog_str, string(pkg_load))
+        @test contains(clog_str, "LibALPM.ChangeLog")
         logstart = "# Version 0.0\n\n"
         @test String(read(clog, length(logstart))) == logstart
         lognext = "Random text\n\n"
@@ -509,8 +512,9 @@ end
 
         clog2 = LibALPM.ChangeLog(pkg_load)
         clog3 = LibALPM.ChangeLog(pkg_load)
+        @test read(clog3, UInt8) == UInt8('#')
         @test String(readavailable(clog2)) == logstart * lognext * logend
-        @test String(read(clog3)) == logstart * lognext * logend
+        @test "#" * String(read(clog3)) == logstart * lognext * logend
         close(clog3)
         close(clog2)
         close(clog)
