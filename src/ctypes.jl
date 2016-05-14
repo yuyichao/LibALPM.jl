@@ -294,7 +294,7 @@ end
 end
 
 function cstr_to_utf8(cstr, own)
-    cstr == C_NULL && return String("")
+    cstr == C_NULL && return ""
     own && return ptr_to_utf8(Ptr{UInt8}(cstr))
     utf8(Ptr{UInt8}(cstr))
 end
@@ -470,10 +470,10 @@ immutable Delta
     function Delta(_ptr::Ptr)
         ptr = Ptr{CTypes.Delta}(_ptr)
         cdelta = unsafe_load(ptr)
-        delta = utf8(Ptr{UInt8}(cdelta.delta))
-        delta_md5 = utf8(Ptr{UInt8}(cdelta.delta_md5))
-        from = utf8(Ptr{UInt8}(cdelta.from))
-        to = utf8(Ptr{UInt8}(cdelta.to))
+        delta = cstr_to_utf8(Ptr{UInt8}(cdelta.delta), false)
+        delta_md5 = cstr_to_utf8(Ptr{UInt8}(cdelta.delta_md5), false)
+        from = cstr_to_utf8(Ptr{UInt8}(cdelta.from), false)
+        to = cstr_to_utf8(Ptr{UInt8}(cdelta.to), false)
         new(delta, delta_md5, from, to, cdelta.delta_size, cdelta.download_size)
     end
 end
