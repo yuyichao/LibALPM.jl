@@ -1,0 +1,13 @@
+# Maintainer: Yichao Yu
+pkgname=changelog
+pkgver=0.1
+pkgrel=2
+pkgdesc="nothing"
+arch=('any')
+license=('GPL')
+source=()
+changelog='changelog2'
+
+package() {
+    true
+}

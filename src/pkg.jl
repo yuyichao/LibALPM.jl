@@ -4,6 +4,7 @@ type Pkg
     ptr::Ptr{Void}
     hdl::Handle
     should_free::Bool
+    tofree::Vector{WeakRef}
     function Pkg(ptr::Ptr{Void}, hdl::Handle, should_free=false)
         ptr == C_NULL && throw(UndefRefError())
         cached = hdl.pkgs[ptr, Pkg]
@@ -20,12 +21,25 @@ end
 
 function free(pkg::Pkg)
     # Should not trigger callback and should not fail
+    if isdefined(pkg, :tofree)
+        tofree = pkg.tofree
+        while !isempty(tofree)
+            val = pop!(tofree).value
+            val === nothing || free(val)
+        end
+    end
     ptr = pkg.ptr
     ptr == C_NULL && return
     hdl = pkg.hdl
     pkg.ptr = C_NULL
     delete!(hdl.pkgs, ptr)
     pkg.should_free && ccall((:alpm_pkg_free, libalpm), Cint, (Ptr{Void},), ptr)
+    nothing
+end
+
+function add_tofree(pkg::Pkg, obj::ANY)
+    isdefined(pkg, :tofree) || (pkg.tofree = WeakRef[])
+    push!(pkg.tofree, WeakRef(obj))
     nothing
 end
 

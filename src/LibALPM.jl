@@ -20,31 +20,9 @@ include("handle.jl")
 include("db.jl")
 include("pkg.jl")
 include("event.jl")
+include("changelog.jl")
 
 # TODO
-
-# /** Open a package changelog for reading.
-#  * Similar to fopen in functionality, except that the returned 'file
-#  * stream' could really be from an archive as well as from the database.
-#  * @param pkg the package to read the changelog of (either file or db)
-#  * @return a 'file stream' to the package changelog
-#
-# void *alpm_pkg_changelog_open(alpm_pkg_t *pkg);
-
-# /** Read data from an open changelog 'file stream'.
-#  * Similar to fread in functionality, this function takes a buffer and
-#  * amount of data to read. If an error occurs pm_errno will be set.
-#  * @param ptr a buffer to fill with raw changelog data
-#  * @param size the size of the buffer
-#  * @param pkg the package that the changelog is being read from
-#  * @param fp a 'file stream' to the package changelog
-#  * @return the number of characters read, or 0 if there is no more data or an
-#  * error occurred.
-#
-# size_t alpm_pkg_changelog_read(void *ptr, size_t size,
-# const alpm_pkg_t *pkg, void *fp);
-
-# int alpm_pkg_changelog_close(const alpm_pkg_t *pkg, void *fp);
 
 # /** Open a package mtree file for reading.
 #  * @param pkg the local package to read the changelog of

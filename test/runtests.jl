@@ -33,10 +33,13 @@ function setup_handle(dir)
     hdl
 end
 
-function makepkg(pkgbuild, dest, arch=string(Base.ARCH))
+function makepkg(pkgbuild, dest, arch=string(Base.ARCH); copy_files=String[])
     mktempdir() do dir
         cd(dir) do
             cp(pkgbuild, "PKGBUILD")
+            for file in copy_files
+                cp(file, basename(file))
+            end
             run(setenv(`makepkg`, "PKGEXT"=>".pkg.tar", "CARCH"=>arch))
             pkgs = String[]
             mkpath(dest)
@@ -99,6 +102,8 @@ end
     LibALPM.check_valid(localdb)
     @test LibALPM.get_servers(localdb) == []
     pacmanpkg = LibALPM.get_pkg(localdb, "pacman")
+    # Local package don't have a changelog
+    @test_throws LibALPM.Error LibALPM.ChangeLog(pacmanpkg)
     @test LibALPM.get_pkg(localdb, "pacman") === pacmanpkg
     @test !isempty(LibALPM.get_pkgcache(localdb))
     # Only syncdb can be updated
@@ -474,6 +479,57 @@ end
 
         @test delta_event
         @test delta_event_nonnull
+
+        LibALPM.release(hdl)
+    end
+end
+
+@testset "ChangeLog" begin
+    mktempdir() do dir
+        pkgdir = joinpath(dir, "pkgdir")
+        hdl = setup_handle(dir)
+        LibALPM.set_arch(hdl, Base.ARCH)
+
+        pkg = makepkg(joinpath(thisdir, "pkgs", "PKGBUILD.changelog"),
+                      pkgdir; copy_files=[joinpath(thisdir, "pkgs",
+                                                   "changelog")])[1]
+        pkg_load = LibALPM.load(hdl, pkg, true,
+                                LibALPM.SigLevel.PACKAGE_OPTIONAL)
+
+        clog = LibALPM.ChangeLog(pkg_load)
+        logstart = "# Version 0.0\n\n"
+        @test String(read(clog, length(logstart))) == logstart
+        lognext = "Random text\n\n"
+        buf = Vector{UInt8}(length(lognext))
+        @test readbytes!(clog, buf) == length(lognext)
+        @test String(buf) == lognext
+        logend = "# Version 0.1\n\nNothing new here\n"
+        @test readstring(clog) == logend
+        @test_throws EOFError read(clog, UInt8)
+
+        clog2 = LibALPM.ChangeLog(pkg_load)
+        clog3 = LibALPM.ChangeLog(pkg_load)
+        @test String(readavailable(clog2)) == logstart * lognext * logend
+        @test String(read(clog3)) == logstart * lognext * logend
+        close(clog3)
+        close(clog2)
+        close(clog)
+
+        clog_str = randstring(100_000)
+        pkg = mktempdir() do dir
+            changelog2 = joinpath(dir, "changelog2")
+            open(changelog2, "w") do fd
+                write(fd, clog_str)
+            end
+            makepkg(joinpath(thisdir, "pkgs", "PKGBUILD.changelog2"),
+                    pkgdir; copy_files=[changelog2])[1]
+        end
+        pkg_load = LibALPM.load(hdl, pkg, true,
+                                LibALPM.SigLevel.PACKAGE_OPTIONAL)
+
+        clog = LibALPM.ChangeLog(pkg_load)
+        @test String(read(clog)) == clog_str
+        close(clog)
 
         LibALPM.release(hdl)
     end
