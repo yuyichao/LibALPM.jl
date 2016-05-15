@@ -661,3 +661,36 @@ end
         LibALPM.release(hdl)
     end
 end
+
+@testset "Callback Error" begin
+    mktempdir() do dir
+        hdl = setup_handle(dir)
+        event_error = false
+        log_error = false
+        eventcb = (cbhdl, event)->begin
+            event_error && return
+            event_error = true
+            error("This error is expected")
+        end
+        LibALPM.set_eventcb(hdl, eventcb)
+        logcb = (cbhdl, level, msg)->begin
+            log_error && return
+            log_error = true
+            error("This error is expected")
+        end
+        LibALPM.set_logcb(hdl, logcb)
+        localdb = LibALPM.get_localdb(hdl)
+        coredb = LibALPM.register_syncdb(hdl, "core",
+                                         LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                         LibALPM.SigLevel.DATABASE_OPTIONAL)
+        mirrorurl = get_default_url("core")
+        info("Mirror used: \"$mirrorurl\"")
+        LibALPM.set_servers(coredb, [mirrorurl])
+        LibALPM.update(coredb, false)
+
+        @test event_error
+        @test log_error
+
+        LibALPM.release(hdl)
+    end
+end
