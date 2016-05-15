@@ -617,3 +617,47 @@ end
         LibALPM.release(hdl)
     end
 end
+
+@testset "Hooks" begin
+    mktempdir() do dir
+        hdl = setup_handle(dir)
+        hook_event = false
+        hookrun_event = false
+        eventcb = (cbhdl, event)->begin
+            @test cbhdl === hdl
+            @test isa(event, LibALPM.AbstractEvent)
+            isa(event, LibALPM.Event.Hook) && (hook_event = true)
+            isa(event, LibALPM.Event.HookRun) && (hookrun_event = true)
+        end
+        LibALPM.set_eventcb(hdl, eventcb)
+        localdb = LibALPM.get_localdb(hdl)
+        coredb = LibALPM.register_syncdb(hdl, "core",
+                                         LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                         LibALPM.SigLevel.DATABASE_OPTIONAL)
+        mirrorurl = get_default_url("core")
+        info("Mirror used: \"$mirrorurl\"")
+        LibALPM.set_servers(coredb, [mirrorurl])
+        extradb = LibALPM.register_syncdb(hdl, "extra",
+                                          LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                          LibALPM.SigLevel.DATABASE_OPTIONAL)
+        mirrorurl = get_default_url("extra")
+        info("Mirror used: \"$mirrorurl\"")
+        LibALPM.set_servers(extradb, [mirrorurl])
+
+        LibALPM.update(coredb, false)
+        LibALPM.update(extradb, false)
+
+        mimepkg = LibALPM.get_pkg(extradb, "shared-mime-info")
+
+        LibALPM.trans_init(hdl, 0)
+        LibALPM.add_pkg(hdl, mimepkg)
+        LibALPM.trans_prepare(hdl)
+        LibALPM.trans_commit(hdl)
+        LibALPM.trans_release(hdl)
+
+        @test hook_event
+        @test hookrun_event
+
+        LibALPM.release(hdl)
+    end
+end
