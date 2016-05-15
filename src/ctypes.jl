@@ -323,7 +323,7 @@ immutable Depend
 end
 
 # Mainly for testing, no hash yet.
-Base.(:(==))(dep1::Depend, dep2::Depend) =
+Base.:(==)(dep1::Depend, dep2::Depend) =
     (dep1.name == dep2.name && dep1.version == dep2.version &&
      dep1.desc == dep2.desc && dep1.mod == dep2.mod)
 
@@ -386,7 +386,7 @@ immutable DepMissing
 end
 
 # Mainly for testing, no hash yet.
-Base.(:(==))(obj1::DepMissing, obj2::DepMissing) =
+Base.:(==)(obj1::DepMissing, obj2::DepMissing) =
     (obj1.target == obj2.target && obj1.depend == obj2.depend &&
      obj1.causingpkg == obj2.causingpkg)
 

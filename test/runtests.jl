@@ -1,6 +1,7 @@
 #!/usr/bin/julia -f
 
-using LibALPM
+import LibALPM
+import LibArchive
 using Base.Test
 
 const thisdir = dirname(@__FILE__)
@@ -479,6 +480,31 @@ end
 
         @test delta_event
         @test delta_event_nonnull
+
+        LibALPM.release(hdl)
+
+        hdl = setup_handle(dir)
+        LibALPM.set_arch(hdl, Base.ARCH)
+
+        localdb = LibALPM.get_localdb(hdl)
+        pkg_local = LibALPM.get_pkg(localdb, "backups")
+
+        # It seems that newly installed package doesn't support this interface
+        reader = LibArchive.Reader(pkg_local)
+        entry = LibArchive.next_header(reader)
+        # Somehow reading the content doesn't work...
+        @test LibArchive.pathname(entry) == "./.BUILDINFO"
+        @test LibArchive.filetype(entry) == LibArchive.FileType.REG
+        LibArchive.free(entry)
+        entry = LibArchive.next_header(reader)
+        @test LibArchive.pathname(entry) == "./.PKGINFO"
+        @test LibArchive.filetype(entry) == LibArchive.FileType.REG
+        LibArchive.free(entry)
+        entry = LibArchive.next_header(reader)
+        @test LibArchive.pathname(entry) == "./backups"
+        @test LibArchive.filetype(entry) == LibArchive.FileType.REG
+        LibArchive.free(entry)
+        close(reader)
 
         LibALPM.release(hdl)
     end

@@ -4,6 +4,8 @@ __precompile__(true)
 
 module LibALPM
 
+import LibArchive
+
 const depfile = joinpath(dirname(@__FILE__), "..", "deps", "deps.jl")
 if isfile(depfile)
     include(depfile)
@@ -23,23 +25,6 @@ include("event.jl")
 include("changelog.jl")
 
 # TODO
-
-# /** Open a package mtree file for reading.
-#  * @param pkg the local package to read the changelog of
-#  * @return a archive structure for the package mtree file
-#
-# struct archive *alpm_pkg_mtree_open(alpm_pkg_t *pkg);
-
-# /** Read next entry from a package mtree file.
-#  * @param pkg the package that the mtree file is being read from
-#  * @param archive the archive structure reading from the mtree file
-#  * @param entry an archive_entry to store the entry header information
-#  * @return 0 if end of archive is reached, non-zero otherwise.
-#
-# int alpm_pkg_mtree_next(const alpm_pkg_t *pkg, struct archive *archive,
-# struct archive_entry **entry);
-
-# int alpm_pkg_mtree_close(const alpm_pkg_t *pkg, struct archive *archive);
 
 # /*
 #  * Signatures

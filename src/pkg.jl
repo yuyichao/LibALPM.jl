@@ -349,6 +349,21 @@ remove_pkg(hdl::Handle, pkg::Pkg) = with_handle(hdl) do
     nothing
 end
 
+immutable ReadPkg <: LibArchive.ReaderData
+end
+
+LibArchive.do_open(archive::LibArchive.Reader{ReadPkg}) = nothing
+
+"Open a package mtree file for reading"
+function LibArchive.Reader(pkg::Pkg)
+    archive = ccall((:alpm_pkg_mtree_open, libalpm),
+                    Ptr{Void}, (Ptr{Void},), pkg)
+    archive == C_NULL && throw(Error(pkg.hdl, "mtree_open"))
+    # Currently the archive doesn't have any relation with the package AFAICT
+    # so we don't need to register any tofree callbacks
+    LibArchive.Reader{ReadPkg}(ReadPkg(), archive, true)
+end
+
 # TODO
 #  * Groups
 # alpm_list_t *alpm_find_group_pkgs(alpm_list_t *dbs, const char *name);
