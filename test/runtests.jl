@@ -490,21 +490,21 @@ end
         pkg_local = LibALPM.get_pkg(localdb, "backups")
 
         # It seems that newly installed package doesn't support this interface
-        reader = LibArchive.Reader(pkg_local)
-        entry = LibArchive.next_header(reader)
-        # Somehow reading the content doesn't work...
-        @test LibArchive.pathname(entry) == "./.BUILDINFO"
-        @test LibArchive.filetype(entry) == LibArchive.FileType.REG
-        LibArchive.free(entry)
-        entry = LibArchive.next_header(reader)
-        @test LibArchive.pathname(entry) == "./.PKGINFO"
-        @test LibArchive.filetype(entry) == LibArchive.FileType.REG
-        LibArchive.free(entry)
-        entry = LibArchive.next_header(reader)
-        @test LibArchive.pathname(entry) == "./backups"
-        @test LibArchive.filetype(entry) == LibArchive.FileType.REG
-        LibArchive.free(entry)
-        close(reader)
+        LibArchive.Reader(pkg_local) do reader
+            entry = LibArchive.next_header(reader)
+            # Somehow reading the content doesn't work...
+            @test LibArchive.pathname(entry) == "./.BUILDINFO"
+            @test LibArchive.filetype(entry) == LibArchive.FileType.REG
+            LibArchive.free(entry)
+            entry = LibArchive.next_header(reader)
+            @test LibArchive.pathname(entry) == "./.PKGINFO"
+            @test LibArchive.filetype(entry) == LibArchive.FileType.REG
+            LibArchive.free(entry)
+            entry = LibArchive.next_header(reader)
+            @test LibArchive.pathname(entry) == "./backups"
+            @test LibArchive.filetype(entry) == LibArchive.FileType.REG
+            LibArchive.free(entry)
+        end
 
         LibALPM.release(hdl)
     end
