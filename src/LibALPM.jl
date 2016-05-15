@@ -57,10 +57,6 @@ include("changelog.jl")
 # int alpm_extract_keyid(alpm_handle_t *handle, const char *identifier,
 # const unsigned char *sig, const size_t len, alpm_list_t **keys);
 
-
-# Event callback.
-# typedef void (*alpm_cb_event)(alpm_event_t *);
-
 # Question callback
 # typedef void (*alpm_cb_question)(alpm_question_t *);
 
@@ -105,11 +101,6 @@ include("changelog.jl")
 # alpm_cb_totaldl alpm_option_get_totaldlcb(alpm_handle_t *handle);
 # /** Sets the callback used to report total download size.
 # int alpm_option_set_totaldlcb(alpm_handle_t *handle, alpm_cb_totaldl cb);
-
-# /** Returns the callback used for events.
-# alpm_cb_event alpm_option_get_eventcb(alpm_handle_t *handle);
-# /** Sets the callback used for events.
-# int alpm_option_set_eventcb(alpm_handle_t *handle, alpm_cb_event cb);
 
 # /** Returns the callback used for questions.
 # alpm_cb_question alpm_option_get_questioncb(alpm_handle_t *handle);
