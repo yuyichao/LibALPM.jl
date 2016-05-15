@@ -51,6 +51,11 @@ immutable DeltaPatch <: AbstractEvent
                  Nullable(LibALPM.Delta(cevent.delta)))
         new(cevent._type, delta)
     end
+    # DELTA_PATCHES_START and DELTA_PATCHES_DONE has an uninitialized delta
+    # field
+    function DeltaPatch(hdl::Handle, _type::event_type_t)
+        new(_type, Nullable{LibALPM.Delta}())
+    end
 end
 
 immutable ScriptletInfo <: AbstractEvent
@@ -151,10 +156,11 @@ import .Event.AbstractEvent
     elseif event_type == EventType.OPTDEP_REMOVAL
         cb(hdl, Event.OptdepRemoval(hdl, ptr))
     elseif (event_type == EventType.DELTA_PATCHES_START ||
-            event_type == EventType.DELTA_PATCH_START ||
-            event_type == EventType.DELTA_PATCH_DONE ||
-            event_type == EventType.DELTA_PATCH_FAILED ||
             event_type == EventType.DELTA_PATCHES_DONE)
+        cb(hdl, Event.DeltaPatch(hdl, event_type))
+    elseif (event_type == EventType.DELTA_PATCH_START ||
+            event_type == EventType.DELTA_PATCH_DONE ||
+            event_type == EventType.DELTA_PATCH_FAILED)
         cb(hdl, Event.DeltaPatch(hdl, ptr))
     elseif event_type == EventType.SCRIPTLET_INFO
         cb(hdl, Event.ScriptletInfo(hdl, ptr))
