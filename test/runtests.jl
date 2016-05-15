@@ -564,3 +564,56 @@ end
         LibALPM.release(hdl)
     end
 end
+
+@testset "Optdep" begin
+    mktempdir() do dir
+        pkgdir = joinpath(dir, "pkgdir")
+        hdl = setup_handle(dir)
+        LibALPM.set_arch(hdl, Base.ARCH)
+        optdep_rm_event = false
+        eventcb = (cbhdl::LibALPM.Handle, event::LibALPM.AbstractEvent) -> begin
+            @test cbhdl === hdl
+            if isa(event, LibALPM.Event.OptdepRemoval)
+                event = event::LibALPM.Event.OptdepRemoval
+                @test LibALPM.get_name(get(event.pkg)) == "optdeps2"
+                @test event.optdep == LibALPM.Depend("optdeps1=0.1")
+                optdep_rm_event = true
+            end
+        end
+        LibALPM.set_eventcb(hdl, eventcb)
+
+        pkg1, pkg2 = makepkg(joinpath(thisdir, "pkgs", "PKGBUILD.optdeps"),
+                             pkgdir)
+        repo_add(pkgdir, "alpmtest", [pkg1, pkg2])
+
+        testdb = LibALPM.register_syncdb(hdl, "alpmtest",
+                                         LibALPM.SigLevel.PACKAGE_OPTIONAL |
+                                         LibALPM.SigLevel.DATABASE_OPTIONAL)
+
+        LibALPM.set_servers(testdb, ["file://$pkgdir"])
+        @test !LibALPM.update(testdb, false)
+        @test LibALPM.update(testdb, false)
+        pkg_load1 = LibALPM.get_pkg(testdb, "optdeps1")
+        pkg_load2 = LibALPM.get_pkg(testdb, "optdeps2")
+
+        LibALPM.trans_init(hdl, 0)
+        LibALPM.add_pkg(hdl, pkg_load1)
+        LibALPM.add_pkg(hdl, pkg_load2)
+        LibALPM.trans_prepare(hdl)
+        LibALPM.trans_commit(hdl)
+        LibALPM.trans_release(hdl)
+
+        @test !optdep_rm_event
+
+        localdb = LibALPM.get_localdb(hdl)
+        pkg_local = LibALPM.get_pkg(localdb, "optdeps1")
+        LibALPM.trans_init(hdl, 0)
+        LibALPM.remove_pkg(hdl, pkg_local)
+        LibALPM.trans_prepare(hdl)
+        LibALPM.trans_commit(hdl)
+        LibALPM.trans_release(hdl)
+        @test optdep_rm_event
+
+        LibALPM.release(hdl)
+    end
+end

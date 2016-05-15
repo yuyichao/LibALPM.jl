@@ -1,0 +1,17 @@
+# Maintainer: Yichao Yu
+pkgname=(optdeps1 optdeps2)
+pkgver=0.1
+pkgrel=1
+pkgdesc="nothing"
+arch=('any')
+license=('GPL')
+source=()
+
+package_optdeps1() {
+  true
+}
+
+package_optdeps2() {
+  optdepends=('optdeps1=0.1')
+  true
+}
