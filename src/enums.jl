@@ -68,8 +68,8 @@ import LibALPM: libalpm
       LIBCURL,
       EXTERNAL_DOWNLOAD,
       GPGME)
-Base.strerror(err::errno_t) =
-    utf8(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
+Libc.strerror(err::errno_t) =
+    unsafe_string(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
 end
 import .Errno.errno_t
 abstract AbstractError <: Exception
@@ -78,7 +78,7 @@ immutable Error <: AbstractError
     msg
 end
 Base.showerror(io::IO, err::Error) =
-    print(io, "ALPM Error: $(err.msg) ($(strerror(err.errno)))")
+    print(io, "ALPM Error: $(err.msg) ($(Libc.strerror(err.errno)))")
 
 "Package install reasons"
 module PkgReason

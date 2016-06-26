@@ -60,7 +60,7 @@ Get the name of a package database.
 """
 function get_name(db::DB)
     # Should not trigger callback
-    utf8(ccall((:alpm_db_get_name, libalpm), Ptr{UInt8}, (Ptr{Void},), db))
+    unsafe_string(ccall((:alpm_db_get_name, libalpm), Ptr{UInt8}, (Ptr{Void},), db))
 end
 
 """
@@ -93,7 +93,7 @@ function get_servers(db::DB)
     # Should not trigger callback
     servers = ccall((:alpm_db_get_servers, libalpm), Ptr{list_t},
                     (Ptr{Void},), db)
-    list_to_array(String, servers, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, servers, p->unsafe_string(Ptr{UInt8}(p)))
 end
 function set_servers(db::DB, servers)
     # Should not trigger callback

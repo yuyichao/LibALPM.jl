@@ -17,10 +17,10 @@ function get_default_url(repo)
             m = m::RegexMatch
             urltemplate = m.captures[1]
             return replace(replace(urltemplate, "\$repo", repo),
-                           "\$arch", string(Base.ARCH))
+                           "\$arch", string(Sys.ARCH))
         end
         warn("Cannot find default server, use mirrors.kernel.org instead")
-        return "http://mirrors.kernel.org/archlinux/$repo/os/$(Base.ARCH)"
+        return "http://mirrors.kernel.org/archlinux/$repo/os/$(Sys.ARCH)"
     end
 end
 
@@ -34,7 +34,7 @@ function setup_handle(dir)
     hdl
 end
 
-function makepkg(pkgbuild, dest, arch=string(Base.ARCH); copy_files=String[])
+function makepkg(pkgbuild, dest, arch=string(Sys.ARCH); copy_files=String[])
     mktempdir() do dir
         cd(dir) do
             cp(pkgbuild, "PKGBUILD")
@@ -60,7 +60,7 @@ include("list.jl")
 
 @testset "Errno" begin
     for err in instances(LibALPM.errno_t)
-        @test isa(strerror(err), String)
+        @test isa(Libc.strerror(err), String)
     end
 end
 
@@ -115,8 +115,8 @@ end
                                      LibALPM.SigLevel.DATABASE_OPTIONAL)
 
     @test LibALPM.get_servers(coredb) == []
-    mirrorurl = "http://mirrors.kernel.org/archlinux/core/os/$(Base.ARCH)"
-    mirrorurl2 = "http://mirror.rit.edu/archlinux/core/os/$(Base.ARCH)"
+    mirrorurl = "http://mirrors.kernel.org/archlinux/core/os/$(Sys.ARCH)"
+    mirrorurl2 = "http://mirror.rit.edu/archlinux/core/os/$(Sys.ARCH)"
     LibALPM.set_servers(coredb, [mirrorurl])
     @test LibALPM.get_servers(coredb) == [mirrorurl]
     LibALPM.add_server(coredb, mirrorurl2)
@@ -159,7 +159,7 @@ end
     @test_throws ArgumentError LibALPM.get_md5sum(glibcpkg)
     @test_throws ArgumentError LibALPM.get_sha256sum(glibcpkg)
     # This may fail on 32bit...
-    @test LibALPM.get_arch(glibcpkg) == string(Base.ARCH)
+    @test LibALPM.get_arch(glibcpkg) == string(Sys.ARCH)
     # Not available for local pkg
     @test LibALPM.get_size(glibcpkg) == 0
     @test LibALPM.get_isize(glibcpkg) > 0
@@ -337,7 +337,7 @@ include("pkgerror.jl")
     mktempdir() do dir
         pkgdir = joinpath(dir, "pkgdir")
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Base.ARCH)
+        LibALPM.set_arch(hdl, Sys.ARCH)
         pacnew_created = false
         pacsave_created = false
         eventcb = (cbhdl::LibALPM.Handle, event::LibALPM.AbstractEvent) -> begin
@@ -419,7 +419,7 @@ end
     mktempdir() do dir
         pkgdir = joinpath(dir, "pkgdir")
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Base.ARCH)
+        LibALPM.set_arch(hdl, Sys.ARCH)
         delta_event = false
         delta_event_nonnull = false
         eventcb = (cbhdl::LibALPM.Handle, event::LibALPM.AbstractEvent) -> begin
@@ -461,7 +461,7 @@ end
             run(`pkgdelta --min-pkg-size=0 $pkg1 $pkg2`)
         end
         deltapath = joinpath(pkgdir,
-                             "backups-0.1-1_to_0.2-1-$(Base.ARCH).delta")
+                             "backups-0.1-1_to_0.2-1-$(Sys.ARCH).delta")
         # Wait 2 second so that the timestamp changes...
         sleep(2)
         repo_add(pkgdir, "alpmtest", [deltapath, pkg2])
@@ -484,7 +484,7 @@ end
         LibALPM.release(hdl)
 
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Base.ARCH)
+        LibALPM.set_arch(hdl, Sys.ARCH)
 
         localdb = LibALPM.get_localdb(hdl)
         pkg_local = LibALPM.get_pkg(localdb, "backups")
@@ -514,7 +514,7 @@ end
     mktempdir() do dir
         pkgdir = joinpath(dir, "pkgdir")
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Base.ARCH)
+        LibALPM.set_arch(hdl, Sys.ARCH)
 
         pkg = makepkg(joinpath(thisdir, "pkgs", "PKGBUILD.changelog"),
                       pkgdir; copy_files=[joinpath(thisdir, "pkgs",
@@ -569,7 +569,7 @@ end
     mktempdir() do dir
         pkgdir = joinpath(dir, "pkgdir")
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Base.ARCH)
+        LibALPM.set_arch(hdl, Sys.ARCH)
         optdep_rm_event = false
         eventcb = (cbhdl::LibALPM.Handle, event::LibALPM.AbstractEvent) -> begin
             @test cbhdl === hdl

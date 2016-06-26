@@ -111,8 +111,8 @@ LibALPM.add_assumeinstalled(hdl, "pacman=5.0")
                                            LibALPM.Depend("pacman=5.0")]
 
 @test_throws ArgumentError LibALPM.get_arch(hdl)
-LibALPM.set_arch(hdl, Base.ARCH)
-@test LibALPM.get_arch(hdl) == string(Base.ARCH)
+LibALPM.set_arch(hdl, Sys.ARCH)
+@test LibALPM.get_arch(hdl) == string(Sys.ARCH)
 
 @test LibALPM.get_deltaratio(hdl) == 0
 LibALPM.set_deltaratio(hdl, 0.7)

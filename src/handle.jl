@@ -4,7 +4,7 @@
 # handle
 
 generic_printf_len = true
-if Base.ARCH === :x86_64 && Base.OS_NAME !== :Windows
+if Sys.ARCH === :x86_64 && !is_windows()
     immutable __va_list_tag
         gp_offset::Cuint
         fp_offset::Cuint
@@ -19,10 +19,9 @@ if Base.ARCH === :x86_64 && Base.OS_NAME !== :Windows
               (Ptr{Void}, Csize_t, Ptr{UInt8}, va_list_arg_t),
               C_NULL, 0, fmt, &aq)
     end
-elseif Base.ARCH === :i686 || (Base.ARCH === :x86_64 &&
-                               Base.OS_NAME === :Windows)
+elseif Sys.ARCH === :i686 || (Sys.ARCH === :x86_64 && is_windows())
     typealias va_list_arg_t Ptr{Void}
-elseif Base.ARCH === :aarch64
+elseif Sys.ARCH === :aarch64
     immutable va_list_arg_t
         __stack::Ptr{Void}
         __gr_top::Ptr{Void}
@@ -30,10 +29,10 @@ elseif Base.ARCH === :aarch64
         __gr_offs::Cint
         __vr_offs::Cint
     end
-elseif startswith(string(Base.ARCH), "arm")
+elseif startswith(string(Sys.ARCH), "arm")
     typealias va_list_arg_t Tuple{Ptr{Void}}
 else
-    error("Unsupported arch $(Base.ARCH)")
+    error("Unsupported arch $(Sys.ARCH)")
 end
 if generic_printf_len
     function printf_len(fmt::Ptr{UInt8}, ap::va_list_arg_t)
@@ -184,9 +183,9 @@ function Base.unsafe_convert(::Type{Ptr{Void}}, hdl::Handle)
 end
 
 "Returns the current error code from the handle"
-Base.errno(hdl::Handle) =
+Libc.errno(hdl::Handle) =
     ccall((:alpm_errno, libalpm), errno_t, (Ptr{Void},), hdl)
-Error(hdl::Handle, msg) = Error(errno(hdl), msg)
+Error(hdl::Handle, msg) = Error(Libc.errno(hdl), msg)
 
 unlock(hdl::Handle) = with_handle(hdl) do
     if ccall((:alpm_unlock, libalpm), Cint, (Ptr{Void},), hdl) != 0
@@ -205,28 +204,28 @@ fetch_pkgurl(hdl::Handle, url) = with_handle(hdl) do
     ptr = ccall((:alpm_fetch_pkgurl, libalpm), Ptr{UInt8},
                 (Ptr{Void}, Cstring), hdl, url)
     ptr == C_NULL && throw(Error(hdl, "fetch_pkgurl"))
-    utf8(ptr)
+    unsafe_string(ptr)
 end
 
 "Returns the root of the destination filesystem"
 function get_root(hdl::Handle)
     # Should not trigger callback
-    utf8(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
-               (Ptr{Void},), hdl))
+    unsafe_string(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
+                        (Ptr{Void},), hdl))
 end
 
 "Returns the path to the database directory"
 function get_dbpath(hdl::Handle)
     # Should not trigger callback
-    utf8(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
-               (Ptr{Void},), hdl))
+    unsafe_string(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
+                        (Ptr{Void},), hdl))
 end
 
 "Get the name of the database lock file"
 function get_lockfile(hdl::Handle)
     # Should not trigger callback
-    utf8(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
-               (Ptr{Void},), hdl))
+    unsafe_string(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
+                        (Ptr{Void},), hdl))
 end
 
 # Accessors to the list of package cache directories
@@ -234,7 +233,7 @@ function get_cachedirs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_cachedirs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 set_cachedirs(hdl::Handle, dirs) = with_handle(hdl) do
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -264,7 +263,7 @@ function get_hookdirs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_hookdirs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 set_hookdirs(hdl::Handle, dirs) = with_handle(hdl) do
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
@@ -292,8 +291,8 @@ end
 "Returns the logfile name"
 function get_logfile(hdl::Handle)
     # Should not trigger callback
-    utf8(ccall((:alpm_option_get_logfile, libalpm), Ptr{UInt8},
-               (Ptr{Void},), hdl))
+    unsafe_string(ccall((:alpm_option_get_logfile, libalpm), Ptr{UInt8},
+                        (Ptr{Void},), hdl))
 end
 "Sets the logfile name"
 set_logfile(hdl::Handle, logfile) = with_handle(hdl) do
@@ -306,8 +305,8 @@ end
 "Returns the path to libalpm's GnuPG home directory"
 function get_gpgdir(hdl::Handle)
     # Should not trigger callback
-    utf8(ccall((:alpm_option_get_gpgdir, libalpm), Ptr{UInt8},
-               (Ptr{Void},), hdl))
+    unsafe_string(ccall((:alpm_option_get_gpgdir, libalpm), Ptr{UInt8},
+                        (Ptr{Void},), hdl))
 end
 "Sets the path to libalpm's GnuPG home directory"
 set_gpgdir(hdl::Handle, gpgdir) = with_handle(hdl) do
@@ -338,7 +337,7 @@ function get_noupgrades(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_noupgrades, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 function set_noupgrades(hdl::Handle, dirs)
     # Should not trigger callback
@@ -381,7 +380,7 @@ function get_noextracts(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_noextracts, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 function set_noextracts(hdl::Handle, dirs)
     # Should not trigger callback
@@ -424,7 +423,7 @@ function get_ignorepkgs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_ignorepkgs, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 function set_ignorepkgs(hdl::Handle, dirs)
     # Should not trigger callback
@@ -458,7 +457,7 @@ function get_ignoregroups(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_ignoregroups, libalpm), Ptr{list_t},
                  (Ptr{Void},), hdl)
-    list_to_array(String, dirs, p->utf8(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 function set_ignoregroups(hdl::Handle, dirs)
     # Should not trigger callback
@@ -487,8 +486,8 @@ end
 "Returns the targeted architecture"
 function get_arch(hdl::Handle)
     # Should not trigger callback
-    ascii(ccall((:alpm_option_get_arch, libalpm),
-                Ptr{UInt8}, (Ptr{Void},), hdl))
+    unsafe_string(ccall((:alpm_option_get_arch, libalpm),
+                        Ptr{UInt8}, (Ptr{Void},), hdl))
 end
 "Sets the targeted architecture"
 set_arch(hdl::Handle, arch) = with_handle(hdl) do
@@ -523,8 +522,8 @@ end
 
 function get_dbext(hdl::Handle)
     # Should not trigger callback
-    utf8(ccall((:alpm_option_get_dbext, libalpm), Ptr{UInt8},
-               (Ptr{Void},), hdl))
+    unsafe_string(ccall((:alpm_option_get_dbext, libalpm), Ptr{UInt8},
+                        (Ptr{Void},), hdl))
 end
 set_dbext(hdl::Handle, dbext) = with_handle(hdl) do
     ret = ccall((:alpm_option_set_dbext, libalpm), Cint,
@@ -720,7 +719,7 @@ immutable TransPrepareError{T} <: AbstractError
     list::Vector{T}
 end
 function Base.showerror(io::IO, err::TransPrepareError)
-    println(io, "ALPM Transaction Prepare Error: $(strerror(err.errno))")
+    println(io, "ALPM Transaction Prepare Error: $(Libc.strerror(err.errno))")
     if err.errno == Errno.PKG_INVALID_ARCH
         println(io, "Packages with invalid archs:")
     elseif err.errno == Errno.UNSATISFIED_DEPS
@@ -742,7 +741,7 @@ trans_prepare(hdl::Handle) = with_handle(hdl) do
                 Cint, (Ptr{Void}, Ptr{Ptr{list_t}}), hdl, list)
     if ret != 0
         list[] == C_NULL && throw(Error(hdl, "trans_prepare"))
-        errno = Base.errno(hdl)
+        errno = Libc.errno(hdl)
         # The following part is not documented anyware AFAIK and
         # is purely based on libalpm source code...
         # What the list is for each error code
@@ -778,7 +777,7 @@ immutable TransCommitError{T} <: AbstractError
     list::Vector{T}
 end
 function Base.showerror(io::IO, err::TransCommitError)
-    println(io, "ALPM Transaction Commit Error: $(strerror(err.errno))")
+    println(io, "ALPM Transaction Commit Error: $(Libc.strerror(err.errno))")
     if err.errno == Errno.FILE_CONFLICTS
         println(io, "File conflicts:")
     else
@@ -803,7 +802,7 @@ trans_commit(hdl::Handle) = with_handle(hdl) do
                 Cint, (Ptr{Void}, Ptr{Ptr{list_t}}), hdl, list)
     if ret != 0
         list[] == C_NULL && throw(Error(hdl, "trans_commit"))
-        errno = Base.errno(hdl)
+        errno = Libc.errno(hdl)
         # The following part is not documented anyware AFAIK and
         # is purely based on libalpm source code...
         # What the list is for each error code

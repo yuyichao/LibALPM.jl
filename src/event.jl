@@ -64,7 +64,7 @@ immutable ScriptletInfo <: AbstractEvent
     line::String
     function ScriptletInfo(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.ScriptletInfo}(ptr))
-        new(cevent._type, utf8(Ptr{UInt8}(cevent.line)))
+        new(cevent._type, unsafe_string(Ptr{UInt8}(cevent.line)))
     end
 end
 
@@ -74,7 +74,7 @@ immutable DatabaseMissing <: AbstractEvent
     dbname::String
     function DatabaseMissing(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.DatabaseMissing}(ptr))
-        new(cevent._type, utf8(Ptr{UInt8}(cevent.dbname)))
+        new(cevent._type, unsafe_string(Ptr{UInt8}(cevent.dbname)))
     end
 end
 
@@ -84,7 +84,7 @@ immutable PkgDownload <: AbstractEvent
     file::String
     function PkgDownload(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.PkgDownload}(ptr))
-        new(cevent._type, utf8(Ptr{UInt8}(cevent.file)))
+        new(cevent._type, unsafe_string(Ptr{UInt8}(cevent.file)))
     end
 end
 
@@ -102,7 +102,8 @@ immutable PacnewCreated <: AbstractEvent
         cevent = unsafe_load(Ptr{CEvent.PacnewCreated}(ptr))
         new(cevent._type, cevent.from_noupgrade,
             Nullable{Pkg}(cevent.oldpkg, hdl),
-            Nullable{Pkg}(cevent.newpkg, hdl), utf8(Ptr{UInt8}(cevent.file)))
+            Nullable{Pkg}(cevent.newpkg, hdl),
+            unsafe_string(Ptr{UInt8}(cevent.file)))
     end
 end
 
@@ -115,7 +116,7 @@ immutable PacsaveCreated <: AbstractEvent
     function PacsaveCreated(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.PacsaveCreated}(ptr))
         new(cevent._type, Nullable{Pkg}(cevent.oldpkg, hdl),
-            utf8(Ptr{UInt8}(cevent.file)))
+            unsafe_string(Ptr{UInt8}(cevent.file)))
     end
 end
 
@@ -141,8 +142,9 @@ immutable HookRun <: AbstractEvent
     total::Csize_t
     function HookRun(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.HookRun}(ptr))
-        new(cevent._type, utf8(Ptr{UInt8}(cevent.name)),
-            utf8(Ptr{UInt8}(cevent.desc)), cevent.position, cevent.total)
+        new(cevent._type, unsafe_string(Ptr{UInt8}(cevent.name)),
+            unsafe_string(Ptr{UInt8}(cevent.desc)), cevent.position,
+            cevent.total)
     end
 end
 end

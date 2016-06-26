@@ -296,7 +296,7 @@ end
 function cstr_to_utf8(cstr, own)
     cstr == C_NULL && return ""
     own && return ptr_to_utf8(Ptr{UInt8}(cstr))
-    utf8(Ptr{UInt8}(cstr))
+    unsafe_string(Ptr{UInt8}(cstr))
 end
 
 immutable Depend
@@ -437,7 +437,7 @@ immutable File
     function File(_ptr::Ptr)
         ptr = Ptr{CTypes.File}(_ptr)
         cfile = unsafe_load(ptr)
-        name = utf8(Ptr{UInt8}(cfile.name))
+        name = unsafe_string(Ptr{UInt8}(cfile.name))
         new(name, cfile.size, cfile.mode)
     end
 end
@@ -448,8 +448,8 @@ immutable Backup
     function Backup(_ptr::Ptr)
         ptr = Ptr{CTypes.Backup}(_ptr)
         cbackup = unsafe_load(ptr)
-        name = utf8(Ptr{UInt8}(cbackup.name))
-        hash = utf8(Ptr{UInt8}(cbackup.hash))
+        name = unsafe_string(Ptr{UInt8}(cbackup.name))
+        hash = unsafe_string(Ptr{UInt8}(cbackup.hash))
         new(name, hash)
     end
 end
