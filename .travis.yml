@@ -13,7 +13,6 @@ arch:
     - mbedtls
     - xdelta3
   script:
-    - julia -e 'Pkg.add("LibArchive"); Pkg.checkout("LibArchive")'
     - julia -e 'Pkg.clone(pwd())'
     - julia -e 'Pkg.build("LibALPM")'
     - julia --check-bounds=yes -e 'Pkg.test("LibALPM", coverage=true)'
