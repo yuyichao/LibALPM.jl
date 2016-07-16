@@ -328,17 +328,17 @@ Base.:(==)(dep1::Depend, dep2::Depend) =
      dep1.desc == dep2.desc && dep1.mod == dep2.mod)
 
 # WARNING! Relies on julia internal API:
-#     `cconvert(Cstring, ::String)` is no-op
 #     Base.RefValue
 Base.cconvert(::Type{Ptr{CTypes.Depend}}, dep::Depend) =
-    (dep, Ref{CTypes.Depend}())
-function Base.unsafe_convert(::Type{Ptr{CTypes.Depend}},
-                             tup::Tuple{Depend,Base.RefValue{CTypes.Depend}})
-    dep, ref = tup
-    cdep = CTypes.Depend(Base.unsafe_convert(Cstring, dep.name),
-                         Base.unsafe_convert(Cstring, dep.version),
-                         Base.unsafe_convert(Cstring, dep.desc),
-                         dep.name_hash, dep.mod)
+    (Ref{CTypes.Depend}(), Base.cconvert(Cstring, dep.name),
+     Base.cconvert(Cstring, dep.version), Base.cconvert(Cstring, dep.desc),
+     dep.name_hash, dep.mod)
+function Base.unsafe_convert(::Type{Ptr{CTypes.Depend}}, tup::Tuple)
+    ref, name, version, desc, name_hash, mod = tup
+    cdep = CTypes.Depend(Base.unsafe_convert(Cstring, name),
+                         Base.unsafe_convert(Cstring, version),
+                         Base.unsafe_convert(Cstring, desc),
+                         name_hash, mod)
     ref[] = cdep
     Base.unsafe_convert(Ptr{CTypes.Depend}, ref)
 end
