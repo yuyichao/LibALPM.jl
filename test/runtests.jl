@@ -679,6 +679,8 @@ end
             error("This error is expected")
         end
         LibALPM.set_logcb(hdl, logcb)
+        old_stderr = STDERR
+        new_stderr = redirect_stderr(open("/dev/null", "w"))
         localdb = LibALPM.get_localdb(hdl)
         coredb = LibALPM.register_syncdb(hdl, "core",
                                          LibALPM.SigLevel.PACKAGE_OPTIONAL |
@@ -690,6 +692,9 @@ end
 
         @test event_error
         @test log_error
+
+        redirect_stderr(old_stderr)
+        close(new_stderr)
 
         LibALPM.release(hdl)
     end
