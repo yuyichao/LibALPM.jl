@@ -12,6 +12,7 @@ arch:
     - cmake
     - mbedtls
     - xdelta3
+    - http-parser
   script:
     - julia -e 'Pkg.clone(pwd())'
     - julia -e 'Pkg.build("LibALPM")'
