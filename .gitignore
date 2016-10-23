@@ -39,3 +39,4 @@ _autosave-*
 *.*-bak
 deps/deps.jl
 !.travis.yml
+*.cov
