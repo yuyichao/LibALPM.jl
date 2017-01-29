@@ -9,8 +9,8 @@ const thisdir = dirname(@__FILE__)
 function get_default_url(repo)
     open("/etc/pacman.d/mirrorlist") do fd
         for line in eachline(fd)
-            line[1] == '#' && continue
             isempty(line) && continue
+            line[1] == '#' && continue
             line = strip(line)
             m = match(r"^ *Server *= *([^ ]*)", line)
             m === nothing && continue
