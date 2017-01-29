@@ -111,13 +111,23 @@ version() =
     VersionNumber(unsafe_string(ccall((:alpm_version, libalpm), Ptr{UInt8}, ())))
 capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
 
+if isdefined("", :data)
+    take_cstring(ptr) = unsafe_wrap(String, ptr, true)
+else
+    function take_cstring(ptr)
+        str = unsafe_string(ptr)
+        ccall(:free, Void, (Ptr{Void},), ptr)
+        return str
+    end
+end
+
 # checksums
 compute_md5sum(fname) =
-    unsafe_wrap(String, ccall((:alpm_compute_md5sum, libalpm),
-                              Ptr{UInt8}, (Cstring,), fname), true)
+    take_cstring(ccall((:alpm_compute_md5sum, libalpm),
+                       Ptr{UInt8}, (Cstring,), fname))
 compute_sha256sum(fname) =
-    unsafe_wrap(String, ccall((:alpm_compute_sha256sum, libalpm),
-                              Ptr{UInt8}, (Cstring,), fname), true)
+    take_cstring(ccall((:alpm_compute_sha256sum, libalpm),
+                       Ptr{UInt8}, (Cstring,), fname))
 
 "Compare two version strings and determine which one is 'newer'"
 vercmp(a, b) = ccall((:alpm_pkg_vercmp, libalpm), Cint, (Cstring, Cstring), a, b)
