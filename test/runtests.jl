@@ -416,7 +416,11 @@ function repo_add(repodir, reponame, pkg)
 end
 
 @testset "Delta" begin
-    mktempdir() do dir
+    has_pkgdelta = success(`which xdelta`)
+    if !has_pkgdelta
+        warn("PkgDelta test skipped since `xdelta` is not found.")
+    end
+    has_pkgdelta && mktempdir() do dir
         pkgdir = joinpath(dir, "pkgdir")
         hdl = setup_handle(dir)
         LibALPM.set_arch(hdl, Sys.ARCH)
