@@ -5,7 +5,13 @@ type LazyTaskContext{T}
     dictcnt::Int
     curtask::Task
     curref::T
-    LazyTaskContext() = new(Dict{Task,T}(), 0)
+    @static if isdefined(Base, :UnionAll)
+        function LazyTaskContext{T}() where{T}
+            new(Dict{Task,T}(), 0)
+        end
+    else
+        LazyTaskContext() = new(Dict{Task,T}(), 0)
+    end
 end
 
 @noinline function start_task_context_slow(ctx::LazyTaskContext,
