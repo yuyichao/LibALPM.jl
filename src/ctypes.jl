@@ -117,8 +117,9 @@ end
 module Event
 import LibALPM: LibALPM, event_type_t
 import ..CTypes
+using Compat: @compat
 
-abstract AbstractEvent
+@compat abstract type AbstractEvent end
 
 immutable AnyEvent <: AbstractEvent
     _type::event_type_t
@@ -206,8 +207,9 @@ import .Event.AbstractEvent
 module Question
 import LibALPM
 import ..CTypes
+using Compat: @compat
 
-abstract AbstractQuestion
+@compat abstract type AbstractQuestion end
 
 immutable AnyQuestion <: AbstractQuestion
     # Type of question

@@ -4,8 +4,9 @@ module Event
 import LibALPM: LibALPM, event_type_t, Handle, DB, Pkg
 import ..CTypes
 const CEvent = CTypes.Event
+using Compat: @compat
 
-abstract AbstractEvent
+@compat abstract type AbstractEvent end
 
 immutable AnyEvent <: AbstractEvent
     event_type::event_type_t
