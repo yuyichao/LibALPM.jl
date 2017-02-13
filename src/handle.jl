@@ -11,7 +11,7 @@ if Sys.ARCH === :x86_64 && !is_windows()
         overflow_arg_area::Ptr{Void}
         reg_save_area::Ptr{Void}
     end
-    typealias va_list_arg_t Ptr{__va_list_tag}
+    const va_list_arg_t = Ptr{__va_list_tag}
     generic_printf_len = false
     function printf_len(fmt::Ptr{UInt8}, ap::va_list_arg_t)
         aq = unsafe_load(ap) # va_copy
@@ -20,7 +20,7 @@ if Sys.ARCH === :x86_64 && !is_windows()
               C_NULL, 0, fmt, &aq)
     end
 elseif Sys.ARCH === :i686 || (Sys.ARCH === :x86_64 && is_windows())
-    typealias va_list_arg_t Ptr{Void}
+    const va_list_arg_t = Ptr{Void}
 elseif Sys.ARCH === :aarch64
     immutable va_list_arg_t
         __stack::Ptr{Void}
@@ -30,7 +30,7 @@ elseif Sys.ARCH === :aarch64
         __vr_offs::Cint
     end
 elseif startswith(string(Sys.ARCH), "arm")
-    typealias va_list_arg_t Tuple{Ptr{Void}}
+    const va_list_arg_t = Tuple{Ptr{Void}}
 else
     error("Unsupported arch $(Sys.ARCH)")
 end
