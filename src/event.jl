@@ -151,7 +151,7 @@ end
 end
 import .Event.AbstractEvent
 
-@inline function dispatch_event(cb::ANY, hdl::Handle, ptr::Ptr{Void})
+@inline function dispatch_event(@nospecialize(cb), hdl::Handle, ptr::Ptr{Void})
     event_type = unsafe_load(Ptr{event_type_t}(ptr))
     if (event_type == EventType.PACKAGE_OPERATION_START ||
         event_type == EventType.PACKAGE_OPERATION_DONE)

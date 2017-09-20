@@ -37,7 +37,7 @@ function free(pkg::Pkg)
     nothing
 end
 
-function add_tofree(pkg::Pkg, obj::ANY)
+function add_tofree(pkg::Pkg, @nospecialize(obj))
     isdefined(pkg, :tofree) || (pkg.tofree = WeakRef[])
     push!(pkg.tofree, WeakRef(obj))
     nothing

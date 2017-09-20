@@ -3,6 +3,7 @@
 import LibALPM
 import LibArchive
 using Base.Test
+using Compat
 
 const thisdir = dirname(@__FILE__)
 
@@ -176,7 +177,7 @@ end
     # These relies on the detail about the glibc package
     @test LibALPM.has_scriptlet(glibcpkg)
     @test !isempty(LibALPM.get_depends(glibcpkg))
-    @test isempty(LibALPM.get_optdepends(glibcpkg))
+    @test !isempty(LibALPM.get_optdepends(glibcpkg))
     @test isempty(LibALPM.get_conflicts(glibcpkg))
     @test isempty(LibALPM.get_provides(glibcpkg))
     @test isempty(LibALPM.get_replaces(glibcpkg))
@@ -371,8 +372,8 @@ include("pkgerror.jl")
         LibALPM.trans_release(hdl)
         @test pacnew_created
         @test !pacsave_created
-        @test readstring(backup_file) == ""
-        @test readstring("$backup_file.pacnew") == "1\n"
+        @test read(backup_file, String) == ""
+        @test read("$backup_file.pacnew", String) == "1\n"
         pacnew_created = false
 
         LibALPM.trans_init(hdl, 0)
@@ -387,8 +388,8 @@ include("pkgerror.jl")
         LibALPM.trans_release(hdl)
         @test pacnew_created
         @test !pacsave_created
-        @test readstring(backup_file) == ""
-        @test readstring("$backup_file.pacnew") == "2\n"
+        @test read(backup_file, String) == ""
+        @test read("$backup_file.pacnew", String) == "2\n"
         pacnew_created = false
 
         localdb = LibALPM.get_localdb(hdl)
@@ -401,7 +402,7 @@ include("pkgerror.jl")
         @test !pacnew_created
         @test pacsave_created
         @test !ispath(backup_file)
-        @test readstring("$backup_file.pacsave") == ""
+        @test read("$backup_file.pacsave", String) == ""
         pacsave_created = false
 
         LibALPM.release(hdl)
@@ -537,7 +538,7 @@ end
         @test readbytes!(clog, buf) == length(lognext)
         @test String(buf) == lognext
         logend = "# Version 0.1\n\nNothing new here\n"
-        @test readstring(clog) == logend
+        @test read(clog, String) == logend
         @test_throws EOFError read(clog, UInt8)
 
         clog2 = LibALPM.ChangeLog(pkg_load)

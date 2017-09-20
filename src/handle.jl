@@ -4,7 +4,7 @@
 # handle
 
 generic_printf_len = true
-if Sys.ARCH === :x86_64 && !is_windows()
+if Sys.ARCH === :x86_64 && !Compat.Sys.iswindows()
     immutable __va_list_tag
         gp_offset::Cuint
         fp_offset::Cuint
@@ -16,10 +16,9 @@ if Sys.ARCH === :x86_64 && !is_windows()
     function printf_len(fmt::Ptr{UInt8}, ap::va_list_arg_t)
         aq = unsafe_load(ap) # va_copy
         ccall(:vsnprintf, Cint,
-              (Ptr{Void}, Csize_t, Ptr{UInt8}, va_list_arg_t),
-              C_NULL, 0, fmt, &aq)
+              (Ptr{Void}, Csize_t, Ptr{UInt8}, Ref{__va_list_tag}), C_NULL, 0, fmt, aq)
     end
-elseif Sys.ARCH === :i686 || (Sys.ARCH === :x86_64 && is_windows())
+elseif Sys.ARCH === :i686 || (Sys.ARCH === :x86_64 && Compat.Sys.iswindows())
     const va_list_arg_t = Ptr{Void}
 elseif Sys.ARCH === :aarch64
     immutable va_list_arg_t
@@ -109,12 +108,12 @@ type Handle
 end
 const hdlctx = LibALPM.LazyTaskContext{Handle}()
 
-function set_logcb(hdl::Handle, f::ANY)
+function set_logcb(hdl::Handle, @nospecialize(f))
     hdl.cbs[:log] = f
     nothing
 end
 
-function set_eventcb(hdl::Handle, f::ANY)
+function set_eventcb(hdl::Handle, @nospecialize(f))
     hdl.cbs[:event] = f
     nothing
 end
