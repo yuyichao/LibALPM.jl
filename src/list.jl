@@ -16,7 +16,7 @@ Base.start(iter::list_iter) = iter.ptr
                                  Ptr{list_t}, (Ptr{list_t},), ptr)
 Base.done(::list_iter, ptr::Ptr{list_t}) = ptr == C_NULL
 
-function list_to_array{T}(::Type{T}, list::Ptr{list_t}, cb)
+function list_to_array(::Type{T}, list::Ptr{list_t}, cb) where T
     res = T[]
     for data in list_iter(list)
         push!(res, cb(data))
@@ -26,7 +26,7 @@ end
 
 # The callback should always consume the pointer, even if it throws
 # an error.
-function list_to_array{T}(::Type{T}, list::Ptr{list_t}, cb, freecb::Ptr{Void})
+function list_to_array(::Type{T}, list::Ptr{list_t}, cb, freecb::Ptr{Void}) where T
     res = T[]
     iter = list_iter(list)
     i = start(iter)

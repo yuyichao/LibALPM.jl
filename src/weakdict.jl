@@ -32,7 +32,7 @@ function Base.setindex!(map::CObjMap, @nospecialize(val), ptr::Ptr{Void})
     nothing
 end
 
-function Base.getindex{T}(map::CObjMap, ptr::Ptr{Void}, ::Type{T})
+function Base.getindex(map::CObjMap, ptr::Ptr{Void}, ::Type{T}) where T
     if ptr in keys(map.dict)
         val = map.dict[ptr].value
         val !== nothing && return Nullable{T}(val::T)

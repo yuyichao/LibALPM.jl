@@ -5,12 +5,8 @@ type LazyTaskContext{T}
     dictcnt::Int
     curtask::Task
     curref::T
-    @static if isdefined(Base, :UnionAll)
-        function LazyTaskContext{T}() where{T}
-            new(Dict{Task,T}(), 0)
-        end
-    else
-        LazyTaskContext() = new(Dict{Task,T}(), 0)
+    function LazyTaskContext{T}() where T
+        new(Dict{Task,T}(), 0)
     end
 end
 
@@ -26,8 +22,8 @@ end
     nothing
 end
 
-@inline function start_task_context{T}(ctx::LazyTaskContext{T},
-                                       t::T, curtask::Task)
+@inline function start_task_context(ctx::LazyTaskContext{T},
+                                    t::T, curtask::Task) where T
     taskslot = pointer_from_objref(ctx) + sizeof(Int) * 2
     taskptr = unsafe_load(Ptr{Ptr{Void}}(taskslot))
     if taskptr == C_NULL
@@ -67,7 +63,7 @@ end
     end_task_context_slow(ctx, curtask)
 end
 
-@inline function with_task_context{T}(f, ctx::LazyTaskContext{T}, t::T)
+@inline function with_task_context(f, ctx::LazyTaskContext{T}, t::T) where T
     curtask = current_task()
     start_task_context(ctx, t, curtask)
     try
@@ -77,7 +73,7 @@ end
     end
 end
 
-@inline function with_task_context_nested{T}(f, ctx::LazyTaskContext{T}, t::T)
+@inline function with_task_context_nested(f, ctx::LazyTaskContext{T}, t::T) where T
     # Not very efficient when actually called nested but should be good enough.
     curtask = current_task()
     nested = false
@@ -97,7 +93,7 @@ end
     end
 end
 
-function get_task_context{T}(ctx::LazyTaskContext{T})
+function get_task_context(ctx::LazyTaskContext{T}) where T
     taskslot = pointer_from_objref(ctx) + sizeof(Int) * 2
     taskptr = unsafe_load(Ptr{Ptr{Void}}(taskslot))
     curtask = current_task()
@@ -117,14 +113,10 @@ version() =
     VersionNumber(unsafe_string(ccall((:alpm_version, libalpm), Ptr{UInt8}, ())))
 capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
 
-if isdefined("", :data)
-    take_cstring(ptr) = unsafe_wrap(String, ptr, true)
-else
-    function take_cstring(ptr)
-        str = unsafe_string(ptr)
-        ccall(:free, Void, (Ptr{Void},), ptr)
-        return str
-    end
+function take_cstring(ptr)
+    str = unsafe_string(ptr)
+    ccall(:free, Void, (Ptr{Void},), ptr)
+    return str
 end
 
 # checksums
