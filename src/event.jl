@@ -4,11 +4,10 @@ module Event
 import LibALPM: LibALPM, event_type_t, Handle, DB, Pkg
 import ..CTypes
 const CEvent = CTypes.Event
-using Compat: @compat
 
-@compat abstract type AbstractEvent end
+abstract type AbstractEvent end
 
-immutable AnyEvent <: AbstractEvent
+struct AnyEvent <: AbstractEvent
     event_type::event_type_t
     function AnyEvent(hdl::Handle, ptr::Ptr{Void})
         cevent = unsafe_load(Ptr{CEvent.AnyEvent}(ptr))
@@ -16,7 +15,7 @@ immutable AnyEvent <: AbstractEvent
     end
 end
 
-immutable PackageOperation <: AbstractEvent
+struct PackageOperation <: AbstractEvent
     event_type::event_type_t
     operation::LibALPM.package_operation_t
     oldpkg::Nullable{Pkg}
@@ -29,7 +28,7 @@ immutable PackageOperation <: AbstractEvent
     end
 end
 
-immutable OptdepRemoval <: AbstractEvent
+struct OptdepRemoval <: AbstractEvent
     event_type::event_type_t
     # Package with the optdep.
     pkg::Nullable{Pkg}
@@ -42,7 +41,7 @@ immutable OptdepRemoval <: AbstractEvent
     end
 end
 
-immutable DeltaPatch <: AbstractEvent
+struct DeltaPatch <: AbstractEvent
     event_type::event_type_t
     # Delta info
     delta::Nullable{LibALPM.Delta}
@@ -59,7 +58,7 @@ immutable DeltaPatch <: AbstractEvent
     end
 end
 
-immutable ScriptletInfo <: AbstractEvent
+struct ScriptletInfo <: AbstractEvent
     event_type::event_type_t
     # Line of scriptlet output.
     line::String
@@ -69,7 +68,7 @@ immutable ScriptletInfo <: AbstractEvent
     end
 end
 
-immutable DatabaseMissing <: AbstractEvent
+struct DatabaseMissing <: AbstractEvent
     event_type::event_type_t
     # Name of the database.
     dbname::String
@@ -79,7 +78,7 @@ immutable DatabaseMissing <: AbstractEvent
     end
 end
 
-immutable PkgDownload <: AbstractEvent
+struct PkgDownload <: AbstractEvent
     event_type::event_type_t
     # Name of the file
     file::String
@@ -89,7 +88,7 @@ immutable PkgDownload <: AbstractEvent
     end
 end
 
-immutable PacnewCreated <: AbstractEvent
+struct PacnewCreated <: AbstractEvent
     event_type::event_type_t
     # Whether the creation was result of a NoUpgrade or not
     from_noupgrade::Cint
@@ -108,7 +107,7 @@ immutable PacnewCreated <: AbstractEvent
     end
 end
 
-immutable PacsaveCreated <: AbstractEvent
+struct PacsaveCreated <: AbstractEvent
     event_type::event_type_t
     # Old package.
     oldpkg::Nullable{Pkg}
@@ -121,7 +120,7 @@ immutable PacsaveCreated <: AbstractEvent
     end
 end
 
-immutable Hook <: AbstractEvent
+struct Hook <: AbstractEvent
     event_type::event_type_t
     # Type of hooks.
     when::LibALPM.hook_when_t
@@ -131,7 +130,7 @@ immutable Hook <: AbstractEvent
     end
 end
 
-immutable HookRun <: AbstractEvent
+struct HookRun <: AbstractEvent
     event_type::event_type_t
     # Name of hook
     name::String

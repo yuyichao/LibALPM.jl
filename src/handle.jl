@@ -5,7 +5,7 @@
 
 generic_printf_len = true
 if Sys.ARCH === :x86_64 && !Compat.Sys.iswindows()
-    immutable __va_list_tag
+    struct __va_list_tag
         gp_offset::Cuint
         fp_offset::Cuint
         overflow_arg_area::Ptr{Void}
@@ -21,7 +21,7 @@ if Sys.ARCH === :x86_64 && !Compat.Sys.iswindows()
 elseif Sys.ARCH === :i686 || (Sys.ARCH === :x86_64 && Compat.Sys.iswindows())
     const va_list_arg_t = Ptr{Void}
 elseif Sys.ARCH === :aarch64
-    immutable va_list_arg_t
+    struct va_list_arg_t
         __stack::Ptr{Void}
         __gr_top::Ptr{Void}
         __vr_top::Ptr{Void}
@@ -79,7 +79,7 @@ function libalpm_event_cb(eventptr::Ptr{Void})
     nothing
 end
 
-type Handle
+mutable struct Handle
     ptr::Ptr{Void}
     dbs::CObjMap
     pkgs::CObjMap
@@ -713,7 +713,7 @@ trans_init(hdl::Handle, flags) = with_handle(hdl) do
     nothing
 end
 
-immutable TransPrepareError{T} <: AbstractError
+struct TransPrepareError{T} <: AbstractError
     errno::errno_t
     list::Vector{T}
 end
@@ -771,7 +771,7 @@ trans_prepare(hdl::Handle) = with_handle(hdl) do
     nothing
 end
 
-immutable TransCommitError{T} <: AbstractError
+struct TransCommitError{T} <: AbstractError
     errno::errno_t
     list::Vector{T}
 end

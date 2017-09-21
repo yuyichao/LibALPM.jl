@@ -1,7 +1,7 @@
 #!/usr/bin/julia -f
 
 "Open a package changelog for reading"
-type ChangeLog <: IO
+mutable struct ChangeLog <: IO
     ptr::Ptr{Void}
     pkg::Pkg
     function ChangeLog(pkg::Pkg)

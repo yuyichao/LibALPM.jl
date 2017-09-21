@@ -1,6 +1,6 @@
 #!/usr/bin/julia -f
 
-type CObjMap
+mutable struct CObjMap
     dict::Dict{Ptr{Void},WeakRef}
     new_added::Int
     last_pause::Int

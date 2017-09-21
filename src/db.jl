@@ -1,6 +1,6 @@
 #!/usr/bin/julia -f
 
-type DB
+mutable struct DB
     ptr::Ptr{Void}
     hdl::Handle
     function DB(ptr::Ptr{Void}, hdl::Handle)

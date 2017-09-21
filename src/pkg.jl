@@ -1,6 +1,6 @@
 #!/usr/bin/julia -f
 
-type Pkg
+mutable struct Pkg
     ptr::Ptr{Void}
     hdl::Handle
     should_free::Bool

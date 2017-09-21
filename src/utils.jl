@@ -1,6 +1,6 @@
 #!/usr/bin/julia -f
 
-type LazyTaskContext{T}
+mutable struct LazyTaskContext{T}
     dict::Dict{Task,T}
     dictcnt::Int
     curtask::Task

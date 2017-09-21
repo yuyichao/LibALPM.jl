@@ -72,9 +72,8 @@ Libc.strerror(err::errno_t) =
     unsafe_string(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
 end
 import .Errno.errno_t
-using Compat: @compat
-@compat abstract type AbstractError <: Exception end
-immutable Error <: AbstractError
+abstract type AbstractError <: Exception end
+struct Error <: AbstractError
     errno::errno_t
     msg
 end
