@@ -417,9 +417,9 @@ function repo_add(repodir, reponame, pkg)
 end
 
 @testset "Delta" begin
-    has_pkgdelta = success(`which xdelta`)
+    has_pkgdelta = success(`which xdelta3`)
     if !has_pkgdelta
-        warn("PkgDelta test skipped since `xdelta` is not found.")
+        warn("PkgDelta test skipped since `xdelta3` is not found.")
     end
     has_pkgdelta && mktempdir() do dir
         pkgdir = joinpath(dir, "pkgdir")
