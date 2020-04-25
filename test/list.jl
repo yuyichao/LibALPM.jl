@@ -25,8 +25,9 @@ using LibALPM
                                  cglobal(:free))
     @test_throws(ErrorException,
                  LibALPM.list_to_array(String, list,
-                                       p->(s = LibALPM.ptr_to_utf8(p);
+                                       p->(s = unsafe_string(Ptr{UInt8}(p));
                                            length(s) > 1 && error();
+                                           ccall(:free, Cvoid, (Ptr{Cvoid},), p);
                                            s), cglobal(:free)))
 end
 
