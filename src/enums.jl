@@ -53,9 +53,6 @@ import LibALPM: libalpm
       # Signatures
       SIG_MISSING,
       SIG_INVALID,
-      # Deltas
-      DLT_INVALID,
-      DLT_PATCHFAILED,
       # Dependencies
       UNSATISFIED_DEPS,
       CONFLICTING_DEPS,
@@ -228,21 +225,6 @@ module EventType
       LOAD_START,
       # Target package is finished loading
       LOAD_DONE,
-      # Target delta's integrity will be checked
-      DELTA_INTEGRITY_START,
-      # Target delta's integrity was checked
-      DELTA_INTEGRITY_DONE,
-      # Deltas will be applied to packages
-      DELTA_PATCHES_START,
-      # Deltas were applied to packages
-      DELTA_PATCHES_DONE,
-      # Delta patch will be applied to target package; See
-      # Event.DeltaPatch for arguments.
-      DELTA_PATCH_START,
-      # Delta patch was applied to target package
-      DELTA_PATCH_DONE,
-      # Delta patch failed to apply to target package
-      DELTA_PATCH_FAILED,
       # Scriptlet has printed information; See Event.ScriptletInfo for
       # arguments
       SCRIPTLET_INFO,

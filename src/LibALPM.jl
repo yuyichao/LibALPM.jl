@@ -6,7 +6,9 @@ module LibALPM
 
 import LibArchive
 
-using Compat
+@inline function finalizer(obj, func)
+    Base.finalizer(func, obj)
+end
 
 const depfile = joinpath(dirname(@__FILE__), "..", "deps", "deps.jl")
 if isfile(depfile)

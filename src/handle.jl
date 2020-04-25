@@ -4,39 +4,39 @@
 # handle
 
 generic_printf_len = true
-if Sys.ARCH === :x86_64 && !Compat.Sys.iswindows()
+if Sys.ARCH === :x86_64 && !Sys.iswindows()
     struct __va_list_tag
         gp_offset::Cuint
         fp_offset::Cuint
-        overflow_arg_area::Ptr{Void}
-        reg_save_area::Ptr{Void}
+        overflow_arg_area::Ptr{Cvoid}
+        reg_save_area::Ptr{Cvoid}
     end
     const va_list_arg_t = Ptr{__va_list_tag}
     generic_printf_len = false
     function printf_len(fmt::Ptr{UInt8}, ap::va_list_arg_t)
         aq = unsafe_load(ap) # va_copy
         ccall(:vsnprintf, Cint,
-              (Ptr{Void}, Csize_t, Ptr{UInt8}, Ref{__va_list_tag}), C_NULL, 0, fmt, aq)
+              (Ptr{Cvoid}, Csize_t, Ptr{UInt8}, Ref{__va_list_tag}), C_NULL, 0, fmt, aq)
     end
-elseif Sys.ARCH === :i686 || (Sys.ARCH === :x86_64 && Compat.Sys.iswindows())
-    const va_list_arg_t = Ptr{Void}
+elseif Sys.ARCH === :i686 || (Sys.ARCH === :x86_64 && Sys.iswindows())
+    const va_list_arg_t = Ptr{Cvoid}
 elseif Sys.ARCH === :aarch64
     struct va_list_arg_t
-        __stack::Ptr{Void}
-        __gr_top::Ptr{Void}
-        __vr_top::Ptr{Void}
+        __stack::Ptr{Cvoid}
+        __gr_top::Ptr{Cvoid}
+        __vr_top::Ptr{Cvoid}
         __gr_offs::Cint
         __vr_offs::Cint
     end
 elseif startswith(string(Sys.ARCH), "arm")
-    const va_list_arg_t = Tuple{Ptr{Void}}
+    const va_list_arg_t = Tuple{Ptr{Cvoid}}
 else
     error("Unsupported arch $(Sys.ARCH)")
 end
 if generic_printf_len
     function printf_len(fmt::Ptr{UInt8}, ap::va_list_arg_t)
         ccall(:vsnprintf, Cint,
-              (Ptr{Void}, Csize_t, Ptr{UInt8}, va_list_arg_t),
+              (Ptr{Cvoid}, Csize_t, Ptr{UInt8}, va_list_arg_t),
               C_NULL, 0, fmt, ap)
     end
 end
@@ -46,6 +46,7 @@ function cb_show_error(ex)
         # Good enough for now...
         Base.showerror(STDERR, ex, catch_backtrace())
         println(STDERR)
+    catch
     end
 end
 
@@ -67,7 +68,7 @@ function libalpm_log_cb(level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
     nothing
 end
 
-function libalpm_event_cb(eventptr::Ptr{Void})
+function libalpm_event_cb(eventptr::Ptr{Cvoid})
     hdl = get_task_context(hdlctx)
     cb = get(hdl.cbs, :event, nothing)
     cb === nothing && return
@@ -80,7 +81,7 @@ function libalpm_event_cb(eventptr::Ptr{Void})
 end
 
 mutable struct Handle
-    ptr::Ptr{Void}
+    ptr::Ptr{Cvoid}
     dbs::CObjMap
     pkgs::CObjMap
     transpkgs::Set
@@ -88,7 +89,7 @@ mutable struct Handle
     cbs::Dict{Symbol,Any} # Good enough for now...
     function Handle(root, db)
         err = Ref{errno_t}()
-        ptr = ccall((:alpm_initialize, libalpm), Ptr{Void},
+        ptr = ccall((:alpm_initialize, libalpm), Ptr{Cvoid},
                     (Cstring, Cstring, Ref{errno_t}), root, db, err)
         ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
         self = new(ptr, CObjMap(), CObjMap(), Set{Pkg}(), Set{Pkg}(),
@@ -96,12 +97,12 @@ mutable struct Handle
         finalizer(self, release)
         with_handle(self) do
             ccall((:alpm_option_set_logcb, libalpm),
-                  Cint, (Ptr{Void}, Ptr{Void}),
-                  self, cfunction(libalpm_log_cb, Void,
-                                  Tuple{UInt32,Ptr{UInt8},va_list_arg_t}))
+                  Cint, (Ptr{Cvoid}, Ptr{Cvoid}),
+                  self, @cfunction(libalpm_log_cb, Cvoid,
+                                   (UInt32, Ptr{UInt8}, va_list_arg_t)))
             ccall((:alpm_option_set_eventcb, libalpm),
-                  Cint, (Ptr{Void}, Ptr{Void}),
-                  self, cfunction(libalpm_event_cb, Void, Tuple{Ptr{Void}}))
+                  Cint, (Ptr{Cvoid}, Ptr{Cvoid}),
+                  self, @cfunction(libalpm_event_cb, Cvoid, (Ptr{Cvoid},)))
         end
         self
     end
@@ -120,7 +121,7 @@ end
 
 logaction(hdl::Handle, prefix, msg) = with_handle(hdl) do
     ccall((:alpm_logaction, libalpm),
-          Cint, (Ptr{Void}, Cstring, Ptr{UInt8}, Cstring...),
+          Cint, (Ptr{Cvoid}, Cstring, Ptr{UInt8}, Cstring...),
           hdl, prefix, "%s", msg)
 end
 
@@ -169,13 +170,13 @@ function release(hdl::Handle)
         _null_all_pkgs(pkgs)
         _null_all_dbs(dbs)
         hdl.ptr = C_NULL
-        ccall((:alpm_release, libalpm), Cint, (Ptr{Void},), ptr)
+        ccall((:alpm_release, libalpm), Cint, (Ptr{Cvoid},), ptr)
     end
     nothing
 end
 
-Base.cconvert(::Type{Ptr{Void}}, hdl::Handle) = hdl
-function Base.unsafe_convert(::Type{Ptr{Void}}, hdl::Handle)
+Base.cconvert(::Type{Ptr{Cvoid}}, hdl::Handle) = hdl
+function Base.unsafe_convert(::Type{Ptr{Cvoid}}, hdl::Handle)
     ptr = hdl.ptr
     ptr == C_NULL && throw(UndefRefError())
     ptr
@@ -183,11 +184,11 @@ end
 
 "Returns the current error code from the handle"
 Libc.errno(hdl::Handle) =
-    ccall((:alpm_errno, libalpm), errno_t, (Ptr{Void},), hdl)
+    ccall((:alpm_errno, libalpm), errno_t, (Ptr{Cvoid},), hdl)
 Error(hdl::Handle, msg) = Error(Libc.errno(hdl), msg)
 
 unlock(hdl::Handle) = with_handle(hdl) do
-    if ccall((:alpm_unlock, libalpm), Cint, (Ptr{Void},), hdl) != 0
+    if ccall((:alpm_unlock, libalpm), Cint, (Ptr{Cvoid},), hdl) != 0
         throw(Error(hdl, "Unlock handle"))
     end
 end
@@ -201,7 +202,7 @@ Returns the downloaded filepath on success.
 """
 fetch_pkgurl(hdl::Handle, url) = with_handle(hdl) do
     ptr = ccall((:alpm_fetch_pkgurl, libalpm), Ptr{UInt8},
-                (Ptr{Void}, Cstring), hdl, url)
+                (Ptr{Cvoid}, Cstring), hdl, url)
     ptr == C_NULL && throw(Error(hdl, "fetch_pkgurl"))
     unsafe_string(ptr)
 end
@@ -210,35 +211,35 @@ end
 function get_root(hdl::Handle)
     # Should not trigger callback
     unsafe_string(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
-                        (Ptr{Void},), hdl))
+                        (Ptr{Cvoid},), hdl))
 end
 
 "Returns the path to the database directory"
 function get_dbpath(hdl::Handle)
     # Should not trigger callback
     unsafe_string(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
-                        (Ptr{Void},), hdl))
+                        (Ptr{Cvoid},), hdl))
 end
 
 "Get the name of the database lock file"
 function get_lockfile(hdl::Handle)
     # Should not trigger callback
     unsafe_string(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
-                        (Ptr{Void},), hdl))
+                        (Ptr{Cvoid},), hdl))
 end
 
 # Accessors to the list of package cache directories
 function get_cachedirs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_cachedirs, libalpm), Ptr{list_t},
-                 (Ptr{Void},), hdl)
+                 (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 set_cachedirs(hdl::Handle, dirs) = with_handle(hdl) do
-    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_option_set_cachedirs, libalpm), Cint,
-                (Ptr{Void}, Ptr{list_t}), hdl, list)
+                (Ptr{Cvoid}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
         throw(Error(hdl, "set_cachedirs"))
@@ -246,13 +247,13 @@ set_cachedirs(hdl::Handle, dirs) = with_handle(hdl) do
 end
 add_cachedir(hdl::Handle, cachedir) = with_handle(hdl) do
     ret = ccall((:alpm_option_add_cachedir, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, cachedir)
+                (Ptr{Cvoid}, Cstring), hdl, cachedir)
     ret == 0 || throw(Error(hdl, "add_cachedir"))
     nothing
 end
 remove_cachedir(hdl::Handle, cachedir) = with_handle(hdl) do
     ret = ccall((:alpm_option_remove_cachedir, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, cachedir)
+                (Ptr{Cvoid}, Cstring), hdl, cachedir)
     ret < 0 && throw(Error(hdl, "remove_cachedir"))
     ret != 0
 end
@@ -261,14 +262,14 @@ end
 function get_hookdirs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_hookdirs, libalpm), Ptr{list_t},
-                 (Ptr{Void},), hdl)
+                 (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 set_hookdirs(hdl::Handle, dirs) = with_handle(hdl) do
-    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_option_set_hookdirs, libalpm), Cint,
-                (Ptr{Void}, Ptr{list_t}), hdl, list)
+                (Ptr{Cvoid}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
         throw(Error(hdl, "set_hookdirs"))
@@ -276,13 +277,13 @@ set_hookdirs(hdl::Handle, dirs) = with_handle(hdl) do
 end
 add_hookdir(hdl::Handle, hookdir) = with_handle(hdl) do
     ret = ccall((:alpm_option_add_hookdir, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, hookdir)
+                (Ptr{Cvoid}, Cstring), hdl, hookdir)
     ret == 0 || throw(Error(hdl, "add_hookdir"))
     nothing
 end
 remove_hookdir(hdl::Handle, hookdir) = with_handle(hdl) do
     ret = ccall((:alpm_option_remove_hookdir, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, hookdir)
+                (Ptr{Cvoid}, Cstring), hdl, hookdir)
     ret < 0 && throw(Error(hdl, "remove_hookdir"))
     ret != 0
 end
@@ -291,12 +292,12 @@ end
 function get_logfile(hdl::Handle)
     # Should not trigger callback
     unsafe_string(ccall((:alpm_option_get_logfile, libalpm), Ptr{UInt8},
-                        (Ptr{Void},), hdl))
+                        (Ptr{Cvoid},), hdl))
 end
 "Sets the logfile name"
 set_logfile(hdl::Handle, logfile) = with_handle(hdl) do
     ret = ccall((:alpm_option_set_logfile, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, logfile)
+                (Ptr{Cvoid}, Cstring), hdl, logfile)
     ret == 0 || throw(Error(hdl, "set_logfile"))
     nothing
 end
@@ -305,12 +306,12 @@ end
 function get_gpgdir(hdl::Handle)
     # Should not trigger callback
     unsafe_string(ccall((:alpm_option_get_gpgdir, libalpm), Ptr{UInt8},
-                        (Ptr{Void},), hdl))
+                        (Ptr{Cvoid},), hdl))
 end
 "Sets the path to libalpm's GnuPG home directory"
 set_gpgdir(hdl::Handle, gpgdir) = with_handle(hdl) do
     ret = ccall((:alpm_option_set_gpgdir, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, gpgdir)
+                (Ptr{Cvoid}, Cstring), hdl, gpgdir)
     ret == 0 || throw(Error(hdl, "set_gpgdir"))
     nothing
 end
@@ -318,13 +319,13 @@ end
 "Returns whether to use syslog"
 function get_usesyslog(hdl::Handle)
     # Should not trigger callback
-    ccall((:alpm_option_get_usesyslog, libalpm), Cint, (Ptr{Void},), hdl) != 0
+    ccall((:alpm_option_get_usesyslog, libalpm), Cint, (Ptr{Cvoid},), hdl) != 0
 end
 "Sets whether to use syslog"
 function set_usesyslog(hdl::Handle, usesyslog)
     # Should not trigger callback and should not fail
     ccall((:alpm_option_set_usesyslog, libalpm), Cint,
-          (Ptr{Void}, Cint), hdl, usesyslog)
+          (Ptr{Cvoid}, Cint), hdl, usesyslog)
     nothing
 end
 
@@ -335,15 +336,15 @@ end
 function get_noupgrades(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_noupgrades, libalpm), Ptr{list_t},
-                 (Ptr{Void},), hdl)
+                 (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 function set_noupgrades(hdl::Handle, dirs)
     # Should not trigger callback
-    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_option_set_noupgrades, libalpm), Cint,
-                (Ptr{Void}, Ptr{list_t}), hdl, list)
+                (Ptr{Cvoid}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
         throw(Error(hdl, "set_noupgrades"))
@@ -351,13 +352,13 @@ function set_noupgrades(hdl::Handle, dirs)
 end
 add_noupgrade(hdl::Handle, noupgrade) = with_handle(hdl) do
     ret = ccall((:alpm_option_add_noupgrade, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, noupgrade)
+                (Ptr{Cvoid}, Cstring), hdl, noupgrade)
     ret == 0 || throw(Error(hdl, "add_noupgrade"))
     nothing
 end
 remove_noupgrade(hdl::Handle, noupgrade) = with_handle(hdl) do
     ret = ccall((:alpm_option_remove_noupgrade, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, noupgrade)
+                (Ptr{Cvoid}, Cstring), hdl, noupgrade)
     ret < 0 && throw(Error(hdl, "remove_noupgrade"))
     ret != 0
 end
@@ -368,7 +369,7 @@ negative if they don't match and positive if the last match was inverted.
 function match_noupgrade(hdl::Handle, noupgrade)
     # Should not trigger callback
     ccall((:alpm_option_match_noupgrade, libalpm), Cint,
-          (Ptr{Void}, Cstring), hdl, noupgrade)
+          (Ptr{Cvoid}, Cstring), hdl, noupgrade)
 end
 
 # Accessors to the list of no-extract files.
@@ -378,15 +379,15 @@ end
 function get_noextracts(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_noextracts, libalpm), Ptr{list_t},
-                 (Ptr{Void},), hdl)
+                 (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 function set_noextracts(hdl::Handle, dirs)
     # Should not trigger callback
-    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_option_set_noextracts, libalpm), Cint,
-                (Ptr{Void}, Ptr{list_t}), hdl, list)
+                (Ptr{Cvoid}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
         throw(Error(hdl, "set_noextracts"))
@@ -394,13 +395,13 @@ function set_noextracts(hdl::Handle, dirs)
 end
 add_noextract(hdl::Handle, noextract) = with_handle(hdl) do
     ret = ccall((:alpm_option_add_noextract, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, noextract)
+                (Ptr{Cvoid}, Cstring), hdl, noextract)
     ret == 0 || throw(Error(hdl, "add_noextract"))
     nothing
 end
 remove_noextract(hdl::Handle, noextract) = with_handle(hdl) do
     ret = ccall((:alpm_option_remove_noextract, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, noextract)
+                (Ptr{Cvoid}, Cstring), hdl, noextract)
     ret < 0 && throw(Error(hdl, "remove_noextract"))
     ret != 0
 end
@@ -411,7 +412,7 @@ negative if they don't match and positive if the last match was inverted.
 function match_noextract(hdl::Handle, noextract)
     # Should not trigger callback
     ccall((:alpm_option_match_noextract, libalpm), Cint,
-          (Ptr{Void}, Cstring), hdl, noextract)
+          (Ptr{Cvoid}, Cstring), hdl, noextract)
 end
 
 # Accessors to the list of ignored packages.
@@ -421,15 +422,15 @@ end
 function get_ignorepkgs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_ignorepkgs, libalpm), Ptr{list_t},
-                 (Ptr{Void},), hdl)
+                 (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 function set_ignorepkgs(hdl::Handle, dirs)
     # Should not trigger callback
-    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_option_set_ignorepkgs, libalpm), Cint,
-                (Ptr{Void}, Ptr{list_t}), hdl, list)
+                (Ptr{Cvoid}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
         throw(Error(hdl, "ignorepkgs"))
@@ -437,13 +438,13 @@ function set_ignorepkgs(hdl::Handle, dirs)
 end
 add_ignorepkg(hdl::Handle, ignorepkg) = with_handle(hdl) do
     ret = ccall((:alpm_option_add_ignorepkg, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, ignorepkg)
+                (Ptr{Cvoid}, Cstring), hdl, ignorepkg)
     ret == 0 || throw(Error(hdl, "add_ignorepkg"))
     nothing
 end
 remove_ignorepkg(hdl::Handle, ignorepkg) = with_handle(hdl) do
     ret = ccall((:alpm_option_remove_ignorepkg, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, ignorepkg)
+                (Ptr{Cvoid}, Cstring), hdl, ignorepkg)
     ret < 0 && throw(Error(hdl, "remove_ignorepkg"))
     ret != 0
 end
@@ -455,15 +456,15 @@ end
 function get_ignoregroups(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_ignoregroups, libalpm), Ptr{list_t},
-                 (Ptr{Void},), hdl)
+                 (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
 function set_ignoregroups(hdl::Handle, dirs)
     # Should not trigger callback
-    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_option_set_ignoregroups, libalpm), Cint,
-                (Ptr{Void}, Ptr{list_t}), hdl, list)
+                (Ptr{Cvoid}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal(:free))
         throw(Error(hdl, "set_ignoregroups"))
@@ -471,13 +472,13 @@ function set_ignoregroups(hdl::Handle, dirs)
 end
 add_ignoregroup(hdl::Handle, ignoregroup) = with_handle(hdl) do
     ret = ccall((:alpm_option_add_ignoregroup, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, ignoregroup)
+                (Ptr{Cvoid}, Cstring), hdl, ignoregroup)
     ret == 0 || throw(Error(hdl, "add_ignoregroup"))
     nothing
 end
 remove_ignoregroup(hdl::Handle, ignoregroup) = with_handle(hdl) do
     ret = ccall((:alpm_option_remove_ignoregroup, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, ignoregroup)
+                (Ptr{Cvoid}, Cstring), hdl, ignoregroup)
     ret < 0 && throw(Error(hdl, "remove_ignoregroup"))
     ret != 0
 end
@@ -486,58 +487,46 @@ end
 function get_arch(hdl::Handle)
     # Should not trigger callback
     unsafe_string(ccall((:alpm_option_get_arch, libalpm),
-                        Ptr{UInt8}, (Ptr{Void},), hdl))
+                        Ptr{UInt8}, (Ptr{Cvoid},), hdl))
 end
 "Sets the targeted architecture"
 set_arch(hdl::Handle, arch) = with_handle(hdl) do
     ret = ccall((:alpm_option_set_arch, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, arch)
+                (Ptr{Cvoid}, Cstring), hdl, arch)
     ret == 0 || throw(Error(hdl, "set_arch"))
-    nothing
-end
-
-function get_deltaratio(hdl::Handle)
-    # Should not trigger callback
-    ccall((:alpm_option_get_deltaratio, libalpm), Cdouble,
-          (Ptr{Void},), hdl)
-end
-set_deltaratio(hdl::Handle, deltaratio) = with_handle(hdl) do
-    ret = ccall((:alpm_option_set_deltaratio, libalpm), Cint,
-                (Ptr{Void}, Cdouble), hdl, deltaratio)
-    ret == 0 || throw(Error(hdl, "set_deltaratio"))
     nothing
 end
 
 function get_checkspace(hdl::Handle)
     # Should not trigger callback
-    ccall((:alpm_option_get_checkspace, libalpm), Cint, (Ptr{Void},), hdl) != 0
+    ccall((:alpm_option_get_checkspace, libalpm), Cint, (Ptr{Cvoid},), hdl) != 0
 end
 function set_checkspace(hdl::Handle, checkspace)
     # Should not trigger callback and should not fail
     ccall((:alpm_option_set_checkspace, libalpm), Cint,
-          (Ptr{Void}, Cint), hdl, checkspace)
+          (Ptr{Cvoid}, Cint), hdl, checkspace)
     nothing
 end
 
 function get_dbext(hdl::Handle)
     # Should not trigger callback
     unsafe_string(ccall((:alpm_option_get_dbext, libalpm), Ptr{UInt8},
-                        (Ptr{Void},), hdl))
+                        (Ptr{Cvoid},), hdl))
 end
 set_dbext(hdl::Handle, dbext) = with_handle(hdl) do
     ret = ccall((:alpm_option_set_dbext, libalpm), Cint,
-                (Ptr{Void}, Cstring), hdl, dbext)
+                (Ptr{Cvoid}, Cstring), hdl, dbext)
     ret == 0 || throw(Error(hdl, "set_dbext"))
     nothing
 end
 
 function get_default_siglevel(hdl::Handle)
     # Should not trigger callback
-    ccall((:alpm_option_get_default_siglevel, libalpm), Cint, (Ptr{Void},), hdl)
+    ccall((:alpm_option_get_default_siglevel, libalpm), Cint, (Ptr{Cvoid},), hdl)
 end
 set_default_siglevel(hdl::Handle, siglevel) = with_handle(hdl) do
     ret = ccall((:alpm_option_set_default_siglevel, libalpm), Cint,
-                (Ptr{Void}, Cint), hdl, siglevel)
+                (Ptr{Cvoid}, Cint), hdl, siglevel)
     ret == 0 || throw(Error(hdl, "set_default_siglevel"))
     nothing
 end
@@ -545,11 +534,11 @@ end
 function get_local_file_siglevel(hdl::Handle)
     # Should not trigger callback
     ccall((:alpm_option_get_local_file_siglevel, libalpm),
-          Cint, (Ptr{Void},), hdl)
+          Cint, (Ptr{Cvoid},), hdl)
 end
 set_local_file_siglevel(hdl::Handle, siglevel) = with_handle(hdl) do
     ret = ccall((:alpm_option_set_local_file_siglevel, libalpm), Cint,
-                (Ptr{Void}, Cint), hdl, siglevel)
+                (Ptr{Cvoid}, Cint), hdl, siglevel)
     ret == 0 || throw(Error(hdl, "set_local_file_siglevel"))
     nothing
 end
@@ -557,11 +546,11 @@ end
 function get_remote_file_siglevel(hdl::Handle)
     # Should not trigger callback
     ccall((:alpm_option_get_remote_file_siglevel, libalpm),
-          Cint, (Ptr{Void},), hdl)
+          Cint, (Ptr{Cvoid},), hdl)
 end
 set_remote_file_siglevel(hdl::Handle, siglevel) = with_handle(hdl) do
     ret = ccall((:alpm_option_set_remote_file_siglevel, libalpm), Cint,
-                (Ptr{Void}, Cint), hdl, siglevel)
+                (Ptr{Cvoid}, Cint), hdl, siglevel)
     ret == 0 || throw(Error(hdl, "set_remote_file_siglevel"))
     nothing
 end
@@ -577,7 +566,7 @@ Return a reference to the local database
 """
 get_localdb(hdl::Handle) =
     # Should not trigger callback
-    DB(ccall((:alpm_get_localdb, libalpm), Ptr{Void}, (Ptr{Void},), hdl), hdl)
+    DB(ccall((:alpm_get_localdb, libalpm), Ptr{Cvoid}, (Ptr{Cvoid},), hdl), hdl)
 
 """
 Get the list of sync databases.
@@ -586,7 +575,7 @@ Returns an array of DB's, one for each registered sync database.
 """
 function get_syncdbs(hdl::Handle)
     # Should not trigger callback
-    dbs = ccall((:alpm_get_syncdbs, libalpm), Ptr{list_t}, (Ptr{Void},), hdl)
+    dbs = ccall((:alpm_get_syncdbs, libalpm), Ptr{list_t}, (Ptr{Cvoid},), hdl)
     list_to_array(DB, dbs, p->DB(p, hdl))
 end
 
@@ -600,8 +589,8 @@ Register a sync database of packages.
 Returns an DB on success
 """
 register_syncdb(hdl::Handle, treename, level) = with_handle(hdl) do
-    db = ccall((:alpm_register_syncdb, libalpm), Ptr{Void},
-               (Ptr{Void}, Cstring, UInt32), hdl, treename, level)
+    db = ccall((:alpm_register_syncdb, libalpm), Ptr{Cvoid},
+               (Ptr{Cvoid}, Cstring, UInt32), hdl, treename, level)
     db == C_NULL && throw(Error(hdl, "register_syncdb"))
     DB(db, hdl)
 end
@@ -609,15 +598,15 @@ end
 "Unregister all package databases"
 unregister_all_syncdbs(hdl::Handle) = with_handle(hdl) do
     for ptr in list_iter(ccall((:alpm_get_syncdbs, libalpm),
-                               Ptr{list_t}, (Ptr{Void},), hdl))
+                               Ptr{list_t}, (Ptr{Cvoid},), hdl))
         cached = hdl.dbs[ptr, DB]
-        isnull(cached) && continue
-        db = get(cached)
+        cached === nothing && continue
+        db = cached
         _null_all_pkgs(db)
         db.ptr = C_NULL
     end
     ret = ccall((:alpm_unregister_all_syncdbs, libalpm),
-                Cint, (Ptr{Void},), hdl)
+                Cint, (Ptr{Cvoid},), hdl)
     ret == 0 || throw(Error(hdl, "unregister_all_syncdbs"))
     nothing
 end
@@ -640,9 +629,9 @@ which serves as a verification of integrity and the filelist can be created.
          package; note that this must be a '.sig' file type verification
 """
 load(hdl::Handle, filename, full, level) = with_handle(hdl) do
-    pkgout = Ref{Ptr{Void}}()
+    pkgout = Ref{Ptr{Cvoid}}()
     ret = ccall((:alpm_pkg_load, libalpm), Cint,
-                (Ptr{Void}, Cstring, Cint, UInt32, Ptr{Ptr{Void}}),
+                (Ptr{Cvoid}, Cstring, Cint, UInt32, Ptr{Ptr{Cvoid}}),
                 hdl, filename, full, level, pkgout)
     ret == 0 || throw(Error(hdl, "load"))
     Pkg(pkgout[], hdl, true)
@@ -654,20 +643,20 @@ end
 function get_assumeinstalled(hdl::Handle)
     # Should not trigger callback
     list = ccall((:alpm_option_get_assumeinstalled, libalpm),
-                 Ptr{list_t}, (Ptr{Void},), hdl)
+                 Ptr{list_t}, (Ptr{Cvoid},), hdl)
     list_to_array(Depend, list, Depend)
 end
 add_assumeinstalled(hdl::Handle, dep) = with_handle(hdl) do
     ret = ccall((:alpm_option_add_assumeinstalled, libalpm),
-                Cint, (Ptr{Void}, Ptr{CTypes.Depend}), hdl, Depend(dep))
+                Cint, (Ptr{Cvoid}, Ptr{CTypes.Depend}), hdl, Depend(dep))
     ret == 0 || throw(Error(hdl, "add_assumeinstalled"))
     nothing
 end
 set_assumeinstalled(hdl::Handle, deps) = with_handle(hdl) do
-    list = array_to_list(deps, dep->Ptr{Void}(to_c(Depend(dep))),
+    list = array_to_list(deps, dep->Ptr{Cvoid}(to_c(Depend(dep))),
                          cglobal((:alpm_dep_free, libalpm)))
     ret = ccall((:alpm_option_set_assumeinstalled, libalpm),
-                Cint, (Ptr{Void}, Ptr{list_t}), hdl, list)
+                Cint, (Ptr{Cvoid}, Ptr{list_t}), hdl, list)
     if ret != 0
         free(list, cglobal((:alpm_dep_free, libalpm)))
         throw(Error(hdl, "set_assumeinstalled"))
@@ -676,7 +665,7 @@ set_assumeinstalled(hdl::Handle, deps) = with_handle(hdl) do
 end
 remove_assumeinstalled(hdl::Handle, dep) = with_handle(hdl) do
     ret = ccall((:alpm_option_remove_assumeinstalled, libalpm),
-                Cint, (Ptr{Void}, Ptr{CTypes.Depend}), hdl, Depend(dep))
+                Cint, (Ptr{Cvoid}, Ptr{CTypes.Depend}), hdl, Depend(dep))
     ret < 0 && throw(Error(hdl, "remove_assumeinstalled"))
     ret != 0
 end
@@ -686,20 +675,20 @@ end
 
 "Returns the bitfield of flags for the current transaction"
 get_flags(hdl::Handle) = with_handle(hdl) do
-    ccall((:alpm_trans_get_flags, libalpm), UInt32, (Ptr{Void},), hdl)
+    ccall((:alpm_trans_get_flags, libalpm), UInt32, (Ptr{Cvoid},), hdl)
 end
 
 "Returns a list of packages added by the transaction"
 get_add(hdl::Handle) = with_handle(hdl) do
     pkgs = ccall((:alpm_trans_get_add, libalpm),
-                 Ptr{list_t}, (Ptr{Void},), hdl)
+                 Ptr{list_t}, (Ptr{Cvoid},), hdl)
     list_to_array(Pkg, pkgs, p->Pkg(p, hdl))
 end
 
 "Returns the list of packages removed by the transaction"
 get_remove(hdl::Handle) = with_handle(hdl) do
     pkgs = ccall((:alpm_trans_get_remove, libalpm),
-                 Ptr{list_t}, (Ptr{Void},), hdl)
+                 Ptr{list_t}, (Ptr{Cvoid},), hdl)
     list_to_array(Pkg, pkgs, p->(pkg = Pkg(p, hdl);
                                  push!(hdl.rmpkgs::Set{Pkg}, pkg);
                                  pkg.should_free = false; pkg))
@@ -708,7 +697,7 @@ end
 "Initialize the transaction"
 trans_init(hdl::Handle, flags) = with_handle(hdl) do
     ret = ccall((:alpm_trans_init, libalpm),
-                Cint, (Ptr{Void}, UInt32), hdl, flags)
+                Cint, (Ptr{Cvoid}, UInt32), hdl, flags)
     ret == 0 || throw(Error(hdl, "init"))
     nothing
 end
@@ -737,7 +726,7 @@ end
 trans_prepare(hdl::Handle) = with_handle(hdl) do
     list = Ref{Ptr{list_t}}(0)
     ret = ccall((:alpm_trans_prepare, libalpm),
-                Cint, (Ptr{Void}, Ptr{Ptr{list_t}}), hdl, list)
+                Cint, (Ptr{Cvoid}, Ptr{Ptr{list_t}}), hdl, list)
     if ret != 0
         list[] == C_NULL && throw(Error(hdl, "trans_prepare"))
         errno = Libc.errno(hdl)
@@ -798,7 +787,7 @@ trans_commit(hdl::Handle) = with_handle(hdl) do
     empty!(rmpkgs)
     list = Ref{Ptr{list_t}}(0)
     ret = ccall((:alpm_trans_commit, libalpm),
-                Cint, (Ptr{Void}, Ptr{Ptr{list_t}}), hdl, list)
+                Cint, (Ptr{Cvoid}, Ptr{Ptr{list_t}}), hdl, list)
     if ret != 0
         list[] == C_NULL && throw(Error(hdl, "trans_commit"))
         errno = Libc.errno(hdl)
@@ -823,7 +812,7 @@ end
 
 "Interrupt a transaction"
 trans_interrupt(hdl::Handle) = with_handle(hdl) do
-    ret = ccall((:alpm_trans_interrupt, libalpm), Cint, (Ptr{Void},), hdl)
+    ret = ccall((:alpm_trans_interrupt, libalpm), Cint, (Ptr{Cvoid},), hdl)
     ret == 0 || throw(Error(hdl, "interrupt"))
     nothing
 end
@@ -835,7 +824,7 @@ trans_release(hdl::Handle) = with_handle(hdl) do
         free(pkg)
     end
     empty!(transpkg)
-    ret = ccall((:alpm_trans_release, libalpm), Cint, (Ptr{Void},), hdl)
+    ret = ccall((:alpm_trans_release, libalpm), Cint, (Ptr{Cvoid},), hdl)
     ret == 0 || throw(Error(hdl, "release"))
     nothing
 end
@@ -849,7 +838,7 @@ Search for packages to upgrade and add them to the transaction
 """
 sysupgrade(hdl::Handle, enable_downgrade) = with_handle(hdl) do
     ret = ccall((:alpm_sync_sysupgrade, libalpm),
-                Cint, (Ptr{Void}, Cint), hdl, enable_downgrade)
+                Cint, (Ptr{Cvoid}, Cint), hdl, enable_downgrade)
     ret == 0 || throw(Error(hdl, "sysupgrade"))
     nothing
 end

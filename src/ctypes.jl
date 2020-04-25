@@ -41,23 +41,7 @@ end
 struct Group
     name::Cstring
     # FIXME: alpm_list_t*
-    package::Ptr{Void}
-end
-
-"Package upgrade delta"
-struct Delta
-    # filename of the delta patch
-    delta::Cstring
-    # md5sum of the delta file
-    delta_md5::Cstring
-    # filename of the 'before' file
-    from::Cstring
-    # filename of the 'after' file
-    to::Cstring
-    # filesize of the delta file
-    delta_size::Int64
-    # download filesize of the delta file
-    download_size::Int64
+    package::Ptr{Cvoid}
 end
 
 "File in a package"
@@ -80,7 +64,7 @@ struct Backup
 end
 
 struct PGPKey
-    data::Ptr{Void}
+    data::Ptr{Cvoid}
     fingerprint::Cstring
     uid::Cstring
     name::Cstring
@@ -127,22 +111,16 @@ end
 struct PackageOperation <: AbstractEvent
     _type::event_type_t
     operation::LibALPM.package_operation_t
-    oldpkg::Ptr{Void} # alpm_pkg_t*
-    newpkg::Ptr{Void} # alpm_pkg_t*
+    oldpkg::Ptr{Cvoid} # alpm_pkg_t*
+    newpkg::Ptr{Cvoid} # alpm_pkg_t*
 end
 
 struct OptdepRemoval <: AbstractEvent
     _type::event_type_t
     # Package with the optdep.
-    pkg::Ptr{Void} # alpm_pkg_t*
+    pkg::Ptr{Cvoid} # alpm_pkg_t*
     # Optdep being removed.
     optdep::Ptr{CTypes.Depend}
-end
-
-struct DeltaPatch <: AbstractEvent
-    _type::event_type_t
-    # Delta info
-    delta::Ptr{CTypes.Delta}
 end
 
 struct ScriptletInfo <: AbstractEvent
@@ -168,9 +146,9 @@ struct PacnewCreated <: AbstractEvent
     # Whether the creation was result of a NoUpgrade or not
     from_noupgrade::Cint
     # Old package.
-    oldpkg::Ptr{Void} # alpm_pkg_t*
+    oldpkg::Ptr{Cvoid} # alpm_pkg_t*
     # New Package.
-    newpkg::Ptr{Void} # alpm_pkg_t*
+    newpkg::Ptr{Cvoid} # alpm_pkg_t*
     # Filename of the file without the .pacnew suffix
     file::Cstring
 end
@@ -178,7 +156,7 @@ end
 struct PacsaveCreated <: AbstractEvent
     _type::event_type_t
     # Old package.
-    oldpkg::Ptr{Void} # alpm_pkg_t*
+    oldpkg::Ptr{Cvoid} # alpm_pkg_t*
     # Filename of the file without the .pacsave suffix.
     file::Cstring
 end
@@ -222,7 +200,7 @@ struct InstallIgnorepkg <: AbstractQuestion
     # Answer: whether or not to install pkg anyway
     install::Cint
     # Package in IgnorePkg/IgnoreGroup
-    pkg::Ptr{Void} # alpm_pkg_t*
+    pkg::Ptr{Cvoid} # alpm_pkg_t*
 end
 
 struct Replace <: AbstractQuestion
@@ -231,11 +209,11 @@ struct Replace <: AbstractQuestion
     # Answer: whether or not to replace oldpkg with newpkg
     replace::Cint
     # Package to be replaced
-    oldpkg::Ptr{Void} # alpm_pkg_t*
+    oldpkg::Ptr{Cvoid} # alpm_pkg_t*
     # Package to replace with
-    newpkg::Ptr{Void} # alpm_pkg_t*
+    newpkg::Ptr{Cvoid} # alpm_pkg_t*
     # DB of newpkg
-    newdb::Ptr{Void} # alpm_db_t*
+    newdb::Ptr{Cvoid} # alpm_db_t*
 end
 
 struct Conflict <: AbstractQuestion
@@ -265,7 +243,7 @@ struct RemovePkgs <: AbstractQuestion
     skip::Cint
     # List of alpm_pkg_t* with unresolved dependencies
     # FIXME: alpm_list_t*
-    packages::Ptr{Void}
+    packages::Ptr{Cvoid}
 end
 
 struct SelectProvider <: AbstractQuestion
@@ -275,7 +253,7 @@ struct SelectProvider <: AbstractQuestion
     use_index::Cint
     # List of alpm_pkg_t* as possible providers
     # FIXME: alpm_list_t*
-    providers::Ptr{Void}
+    providers::Ptr{Cvoid}
     # What providers provide for
     depend::Ptr{CTypes.Depend}
 end
@@ -311,7 +289,7 @@ struct Depend
         ptr = Ptr{CTypes.Depend}(_ptr)
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cdep = unsafe_load(ptr)
-        own && ccall(:free, Void, (Ptr{Void},), ptr)
+        own && ccall(:free, Cvoid, (Ptr{Cvoid},), ptr)
         name = cstr_to_utf8(cdep.name, own)
         version = cstr_to_utf8(cdep.version, own)
         desc = cstr_to_utf8(cdep.desc, own)
@@ -377,7 +355,7 @@ struct DepMissing
         ptr = Ptr{CTypes.DepMissing}(_ptr)
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cdepmissing = unsafe_load(ptr)
-        ccall(:free, Void, (Ptr{Void},), ptr)
+        ccall(:free, Cvoid, (Ptr{Cvoid},), ptr)
         target = cstr_to_utf8(cdepmissing.target, true)
         depend = Depend(cdepmissing.depend, true)
         causingpkg = cstr_to_utf8(cdepmissing.causingpkg, true)
@@ -401,7 +379,7 @@ struct Conflict
         ptr = Ptr{CTypes.Conflict}(_ptr)
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cconflict = unsafe_load(ptr)
-        ccall(:free, Void, (Ptr{Void},), ptr)
+        ccall(:free, Cvoid, (Ptr{Cvoid},), ptr)
         package1 = cstr_to_utf8(cconflict.package1, true)
         package2 = cstr_to_utf8(cconflict.package2, true)
         # But don't take the ownership of the reason.
@@ -422,7 +400,7 @@ struct FileConflict
         ptr = Ptr{CTypes.FileConflict}(_ptr)
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cfileconflict = unsafe_load(ptr)
-        ccall(:free, Void, (Ptr{Void},), ptr)
+        ccall(:free, Cvoid, (Ptr{Cvoid},), ptr)
         target = cstr_to_utf8(cfileconflict.target, true)
         file = cstr_to_utf8(cfileconflict.file, true)
         ctarget = cstr_to_utf8(cfileconflict.ctarget, true)
@@ -451,29 +429,5 @@ struct Backup
         name = unsafe_string(Ptr{UInt8}(cbackup.name))
         hash = unsafe_string(Ptr{UInt8}(cbackup.hash))
         new(name, hash)
-    end
-end
-
-struct Delta
-    # filename of the delta patch
-    delta::String
-    # md5sum of the delta file
-    delta_md5::String
-    # filename of the 'before' file
-    from::String
-    # filename of the 'after' file
-    to::String
-    # filesize of the delta file
-    delta_size::Int64
-    # download filesize of the delta file
-    download_size::Int64
-    function Delta(_ptr::Ptr)
-        ptr = Ptr{CTypes.Delta}(_ptr)
-        cdelta = unsafe_load(ptr)
-        delta = cstr_to_utf8(Ptr{UInt8}(cdelta.delta), false)
-        delta_md5 = cstr_to_utf8(Ptr{UInt8}(cdelta.delta_md5), false)
-        from = cstr_to_utf8(Ptr{UInt8}(cdelta.from), false)
-        to = cstr_to_utf8(Ptr{UInt8}(cdelta.to), false)
-        new(delta, delta_md5, from, to, cdelta.delta_size, cdelta.download_size)
     end
 end

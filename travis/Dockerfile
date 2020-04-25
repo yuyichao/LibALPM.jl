@@ -1,6 +1,6 @@
 FROM base/devel
 
-RUN pacman --noconfirm -Sy systemd git lsb-release cmake mbedtls xdelta3 http-parser suitesparse fftw gmp mpfr libgit2
+RUN pacman --noconfirm -Sy systemd git lsb-release cmake mbedtls http-parser suitesparse fftw gmp mpfr libgit2
 
 RUN useradd -U -G wheel -m julia
 

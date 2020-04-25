@@ -1,12 +1,12 @@
 #!/usr/bin/julia -f
 
 mutable struct DB
-    ptr::Ptr{Void}
+    ptr::Ptr{Cvoid}
     hdl::Handle
-    function DB(ptr::Ptr{Void}, hdl::Handle)
+    function DB(ptr::Ptr{Cvoid}, hdl::Handle)
         ptr == C_NULL && throw(UndefRefError())
         cached = hdl.dbs[ptr, DB]
-        isnull(cached) || return get(cached)
+        cached === nothing || return cached
         self = new(ptr, hdl)
         hdl.dbs[ptr] = self
         self
@@ -18,15 +18,15 @@ function _null_all_pkgs(db::DB)
     db.ptr == C_NULL && return
     hdl = db.hdl
     for ptr in list_iter(ccall((:alpm_db_get_pkgcache, libalpm),
-                               Ptr{list_t}, (Ptr{Void},), db))
+                               Ptr{list_t}, (Ptr{Cvoid},), db))
         cached = hdl.pkgs[ptr, Pkg]
-        isnull(cached) && continue
-        free(get(cached))
+        cached === nothing && continue
+        free(cached)
     end
 end
 
-Base.cconvert(::Type{Ptr{Void}}, db::DB) = db
-function Base.unsafe_convert(::Type{Ptr{Void}}, db::DB)
+Base.cconvert(::Type{Ptr{Cvoid}}, db::DB) = db
+function Base.unsafe_convert(::Type{Ptr{Cvoid}}, db::DB)
     ptr = db.ptr
     ptr == C_NULL && throw(UndefRefError())
     ptr
@@ -49,7 +49,7 @@ function unregister(db::DB)
         _null_all_pkgs(db)
         db.ptr = C_NULL
         delete!(hdl.dbs, ptr)
-        ret = ccall((:alpm_db_unregister, libalpm), Cint, (Ptr{Void},), ptr)
+        ret = ccall((:alpm_db_unregister, libalpm), Cint, (Ptr{Cvoid},), ptr)
         ret == 0 || throw(Error(hdl, "unregister"))
     end
     nothing
@@ -60,7 +60,7 @@ Get the name of a package database.
 """
 function get_name(db::DB)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_db_get_name, libalpm), Ptr{UInt8}, (Ptr{Void},), db))
+    unsafe_string(ccall((:alpm_db_get_name, libalpm), Ptr{UInt8}, (Ptr{Cvoid},), db))
 end
 
 """
@@ -71,7 +71,7 @@ with ALPM_SIG_USE_DEFAULT.
 """
 get_siglevel(db::DB) =
     # Should not trigger callback
-    ccall((:alpm_db_get_siglevel, libalpm), UInt32, (Ptr{Void},), db)
+    ccall((:alpm_db_get_siglevel, libalpm), UInt32, (Ptr{Cvoid},), db)
 
 """
 Check the validity of a database.
@@ -81,7 +81,7 @@ If invalid, the handle error code will be set accordingly.
 Return 0 if valid, -1 if invalid (errno is set accordingly)
 """
 get_valid(db::DB) = with_handle(db.hdl) do
-    ccall((:alpm_db_get_valid, libalpm), Cint, (Ptr{Void},), db)
+    ccall((:alpm_db_get_valid, libalpm), Cint, (Ptr{Cvoid},), db)
 end
 function check_valid(db::DB)
     get_valid(db) == 0 || throw(Error(db.hdl, "check_valid"))
@@ -92,16 +92,16 @@ end
 function get_servers(db::DB)
     # Should not trigger callback
     servers = ccall((:alpm_db_get_servers, libalpm), Ptr{list_t},
-                    (Ptr{Void},), db)
+                    (Ptr{Cvoid},), db)
     list_to_array(String, servers, p->unsafe_string(Ptr{UInt8}(p)))
 end
 function set_servers(db::DB, servers)
     # Should not trigger callback
     list = array_to_list(servers,
-                         str->ccall(:strdup, Ptr{Void}, (Cstring,), str),
+                         str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_db_set_servers, libalpm), Cint,
-                (Ptr{Void}, Ptr{list_t}), db, list)
+                (Ptr{Cvoid}, Ptr{list_t}), db, list)
     if ret != 0
         free(list, cglobal(:free))
         throw(Error(db.hdl, "set_servers"))
@@ -109,20 +109,20 @@ function set_servers(db::DB, servers)
 end
 add_server(db::DB, server) = with_handle(db.hdl) do
     ret = ccall((:alpm_db_add_server, libalpm), Cint,
-                (Ptr{Void}, Cstring), db, server)
+                (Ptr{Cvoid}, Cstring), db, server)
     ret == 0 || throw(Error(db.hdl, "add_server"))
     nothing
 end
 remove_server(db::DB, server) = with_handle(db.hdl) do
     ret = ccall((:alpm_db_remove_server, libalpm), Cint,
-                (Ptr{Void}, Cstring), db, server)
+                (Ptr{Cvoid}, Cstring), db, server)
     ret < 0 && throw(Error(db.hdl, "remove_server"))
     ret != 0
 end
 
 "Return true if db is already up to date."
 update(db::DB, force) = with_handle(db.hdl) do
-    ret = ccall((:alpm_db_update, libalpm), Cint, (Cint, Ptr{Void}), force, db)
+    ret = ccall((:alpm_db_update, libalpm), Cint, (Cint, Ptr{Cvoid}), force, db)
     ret < 0 && throw(Error(db.hdl, "update"))
     ret != 0
 end
@@ -133,7 +133,7 @@ Get a package entry from a package database.
 `name`: of the package
 """
 get_pkg(db::DB, name) = with_handle(db.hdl) do
-    pkg = ccall((:alpm_db_get_pkg, libalpm), Ptr{Void}, (Ptr{Void}, Cstring),
+    pkg = ccall((:alpm_db_get_pkg, libalpm), Ptr{Cvoid}, (Ptr{Cvoid}, Cstring),
                 db, name)
     hdl = db.hdl
     pkg == C_NULL && throw(Error(hdl, "get_pkg"))
@@ -142,7 +142,7 @@ end
 
 "Get the package cache of a package database"
 get_pkgcache(db::DB) = with_handle(db.hdl) do
-    pkgs = ccall((:alpm_db_get_pkgcache, libalpm), Ptr{list_t}, (Ptr{Void},), db)
+    pkgs = ccall((:alpm_db_get_pkgcache, libalpm), Ptr{list_t}, (Ptr{Cvoid},), db)
     hdl = db.hdl
     list_to_array(Pkg, pkgs, p->Pkg(p, hdl))
 end

@@ -2,12 +2,12 @@
 
 "Open a package changelog for reading"
 mutable struct ChangeLog <: IO
-    ptr::Ptr{Void}
+    ptr::Ptr{Cvoid}
     pkg::Pkg
     function ChangeLog(pkg::Pkg)
         ptr = with_handle(pkg.hdl) do
             ccall((:alpm_pkg_changelog_open, libalpm),
-                  Ptr{Void}, (Ptr{Void},), pkg)
+                  Ptr{Cvoid}, (Ptr{Cvoid},), pkg)
         end
         ptr == C_NULL && throw(Error(pkg.hdl, "ChangeLog"))
         clog = new(ptr, pkg)
@@ -16,8 +16,8 @@ mutable struct ChangeLog <: IO
     end
 end
 
-Base.cconvert(::Type{Ptr{Void}}, clog::ChangeLog) = clog
-function Base.unsafe_convert(::Type{Ptr{Void}}, clog::ChangeLog)
+Base.cconvert(::Type{Ptr{Cvoid}}, clog::ChangeLog) = clog
+function Base.unsafe_convert(::Type{Ptr{Cvoid}}, clog::ChangeLog)
     ptr = clog.ptr
     ptr == C_NULL && throw(UndefRefError())
     ptr
@@ -36,7 +36,7 @@ function Base.close(clog::ChangeLog)
     ptr == C_NULL && return
     clog.ptr = C_NULL
     ccall((:alpm_pkg_changelog_close, libalpm),
-          Cint, (Ptr{Void}, Ptr{Void}), clog.pkg, ptr)
+          Cint, (Ptr{Cvoid}, Ptr{Cvoid}), clog.pkg, ptr)
     nothing
 end
 free(clog::ChangeLog) = close(clog)
@@ -44,7 +44,7 @@ free(clog::ChangeLog) = close(clog)
 @inline function unsafe_changelog_read(clog::ChangeLog, ptr::Ptr{UInt8},
                                        sz::UInt)
     ccall((:alpm_pkg_changelog_read, libalpm),
-          Csize_t, (Ptr{UInt8}, Csize_t, Ptr{Void}, Ptr{Void}),
+          Csize_t, (Ptr{UInt8}, Csize_t, Ptr{Cvoid}, Ptr{Cvoid}),
           ptr, sz, clog.pkg, clog)
 end
 

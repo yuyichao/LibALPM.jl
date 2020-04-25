@@ -25,7 +25,7 @@ end
 @inline function start_task_context(ctx::LazyTaskContext{T},
                                     t::T, curtask::Task) where T
     taskslot = pointer_from_objref(ctx) + sizeof(Int) * 2
-    taskptr = unsafe_load(Ptr{Ptr{Void}}(taskslot))
+    taskptr = unsafe_load(Ptr{Ptr{Cvoid}}(taskslot))
     if taskptr == C_NULL
         # Fast path
         ctx.curref = t
@@ -53,11 +53,11 @@ end
 @inline function end_task_context(ctx::LazyTaskContext, curtask::Task)
     taskslot = pointer_from_objref(ctx) + sizeof(Int) * 2
     refslot = pointer_from_objref(ctx) + sizeof(Int) * 3
-    taskptr = unsafe_load(Ptr{Ptr{Void}}(taskslot))
+    taskptr = unsafe_load(Ptr{Ptr{Cvoid}}(taskslot))
     if taskptr == pointer_from_objref(curtask) && ctx.dictcnt == 0
         # Fast path
-        unsafe_store!(Ptr{Ptr{Void}}(taskslot), C_NULL)
-        unsafe_store!(Ptr{Ptr{Void}}(refslot), C_NULL)
+        unsafe_store!(Ptr{Ptr{Cvoid}}(taskslot), C_NULL)
+        unsafe_store!(Ptr{Ptr{Cvoid}}(refslot), C_NULL)
         return
     end
     end_task_context_slow(ctx, curtask)
@@ -95,7 +95,7 @@ end
 
 function get_task_context(ctx::LazyTaskContext{T}) where T
     taskslot = pointer_from_objref(ctx) + sizeof(Int) * 2
-    taskptr = unsafe_load(Ptr{Ptr{Void}}(taskslot))
+    taskptr = unsafe_load(Ptr{Ptr{Cvoid}}(taskslot))
     curtask = current_task()
     taskptr == pointer_from_objref(curtask) && return ctx.curref
     ctx.dict[curtask]
@@ -103,9 +103,9 @@ end
 
 function ptr_to_utf8(p::Ptr)
     p == C_NULL && throw(ArgumentError("Cannot convert NULL to string"))
-    len = ccall(:strlen, Csize_t, (Ptr{Void},), p)
+    len = ccall(:strlen, Csize_t, (Ptr{Cvoid},), p)
     ary = ccall(:jl_ptr_to_array_1d, Ref{Vector{UInt8}},
-                (Any, Ptr{Void}, Csize_t, Cint), Vector{UInt8}, p, len, 1)
+                (Any, Ptr{Cvoid}, Csize_t, Cint), Vector{UInt8}, p, len, 1)
     String(ary)
 end
 
@@ -115,7 +115,7 @@ capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
 
 function take_cstring(ptr)
     str = unsafe_string(ptr)
-    ccall(:free, Void, (Ptr{Void},), ptr)
+    ccall(:free, Cvoid, (Ptr{Cvoid},), ptr)
     return str
 end
 

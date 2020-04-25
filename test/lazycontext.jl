@@ -2,7 +2,7 @@
 
 module TestLazyContext
 
-using Base.Test
+using Test
 using LibALPM
 
 # Not a public API

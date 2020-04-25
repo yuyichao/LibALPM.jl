@@ -114,12 +114,6 @@ LibALPM.add_assumeinstalled(hdl, "pacman=5.0")
 LibALPM.set_arch(hdl, Sys.ARCH)
 @test LibALPM.get_arch(hdl) == string(Sys.ARCH)
 
-@test LibALPM.get_deltaratio(hdl) == 0
-LibALPM.set_deltaratio(hdl, 0.7)
-@test LibALPM.get_deltaratio(hdl) == 0.7
-@test_throws LibALPM.Error LibALPM.set_deltaratio(hdl, 3.0)
-@test LibALPM.get_deltaratio(hdl) == 0.7
-
 @test !LibALPM.get_checkspace(hdl)
 LibALPM.set_checkspace(hdl, true)
 @test LibALPM.get_checkspace(hdl)

@@ -2,8 +2,7 @@
 
 import LibALPM
 import LibArchive
-using Base.Test
-using Compat
+using Test
 
 const thisdir = dirname(@__FILE__)
 
@@ -195,9 +194,6 @@ end
     @test LibALPM.get_db(glibcpkg2) === coredb
     @test !isempty(LibALPM.get_base64_sig(glibcpkg2))
     @test LibALPM.download_size(glibcpkg2) > 0
-    # Not sure what to expect ...
-    LibALPM.get_deltas(glibcpkg2)
-    LibALPM.unused_deltas(glibcpkg2)
 
     LibALPM.unregister(coredb)
     @test coredb.ptr == C_NULL
@@ -416,105 +412,6 @@ function repo_add(repodir, reponame, pkg)
     end
 end
 
-@testset "Delta" begin
-    has_pkgdelta = success(`which xdelta3`)
-    if !has_pkgdelta
-        warn("PkgDelta test skipped since `xdelta3` is not found.")
-    end
-    has_pkgdelta && mktempdir() do dir
-        pkgdir = joinpath(dir, "pkgdir")
-        hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Sys.ARCH)
-        delta_event = false
-        delta_event_nonnull = false
-        eventcb = (cbhdl::LibALPM.Handle, event::LibALPM.AbstractEvent) -> begin
-            @test cbhdl === hdl
-            if isa(event, LibALPM.Event.DeltaPatch)
-                event = event::LibALPM.Event.DeltaPatch
-                delta_event = true
-                !isnull(event.delta) && (delta_event_nonnull = true)
-            end
-        end
-        LibALPM.set_eventcb(hdl, eventcb)
-        LibALPM.set_deltaratio(hdl, 2.0)
-
-        pkg1 = makepkg(joinpath(thisdir, "pkgs", "PKGBUILD.backups"),
-                       pkgdir)[1]
-        repo_add(pkgdir, "alpmtest", pkg1)
-
-        testdb = LibALPM.register_syncdb(hdl, "alpmtest",
-                                         LibALPM.SigLevel.PACKAGE_OPTIONAL |
-                                         LibALPM.SigLevel.DATABASE_OPTIONAL)
-
-        LibALPM.set_servers(testdb, ["file://$pkgdir"])
-        @test !LibALPM.update(testdb, false)
-        @test LibALPM.update(testdb, false)
-        pkg_load = LibALPM.get_pkg(testdb, "backups")
-
-        LibALPM.trans_init(hdl, 0)
-        LibALPM.add_pkg(hdl, pkg_load)
-        LibALPM.trans_prepare(hdl)
-        LibALPM.trans_commit(hdl)
-        LibALPM.trans_release(hdl)
-
-        @test !delta_event
-        @test !delta_event_nonnull
-
-        pkg2 = makepkg(joinpath(thisdir, "pkgs", "PKGBUILD.backups2"),
-                       pkgdir)[1]
-        cd(pkgdir) do
-            run(`pkgdelta --min-pkg-size=0 $pkg1 $pkg2`)
-        end
-        deltapath = joinpath(pkgdir,
-                             "backups-0.1-1_to_0.2-1-$(Sys.ARCH).delta")
-        # Wait 2 second so that the timestamp changes...
-        sleep(2)
-        repo_add(pkgdir, "alpmtest", [deltapath, pkg2])
-
-        @test !LibALPM.update(testdb, false)
-        @test LibALPM.update(testdb, false)
-        pkg_load = LibALPM.get_pkg(testdb, "backups")
-        @test !isempty(LibALPM.get_deltas(pkg_load))
-        @test isempty(LibALPM.unused_deltas(pkg_load))
-
-        LibALPM.trans_init(hdl, 0)
-        LibALPM.sysupgrade(hdl, false)
-        LibALPM.trans_prepare(hdl)
-        LibALPM.trans_commit(hdl)
-        LibALPM.trans_release(hdl)
-
-        @test delta_event
-        @test delta_event_nonnull
-
-        LibALPM.release(hdl)
-
-        hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Sys.ARCH)
-
-        localdb = LibALPM.get_localdb(hdl)
-        pkg_local = LibALPM.get_pkg(localdb, "backups")
-
-        # It seems that newly installed package doesn't support this interface
-        LibArchive.Reader(pkg_local) do reader
-            entry = LibArchive.next_header(reader)
-            # Somehow reading the content doesn't work...
-            @test LibArchive.pathname(entry) == "./.BUILDINFO"
-            @test LibArchive.filetype(entry) == LibArchive.FileType.REG
-            LibArchive.free(entry)
-            entry = LibArchive.next_header(reader)
-            @test LibArchive.pathname(entry) == "./.PKGINFO"
-            @test LibArchive.filetype(entry) == LibArchive.FileType.REG
-            LibArchive.free(entry)
-            entry = LibArchive.next_header(reader)
-            @test LibArchive.pathname(entry) == "./backups"
-            @test LibArchive.filetype(entry) == LibArchive.FileType.REG
-            LibArchive.free(entry)
-        end
-
-        LibALPM.release(hdl)
-    end
-end
-
 @testset "ChangeLog" begin
     mktempdir() do dir
         pkgdir = joinpath(dir, "pkgdir")
@@ -580,7 +477,7 @@ end
             @test cbhdl === hdl
             if isa(event, LibALPM.Event.OptdepRemoval)
                 event = event::LibALPM.Event.OptdepRemoval
-                @test LibALPM.get_name(get(event.pkg)) == "optdeps2"
+                @test LibALPM.get_name(event.pkg) == "optdeps2"
                 @test event.optdep == LibALPM.Depend("optdeps1=0.1")
                 optdep_rm_event = true
             end

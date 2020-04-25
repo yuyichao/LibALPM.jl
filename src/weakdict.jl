@@ -1,10 +1,10 @@
 #!/usr/bin/julia -f
 
 mutable struct CObjMap
-    dict::Dict{Ptr{Void},WeakRef}
+    dict::Dict{Ptr{Cvoid},WeakRef}
     new_added::Int
     last_pause::Int
-    CObjMap() = new(Dict{Ptr{Void},WeakRef}(), 0, 0)
+    CObjMap() = new(Dict{Ptr{Cvoid},WeakRef}(), 0, 0)
 end
 
 function maybe_gc(map::CObjMap)
@@ -24,7 +24,7 @@ function maybe_gc(map::CObjMap)
     end
 end
 
-function Base.setindex!(map::CObjMap, @nospecialize(val), ptr::Ptr{Void})
+function Base.setindex!(map::CObjMap, @nospecialize(val), ptr::Ptr{Cvoid})
     maybe_gc(map)
     ref = WeakRef(val)
     map.new_added += 1
@@ -32,13 +32,13 @@ function Base.setindex!(map::CObjMap, @nospecialize(val), ptr::Ptr{Void})
     nothing
 end
 
-function Base.getindex(map::CObjMap, ptr::Ptr{Void}, ::Type{T}) where T
+function Base.getindex(map::CObjMap, ptr::Ptr{Cvoid}, ::Type{T}) where T
     if ptr in keys(map.dict)
         val = map.dict[ptr].value
-        val !== nothing && return Nullable{T}(val::T)
+        val !== nothing && return v::T
     end
-    Nullable{T}()
+    return nothing
 end
 
-Base.delete!(map::CObjMap, ptr::Ptr{Void}) =
+Base.delete!(map::CObjMap, ptr::Ptr{Cvoid}) =
     delete!(map.dict, ptr)
