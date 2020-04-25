@@ -3,7 +3,8 @@
 module Errno
 import LibALPM: libalpm
 @enum(errno_t,
-      MEMORY = 1,
+      OK = 0,
+      MEMORY,
       SYSTEM,
       BADPERMS,
       NOT_A_FILE,
@@ -64,7 +65,10 @@ import LibALPM: libalpm
       LIBARCHIVE,
       LIBCURL,
       EXTERNAL_DOWNLOAD,
-      GPGME)
+      GPGME,
+      # Missing compile-time features
+      MISSING_CAPABILITY_SIGNATURES
+      )
 Libc.strerror(err::errno_t) =
     unsafe_string(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
 end
@@ -148,7 +152,7 @@ const DATABASE_OPTIONAL = UInt32(1) << 11
 const DATABASE_MARGINAL_OK = UInt32(1) << 12
 const DATABASE_UNKNOWN_OK = UInt32(1) << 13
 
-const USE_DEFAULT = (UInt32(1) << 31)
+const USE_DEFAULT = (UInt32(1) << 30)
 end
 
 "PGP signature verification status return codes"
@@ -191,87 +195,88 @@ end
 "Type of events"
 module EventType
 @enum(event_type_t,
-      # Dependencies will be computed for a package
-      CHECKDEPS_START=1,
-      # Dependencies were computed for a package
+      # Dependencies will be computed for a package.
+      CHECKDEPS_START = 1,
+      # Dependencies were computed for a package.
       CHECKDEPS_DONE,
-      # File conflicts will be computed for a package
+      # File conflicts will be computed for a package.
       FILECONFLICTS_START,
-      # File conflicts were computed for a package
+      # File conflicts were computed for a package.
       FILECONFLICTS_DONE,
-      # Dependencies will be resolved for target package
+      # Dependencies will be resolved for target package.
       RESOLVEDEPS_START,
-      # Dependencies were resolved for target package
+      # Dependencies were resolved for target package.
       RESOLVEDEPS_DONE,
-      # Inter-conflicts will be checked for target package
+      # Inter-conflicts will be checked for target package.
       INTERCONFLICTS_START,
-      # Inter-conflicts were checked for target package
+      # Inter-conflicts were checked for target package.
       INTERCONFLICTS_DONE,
-      # Processing the package transaction is starting
+      # Processing the package transaction is starting.
       TRANSACTION_START,
-      # Processing the package transaction is finished
+      # Processing the package transaction is finished.
       TRANSACTION_DONE,
       # Package will be installed/upgraded/downgraded/re-installed/removed; See
-      # Event.PackageOperation for arguments
+      # alpm_event_package_operation_t for arguments.
       PACKAGE_OPERATION_START,
       # Package was installed/upgraded/downgraded/re-installed/removed; See
-      # Event.PackageOperation for arguments
+      # alpm_event_package_operation_t for arguments.
       PACKAGE_OPERATION_DONE,
-      # Target package's integrity will be checked
+      # Target package's integrity will be checked.
       INTEGRITY_START,
-      # Target package's integrity was checked
+      # Target package's integrity was checked.
       INTEGRITY_DONE,
-      # Target package will be loaded
+      # Target package will be loaded.
       LOAD_START,
-      # Target package is finished loading
+      # Target package is finished loading.
       LOAD_DONE,
-      # Scriptlet has printed information; See Event.ScriptletInfo for
-      # arguments
+      # Scriptlet has printed information; See alpm_event_scriptlet_info_t for
+      # arguments.
       SCRIPTLET_INFO,
-      # Files will be downloaded from a repository
+      # Files will be downloaded from a repository.
       RETRIEVE_START,
-      # Files were downloaded from a repository
+      # Files were downloaded from a repository.
       RETRIEVE_DONE,
-      # Not all files were successfully downloaded from a repository
+      # Not all files were successfully downloaded from a repository.
       RETRIEVE_FAILED,
-      # A file will be downloaded from a repository; See Event.PkgDownload
+      # A file will be downloaded from a repository; See alpm_event_pkgdownload_t
       # for arguments
       PKGDOWNLOAD_START,
-      # A file was downloaded from a repository; See Event.PkgDownload
+      # A file was downloaded from a repository; See alpm_event_pkgdownload_t
       # for arguments
       PKGDOWNLOAD_DONE,
       # A file failed to be downloaded from a repository; See
-      # Event.PkgDownload for arguments
+      # alpm_event_pkgdownload_t for arguments
       PKGDOWNLOAD_FAILED,
-      # Disk space usage will be computed for a package
+      # Disk space usage will be computed for a package.
       DISKSPACE_START,
-      # Disk space usage was computed for a package
+      # Disk space usage was computed for a package.
       DISKSPACE_DONE,
       # An optdepend for another package is being removed; See
-      # Event.OptdepRemoval for arguments
+      # alpm_event_optdep_removal_t for arguments.
       OPTDEP_REMOVAL,
       # A configured repository database is missing; See
-      # Event.DatabaseMissing for arguments
+      # alpm_event_database_missing_t for arguments.
       DATABASE_MISSING,
-      # Checking keys used to create signatures are in keyring
+      # Checking keys used to create signatures are in keyring.
       KEYRING_START,
-      # Keyring checking is finished
+      # Keyring checking is finished.
       KEYRING_DONE,
-      # Downloading missing keys into keyring
+      # Downloading missing keys into keyring.
       KEY_DOWNLOAD_START,
-      # Key downloading is finished
+      # Key downloading is finished.
       KEY_DOWNLOAD_DONE,
-      # A .pacnew file was created; See Event.PacnewCreated for arguments
+      # A .pacnew file was created; See alpm_event_pacnew_created_t for arguments.
       PACNEW_CREATED,
-      # A .pacsave file was created; See Event.PacsaveCreated for arguments
+      # A .pacsave file was created; See alpm_event_pacsave_created_t for
+      # arguments
       PACSAVE_CREATED,
-      # Processing hooks will be started
+      # Processing hooks will be started.
       HOOK_START,
-      # Processing hooks is finished
+      # Processing hooks is finished.
       HOOK_DONE,
       # A hook is starting
       HOOK_RUN_START,
-      # A hook has finnished runnning
+      # A hook has finished running
       HOOK_RUN_DONE)
 end
 import .EventType.event_type_t
