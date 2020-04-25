@@ -237,7 +237,7 @@ get_files(pkg::Pkg) = with_handle(pkg.hdl) do
     listptr = ccall((:alpm_pkg_get_files, libalpm), Ptr{CTypes.FileList},
                     (Ptr{Cvoid},), pkg)
     list = unsafe_load(listptr)
-    ary = Vector{File}(list.count)
+    ary = Vector{File}(undef, list.count)
     for i in 1:list.count
         @inbounds ary[i] = File(list.files + sizeof(CTypes.File) * (i - 1))
     end

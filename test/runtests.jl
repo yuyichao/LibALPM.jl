@@ -2,6 +2,8 @@
 
 import LibALPM
 import LibArchive
+
+using Random
 using Test
 
 const thisdir = dirname(@__FILE__)
@@ -16,10 +18,10 @@ function get_default_url(repo)
             m === nothing && continue
             m = m::RegexMatch
             urltemplate = m.captures[1]
-            return replace(replace(urltemplate, "\$repo", repo),
-                           "\$arch", string(Sys.ARCH))
+            return replace(replace(urltemplate, "\$repo"=>repo),
+                           "\$arch"=>string(Sys.ARCH))
         end
-        warn("Cannot find default server, use mirrors.kernel.org instead")
+        @warn("Cannot find default server, use mirrors.kernel.org instead")
         return "http://mirrors.kernel.org/archlinux/$repo/os/$(Sys.ARCH)"
     end
 end
@@ -134,6 +136,7 @@ end
     hdl = LibALPM.Handle("/", "/var/lib/pacman/")
     localdb = LibALPM.get_localdb(hdl)
     glibcpkg = LibALPM.get_pkg(localdb, "glibc")
+    pacmanpkg = LibALPM.get_pkg(localdb, "pacman")
     str = sprint(io->show(io, glibcpkg))
     @test contains(str, "name=\"glibc\"")
     # checkmd5sum is only for package from local file?
@@ -145,8 +148,9 @@ end
     # no filename for localdb package
     @test_throws ArgumentError LibALPM.get_filename(glibcpkg)
     # no pkgbase for localdb package
-    @test_throws ArgumentError LibALPM.get_base(glibcpkg)
+    @test LibALPM.get_base(glibcpkg) == "glibc"
     @test LibALPM.get_name(glibcpkg) == "glibc"
+    @test LibALPM.get_name(pacmanpkg) == "pacman"
     @test isa(LibALPM.get_version(glibcpkg), String)
     @test LibALPM.get_origin(glibcpkg) == LibALPM.PkgFrom.LOCALDB
     # GNU C Library
@@ -166,7 +170,8 @@ end
     @test LibALPM.get_reason(glibcpkg) in [LibALPM.PkgReason.EXPLICIT,
                                            LibALPM.PkgReason.DEPEND]
     @test LibALPM.get_licenses(glibcpkg) == ["GPL", "LGPL"]
-    @test LibALPM.get_groups(glibcpkg) == ["base"]
+    @test LibALPM.get_groups(glibcpkg) == []
+    @test LibALPM.get_groups(pacmanpkg) == ["base-devel"]
     @test !isempty(LibALPM.get_files(glibcpkg))
     @test !isempty(LibALPM.get_backup(glibcpkg))
     @test LibALPM.get_db(glibcpkg) === localdb
@@ -278,7 +283,7 @@ end
 
         @test LibALPM.get_servers(coredb) == []
         mirrorurl = get_default_url("core")
-        info("Mirror used: \"$mirrorurl\"")
+        @info("Mirror used: \"$mirrorurl\"")
         LibALPM.set_servers(coredb, [mirrorurl])
         @test !LibALPM.update(coredb, false)
         # This can fail if the remote is updated right in between the two calls
@@ -431,7 +436,7 @@ end
         logstart = "# Version 0.0\n\n"
         @test String(read(clog, length(logstart))) == logstart
         lognext = "Random text\n\n"
-        buf = Vector{UInt8}(length(lognext))
+        buf = Vector{UInt8}(undef, length(lognext))
         @test readbytes!(clog, buf) == length(lognext)
         @test String(buf) == lognext
         logend = "# Version 0.1\n\nNothing new here\n"
@@ -537,13 +542,13 @@ end
                                          LibALPM.SigLevel.PACKAGE_OPTIONAL |
                                          LibALPM.SigLevel.DATABASE_OPTIONAL)
         mirrorurl = get_default_url("core")
-        info("Mirror used: \"$mirrorurl\"")
+        @info("Mirror used: \"$mirrorurl\"")
         LibALPM.set_servers(coredb, [mirrorurl])
         extradb = LibALPM.register_syncdb(hdl, "extra",
                                           LibALPM.SigLevel.PACKAGE_OPTIONAL |
                                           LibALPM.SigLevel.DATABASE_OPTIONAL)
         mirrorurl = get_default_url("extra")
-        info("Mirror used: \"$mirrorurl\"")
+        @info("Mirror used: \"$mirrorurl\"")
         LibALPM.set_servers(extradb, [mirrorurl])
 
         LibALPM.update(coredb, false)
@@ -581,14 +586,14 @@ end
             error("This error is expected")
         end
         LibALPM.set_logcb(hdl, logcb)
-        old_stderr = STDERR
+        old_stderr = stderr
         new_stderr = redirect_stderr(open("/dev/null", "w"))
         localdb = LibALPM.get_localdb(hdl)
         coredb = LibALPM.register_syncdb(hdl, "core",
                                          LibALPM.SigLevel.PACKAGE_OPTIONAL |
                                          LibALPM.SigLevel.DATABASE_OPTIONAL)
         mirrorurl = get_default_url("core")
-        info("Mirror used: \"$mirrorurl\"")
+        @info("Mirror used: \"$mirrorurl\"")
         LibALPM.set_servers(coredb, [mirrorurl])
         LibALPM.update(coredb, false)
 

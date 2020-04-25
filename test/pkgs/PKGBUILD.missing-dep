@@ -8,6 +8,6 @@ license=('GPL')
 source=()
 
 package() {
-  depends=('does-not-exist: Just for fun')
+  depends=('does-not-exist')
   touch "$pkgdir/missing-dep"
 }

@@ -35,7 +35,7 @@ end
 function Base.getindex(map::CObjMap, ptr::Ptr{Cvoid}, ::Type{T}) where T
     if ptr in keys(map.dict)
         val = map.dict[ptr].value
-        val !== nothing && return v::T
+        val !== nothing && return val::T
     end
     return nothing
 end

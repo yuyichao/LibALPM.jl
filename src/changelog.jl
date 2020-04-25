@@ -72,7 +72,7 @@ end
 "Read data from `ChangeLog`"
 function Base.read(clog::ChangeLog)
     block_size = UInt(1024)
-    res = Vector{UInt8}(block_size)
+    res = Vector{UInt8}(undef, block_size)
     pos = 1
     while true
         ptr = Base.unsafe_convert(Ptr{UInt8}, Ref(res, pos))

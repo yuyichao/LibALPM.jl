@@ -44,11 +44,11 @@ end
         catch ex
             @test isa(ex, LibALPM.TransPrepareError{LibALPM.DepMissing})
             @test ex.errno == LibALPM.Errno.UNSATISFIED_DEPS
-            dep = LibALPM.Depend("does-not-exist: Just for fun")
+            dep = LibALPM.Depend("does-not-exist")
             @test ex.list == [LibALPM.DepMissing("missing-dep", dep)]
             str = sprint(io->Base.showerror(io, ex))
             @test contains(str, "Missing dependencies:")
-            @test contains(str, "does-not-exist: Just for fun")
+            @test contains(str, "does-not-exist")
         end
         LibALPM.trans_release(hdl)
         LibALPM.release(hdl)
