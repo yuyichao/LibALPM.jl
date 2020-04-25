@@ -16,7 +16,7 @@ using LibALPM
     list = LibALPM.array_to_list(["1", "3", "44"],
                                  s->ccall(:strdup, Ptr{Cvoid}, (Cstring,), s),
                                  cglobal(:free))
-    ary = LibALPM.list_to_array(String, list, LibALPM.ptr_to_utf8)
+    ary = LibALPM.list_to_array(String, list, LibALPM.take_cstring)
     LibALPM.free(list)
     @test ary == ["1", "3", "44"]
 

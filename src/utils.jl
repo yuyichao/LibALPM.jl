@@ -101,21 +101,13 @@ function get_task_context(ctx::LazyTaskContext{T}) where T
     ctx.dict[curtask]
 end
 
-function ptr_to_utf8(p::Ptr)
-    p == C_NULL && throw(ArgumentError("Cannot convert NULL to string"))
-    len = ccall(:strlen, Csize_t, (Ptr{Cvoid},), p)
-    ary = ccall(:jl_ptr_to_array_1d, Ref{Vector{UInt8}},
-                (Any, Ptr{Cvoid}, Csize_t, Cint), Vector{UInt8}, p, len, 1)
-    String(ary)
-end
-
 version() =
     VersionNumber(unsafe_string(ccall((:alpm_version, libalpm), Ptr{UInt8}, ())))
 capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
 
 function take_cstring(ptr)
-    str = unsafe_string(ptr)
-    ccall(:free, Cvoid, (Ptr{Cvoid},), ptr)
+    str = unsafe_string(Ptr{UInt8}(ptr))
+    ccall(:free, Cvoid, (Ptr{Cvoid},), Ptr{Cvoid}(ptr))
     return str
 end
 

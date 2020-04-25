@@ -740,7 +740,7 @@ trans_prepare(hdl::Handle) = with_handle(hdl) do
         # CONFLICTING_DEPS:
         #     Conflict with all internal pointer allocated (dup'd)
         if errno == Errno.PKG_INVALID_ARCH
-            ary = list_to_array(String, list[], ptr_to_utf8, cglobal(:free))
+            ary = list_to_array(String, list[], take_cstring, cglobal(:free))
             throw(TransPrepareError(errno, ary))
         elseif errno == Errno.UNSATISFIED_DEPS
             ary = list_to_array(DepMissing, list[], DepMissing,
@@ -803,7 +803,7 @@ trans_commit(hdl::Handle) = with_handle(hdl) do
                                 cglobal((:alpm_fileconflict_free, libalpm)))
             throw(TransCommitError(errno, ary))
         else
-            ary = list_to_array(String, list[], ptr_to_utf8, cglobal(:free))
+            ary = list_to_array(String, list[], take_cstring, cglobal(:free))
             throw(TransCommitError(errno, ary))
         end
     end

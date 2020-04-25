@@ -72,14 +72,14 @@ end
 compute_requiredby(pkg::Pkg) = with_handle(pkg.hdl) do
     list = ccall((:alpm_pkg_compute_requiredby, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), pkg)
-    list_to_array(String, list, ptr_to_utf8, cglobal(:free))
+    list_to_array(String, list, take_cstring, cglobal(:free))
 end
 
 "Computes the list of packages optionally requiring a given package"
 compute_optionalfor(pkg::Pkg) = with_handle(pkg.hdl) do
     list = ccall((:alpm_pkg_compute_optionalfor, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), pkg)
-    list_to_array(String, list, ptr_to_utf8, cglobal(:free))
+    list_to_array(String, list, take_cstring, cglobal(:free))
 end
 
 """

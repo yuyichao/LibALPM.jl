@@ -273,8 +273,9 @@ end
 
 function cstr_to_utf8(cstr, own)
     cstr == C_NULL && return ""
-    own && return ptr_to_utf8(Ptr{UInt8}(cstr))
-    unsafe_string(Ptr{UInt8}(cstr))
+    res = unsafe_string(Ptr{UInt8}(cstr))
+    own && ccall(:free, Cvoid, (Ptr{Cvoid},), Ptr{Cvoid}(cstr))
+    return res
 end
 
 struct Depend
@@ -336,8 +337,8 @@ end
 
 "Returns a string representing the dependency information"
 compute_string(dep::Depend) =
-    ptr_to_utf8(ccall((:alpm_dep_compute_string, libalpm), Ptr{UInt8},
-                      (Ptr{CTypes.Depend},), dep))
+    take_cstring(ccall((:alpm_dep_compute_string, libalpm), Ptr{UInt8},
+                       (Ptr{CTypes.Depend},), dep))
 
 function Base.show(io::IO, dep::Depend)
     print(io, "LibALPM.Depend(")
