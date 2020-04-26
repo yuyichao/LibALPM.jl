@@ -5,7 +5,8 @@ services:
 language: c
 matrix:
   include:
-    - env: ARCHJL_JULIA_VERSION=0.6
+    - env: ARCHJL_JULIA_VERSION=1.3
+    - env: ARCHJL_JULIA_VERSION=1.4
     - env: ARCHJL_JULIA_VERSION=nightly
 before_install:
   - (cd travis && docker build -f Dockerfile -t archjl . --build-arg JULIA_VERSION=$ARCHJL_JULIA_VERSION)
