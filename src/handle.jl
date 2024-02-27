@@ -50,8 +50,7 @@ function cb_show_error(ex)
     end
 end
 
-function libalpm_log_cb(level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
-    hdl = get_task_context(hdlctx)
+function libalpm_log_cb(hdl, level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
     cb = get(hdl.cbs, :log, nothing)
     cb === nothing && return
     len = printf_len(fmt, ap)
@@ -68,8 +67,7 @@ function libalpm_log_cb(level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
     nothing
 end
 
-function libalpm_event_cb(eventptr::Ptr{Cvoid})
-    hdl = get_task_context(hdlctx)
+function libalpm_event_cb(hdl, eventptr::Ptr{Cvoid})
     cb = get(hdl.cbs, :event, nothing)
     cb === nothing && return
     try
@@ -97,12 +95,15 @@ mutable struct Handle
         finalizer(self, release)
         with_handle(self) do
             ccall((:alpm_option_set_logcb, libalpm),
-                  Cint, (Ptr{Cvoid}, Ptr{Cvoid}),
+                  Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ref{Handle}),
                   self, @cfunction(libalpm_log_cb, Cvoid,
-                                   (UInt32, Ptr{UInt8}, va_list_arg_t)))
+                                   (Ref{Handle}, UInt32, Ptr{UInt8}, va_list_arg_t)),
+                  self)
             ccall((:alpm_option_set_eventcb, libalpm),
-                  Cint, (Ptr{Cvoid}, Ptr{Cvoid}),
-                  self, @cfunction(libalpm_event_cb, Cvoid, (Ptr{Cvoid},)))
+                  Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ref{Handle}),
+                  self, @cfunction(libalpm_event_cb,
+                                   Cvoid, (Ref{Handle}, Ptr{Cvoid})),
+                  self)
         end
         self
     end
@@ -170,7 +171,11 @@ function release(hdl::Handle)
         _null_all_pkgs(pkgs)
         _null_all_dbs(dbs)
         hdl.ptr = C_NULL
-        ccall((:alpm_release, libalpm), Cint, (Ptr{Cvoid},), ptr)
+        # The callback table contains a reference to the julia hdl object
+        # so we still need to preserve hdl.
+        GC.@preserve hdl begin
+            ccall((:alpm_release, libalpm), Cint, (Ptr{Cvoid},), ptr)
+        end
     end
     nothing
 end
