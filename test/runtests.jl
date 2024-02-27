@@ -144,8 +144,7 @@ end
     # checkmd5sum is only for package from local file?
     @test_throws LibALPM.Error LibALPM.checkmd5sum(glibcpkg)
     @test !isempty(LibALPM.compute_requiredby(glibcpkg))
-    # no known package that optionally depend on glibc...
-    @test isempty(LibALPM.compute_optionalfor(glibcpkg))
+    @test !isempty(LibALPM.compute_optionalfor(glibcpkg)) # tzdata
     @test !LibALPM.should_ignore(glibcpkg)
     # no filename for localdb package
     @test_throws ArgumentError LibALPM.get_filename(glibcpkg)
@@ -173,7 +172,7 @@ end
                                            LibALPM.PkgReason.DEPEND]
     @test LibALPM.get_licenses(glibcpkg) == ["GPL", "LGPL"]
     @test LibALPM.get_groups(glibcpkg) == []
-    @test LibALPM.get_groups(pacmanpkg) == ["base-devel"]
+    @test LibALPM.get_groups(pacmanpkg) == []
     @test !isempty(LibALPM.get_files(glibcpkg))
     @test !isempty(LibALPM.get_backup(glibcpkg))
     @test LibALPM.get_db(glibcpkg) === localdb
