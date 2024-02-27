@@ -85,7 +85,9 @@ end
 @testset "Fetch" begin
     hdl = LibALPM.Handle("/", "/var/lib/pacman/")
     try
-        LibALPM.fetch_pkgurl(hdl, "not-exist-url.abcd")
+        # The invalid URL must contain a `/` or libalpm will crash.
+        # Ref https://gitlab.archlinux.org/pacman/pacman/-/issues/99
+        LibALPM.fetch_pkgurl(hdl, "/not-exist-url.abcd")
     catch ex
         @test isa(ex, LibALPM.Error)
         str = sprint(io->Base.showerror(io, ex))
