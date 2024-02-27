@@ -55,7 +55,7 @@ function libalpm_log_cb(level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
     cb = get(hdl.cbs, :log, nothing)
     cb === nothing && return
     len = printf_len(fmt, ap)
-    buf = zeros(UInt8, len - 1)
+    buf = zeros(UInt8, len)
     ccall(:vsnprintf, Cint,
           (Ptr{UInt8}, Csize_t, Ptr{UInt8}, va_list_arg_t),
           buf, len, fmt, ap)
