@@ -33,6 +33,7 @@ import LibALPM: libalpm
       TRANS_NOT_NULL,
       TRANS_NULL,
       TRANS_DUP_TARGET,
+      TRANS_DUP_FILENAME,
       TRANS_NOT_INITIALIZED,
       TRANS_NOT_PREPARED,
       TRANS_ABORT,
@@ -50,7 +51,6 @@ import LibALPM: libalpm
       PKG_CANT_REMOVE,
       PKG_INVALID_NAME,
       PKG_INVALID_ARCH,
-      PKG_REPO_NOT_FOUND,
       # Signatures
       SIG_MISSING,
       SIG_INVALID,
