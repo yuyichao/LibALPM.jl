@@ -100,8 +100,10 @@ function set_servers(db::DB, servers)
     list = array_to_list(servers,
                          str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
-    ret = ccall((:alpm_db_set_servers, libalpm), Cint,
-                (Ptr{Cvoid}, Ptr{list_t}), db, list)
+    ret = with_handle(db.hdl) do
+        ccall((:alpm_db_set_servers, libalpm), Cint,
+                    (Ptr{Cvoid}, Ptr{list_t}), db, list)
+    end
     if ret != 0
         free(list, cglobal(:free))
         throw(Error(db.hdl, "set_servers"))
