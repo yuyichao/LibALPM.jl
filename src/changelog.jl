@@ -63,8 +63,7 @@ end
 
 "Read data from `ChangeLog`"
 function Base.readbytes!(clog::ChangeLog, b::Array{UInt8}, nb=length(b))
-    nbread = unsafe_changelog_read(clog, Base.unsafe_convert(Ptr{UInt8}, b),
-                                   UInt(nb))
+    nbread = unsafe_changelog_read(clog, pointer(b), UInt(nb))
     nbread < nb && resize!(b, nbread)
     nbread
 end
