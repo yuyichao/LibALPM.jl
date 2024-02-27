@@ -57,7 +57,6 @@ function makepkg(pkgbuild, dest, arch=string(Sys.ARCH); copy_files=String[])
     end
 end
 
-include("lazycontext.jl")
 include("list.jl")
 
 @testset "Errno" begin
