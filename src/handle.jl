@@ -194,18 +194,25 @@ unlock(hdl::Handle) = with_handle(hdl) do
 end
 
 """
-Fetch a remote pkg
+Fetch a list of remote packages.
 
 `hdl`: the context handle
-`url` URL of the package to download
-Returns the downloaded filepath on success.
+`urls`: urls list of package URLs to download
+Returns the downloaded filepaths on success.
 """
-fetch_pkgurl(hdl::Handle, url) = with_handle(hdl) do
-    ptr = ccall((:alpm_fetch_pkgurl, libalpm), Ptr{UInt8},
-                (Ptr{Cvoid}, Cstring), hdl, url)
-    ptr == C_NULL && throw(Error(hdl, "fetch_pkgurl"))
-    unsafe_string(ptr)
+fetch_pkgurl(hdl::Handle, urls) = with_handle(hdl) do
+    path_list = Ref{Ptr{list_t}}(0)
+    # TODO, we should be able to avoid copying in some cases
+    url_list = array_to_list(urls, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
+                             cglobal(:free))
+    ret = ccall((:alpm_fetch_pkgurl, libalpm), Cint,
+                (Ptr{Cvoid}, Ptr{list_t}, Ptr{Ptr{list_t}}),
+                hdl, url_list, path_list)
+    free(url_list, cglobal(:free))
+    ret != 0 && throw(Error(hdl, "fetch_pkgurl"))
+    return list_to_array(String, path_list[], p->unsafe_string(Ptr{UInt8}(p)))
 end
+fetch_pkgurl(hdl::Handle, url::AbstractString) = fetch_pkgurl(hdl, [url])[1]
 
 "Returns the root of the destination filesystem"
 function get_root(hdl::Handle)
