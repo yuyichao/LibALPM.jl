@@ -232,21 +232,21 @@ module EventType
       # Scriptlet has printed information; See alpm_event_scriptlet_info_t for
       # arguments.
       SCRIPTLET_INFO,
-      # Files will be downloaded from a repository.
-      RETRIEVE_START,
-      # Files were downloaded from a repository.
-      RETRIEVE_DONE,
-      # Not all files were successfully downloaded from a repository.
-      RETRIEVE_FAILED,
+      # Database files will be downloaded from a repository.
+      DB_RETRIEVE_START,
+      # Database files were downloaded from a repository.
+      DB_RETRIEVE_DONE,
+      # Not all database files were successfully downloaded from a repository.
+      DB_RETRIEVE_FAILED,
       # A file will be downloaded from a repository; See alpm_event_pkgdownload_t
       # for arguments
-      PKGDOWNLOAD_START,
+      PKG_RETRIEVE_START,
       # A file was downloaded from a repository; See alpm_event_pkgdownload_t
       # for arguments
-      PKGDOWNLOAD_DONE,
+      PKG_RETRIEVE_DONE,
       # A file failed to be downloaded from a repository; See
       # alpm_event_pkgdownload_t for arguments
-      PKGDOWNLOAD_FAILED,
+      PKG_RETRIEVE_FAILED,
       # Disk space usage will be computed for a package.
       DISKSPACE_START,
       # Disk space usage was computed for a package.

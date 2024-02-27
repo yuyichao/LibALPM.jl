@@ -61,13 +61,24 @@ struct DatabaseMissing <: AbstractEvent
     end
 end
 
-struct PkgDownload <: AbstractEvent
+# struct PkgDownload <: AbstractEvent
+#     event_type::event_type_t
+#     # Name of the file
+#     file::String
+#     function PkgDownload(hdl::Handle, ptr::Ptr{Cvoid})
+#         cevent = unsafe_load(Ptr{CEvent.PkgDownload}(ptr))
+#         new(cevent._type, unsafe_string(Ptr{UInt8}(cevent.file)))
+#     end
+# end
+struct PkgRetrieve <: AbstractEvent
     event_type::event_type_t
-    # Name of the file
-    file::String
-    function PkgDownload(hdl::Handle, ptr::Ptr{Cvoid})
-        cevent = unsafe_load(Ptr{CEvent.PkgDownload}(ptr))
-        new(cevent._type, unsafe_string(Ptr{UInt8}(cevent.file)))
+    # Number of packages to download
+    num::Csize_t
+    # Total size of packages to download
+    total_size::Int
+    function PkgRetrieve(hdl::Handle, ptr::Ptr{Cvoid})
+        cevent = unsafe_load(Ptr{CEvent.PkgRetrieve}(ptr))
+        new(cevent._type, cevent.num, cevent.total_size)
     end
 end
 
@@ -144,10 +155,10 @@ import .Event.AbstractEvent
         cb(hdl, Event.ScriptletInfo(hdl, ptr))
     elseif event_type == EventType.DATABASE_MISSING
         cb(hdl, Event.DatabaseMissing(hdl, ptr))
-    elseif (event_type == EventType.PKGDOWNLOAD_START ||
-            event_type == EventType.PKGDOWNLOAD_DONE ||
-            event_type == EventType.PKGDOWNLOAD_FAILED)
-        cb(hdl, Event.PkgDownload(hdl, ptr))
+    elseif (event_type == EventType.PKG_RETRIEVE_START ||
+            event_type == EventType.PKG_RETRIEVE_DONE ||
+            event_type == EventType.PKG_RETRIEVE_FAILED)
+        cb(hdl, Event.PkgRetrieve(hdl, ptr))
     elseif event_type == EventType.PACNEW_CREATED
         cb(hdl, Event.PacnewCreated(hdl, ptr))
     elseif event_type == EventType.PACSAVE_CREATED

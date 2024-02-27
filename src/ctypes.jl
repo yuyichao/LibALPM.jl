@@ -135,10 +135,17 @@ struct DatabaseMissing <: AbstractEvent
     dbname::Cstring
 end
 
-struct PkgDownload <: AbstractEvent
+# struct PkgDownload <: AbstractEvent
+#     _type::event_type_t
+#     # Name of the file
+#     file::Cstring
+# end
+struct PkgRetrieve <: AbstractEvent
     _type::event_type_t
-    # Name of the file
-    file::Cstring
+    # Number of packages to download
+    num::Csize_t
+    # Total size of packages to download
+    total_size::Int # off_t
 end
 
 struct PacnewCreated <: AbstractEvent
