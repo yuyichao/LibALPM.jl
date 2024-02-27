@@ -483,18 +483,37 @@ remove_ignoregroup(hdl::Handle, ignoregroup) = with_handle(hdl) do
     ret != 0
 end
 
-"Returns the targeted architecture"
-function get_arch(hdl::Handle)
+"Returns the allowed package architecture."
+function get_architectures(hdl::Handle)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_option_get_arch, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), hdl))
+    dirs = ccall((:alpm_option_get_architectures, libalpm), Ptr{list_t},
+                 (Ptr{Cvoid},), hdl)
+    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
 end
-"Sets the targeted architecture"
-set_arch(hdl::Handle, arch) = with_handle(hdl) do
-    ret = ccall((:alpm_option_set_arch, libalpm), Cint,
-                (Ptr{Cvoid}, Cstring), hdl, arch)
-    ret == 0 || throw(Error(hdl, "set_arch"))
+"Sets the allowed package architecture."
+set_architectures(hdl::Handle, dirs) = with_handle(hdl) do
+    list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
+                         cglobal(:free))
+    ret = ccall((:alpm_option_set_architectures, libalpm), Cint,
+                (Ptr{Cvoid}, Ptr{list_t}), hdl, list)
+    if ret != 0
+        free(list, cglobal(:free))
+        throw(Error(hdl, "set_architectures"))
+    end
+end
+"Adds an allowed package architecture."
+add_architecture(hdl::Handle, architecture) = with_handle(hdl) do
+    ret = ccall((:alpm_option_add_architecture, libalpm), Cint,
+                (Ptr{Cvoid}, Cstring), hdl, architecture)
+    ret == 0 || throw(Error(hdl, "add_architecture"))
     nothing
+end
+"Removes an allowed package architecture."
+remove_architecture(hdl::Handle, architecture) = with_handle(hdl) do
+    ret = ccall((:alpm_option_remove_architecture, libalpm), Cint,
+                (Ptr{Cvoid}, Cstring), hdl, architecture)
+    ret < 0 && throw(Error(hdl, "remove_architecture"))
+    ret != 0
 end
 
 function get_checkspace(hdl::Handle)

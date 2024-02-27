@@ -110,9 +110,15 @@ LibALPM.add_assumeinstalled(hdl, "pacman=5.0")
 @test LibALPM.get_assumeinstalled(hdl) == [LibALPM.Depend("linux=4.4"),
                                            LibALPM.Depend("pacman=5.0")]
 
-@test_throws ArgumentError LibALPM.get_arch(hdl)
-LibALPM.set_arch(hdl, Sys.ARCH)
-@test LibALPM.get_arch(hdl) == string(Sys.ARCH)
+@test LibALPM.get_architectures(hdl) == []
+LibALPM.add_architecture(hdl, Sys.ARCH)
+@test LibALPM.get_architectures(hdl) == [string(Sys.ARCH)]
+LibALPM.set_architectures(hdl, ["x86_64", "aarch64"])
+@test LibALPM.get_architectures(hdl) == ["x86_64", "aarch64"]
+LibALPM.remove_architecture(hdl, "x86_64")
+@test LibALPM.get_architectures(hdl) == ["aarch64"]
+LibALPM.set_architectures(hdl, [Sys.ARCH])
+@test LibALPM.get_architectures(hdl) == [string(Sys.ARCH)]
 
 @test !LibALPM.get_checkspace(hdl)
 LibALPM.set_checkspace(hdl, true)
