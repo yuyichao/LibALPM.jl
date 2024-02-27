@@ -777,8 +777,7 @@ trans_prepare(hdl::Handle) = with_handle(hdl) do
                                 cglobal((:alpm_conflict_free, libalpm)))
             throw(TransPrepareError(errno, ary))
         else
-            warn("LibALPM<trans_prepare>: ",
-                 "ignore unknown list return for error code $errno.")
+            @warn("LibALPM<trans_prepare>: ignore unknown list return for error code $errno.")
             free(list[])
             throw(Error(hdl, "trans_prepare"))
         end
