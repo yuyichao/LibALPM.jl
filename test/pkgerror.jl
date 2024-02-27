@@ -6,7 +6,7 @@
         pkgdir = joinpath(dir, "pkgdir")
         pkgpath = makepkg(pkgbuild, pkgdir, "invalid")[1]
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Sys.ARCH)
+        LibALPM.set_architectures(hdl, [Sys.ARCH])
         pkg_load = LibALPM.load(hdl, pkgpath, true,
                                 LibALPM.SigLevel.PACKAGE_OPTIONAL)
 
@@ -33,7 +33,7 @@ end
         pkgdir = joinpath(dir, "pkgdir")
         pkgpath = makepkg(pkgbuild, pkgdir)[1]
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Sys.ARCH)
+        LibALPM.set_architectures(hdl, [Sys.ARCH])
         pkg_load = LibALPM.load(hdl, pkgpath, true,
                                 LibALPM.SigLevel.PACKAGE_OPTIONAL)
 
@@ -61,7 +61,7 @@ end
         pkgdir = joinpath(dir, "pkgdir")
         pkgpaths = makepkg(pkgbuild, pkgdir)
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Sys.ARCH)
+        LibALPM.set_architectures(hdl, [Sys.ARCH])
         LibALPM.trans_init(hdl, 0)
 
         for path in pkgpaths
@@ -91,7 +91,7 @@ end
         pkgdir = joinpath(dir, "pkgdir")
         pkgpaths = makepkg(pkgbuild, pkgdir)
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Sys.ARCH)
+        LibALPM.set_architectures(hdl, [Sys.ARCH])
         LibALPM.trans_init(hdl, 0)
 
         for path in pkgpaths

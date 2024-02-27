@@ -339,7 +339,7 @@ include("pkgerror.jl")
     mktempdir() do dir
         pkgdir = joinpath(dir, "pkgdir")
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Sys.ARCH)
+        LibALPM.set_architectures(hdl, [Sys.ARCH])
         pacnew_created = false
         pacsave_created = false
         eventcb = (cbhdl::LibALPM.Handle, event::LibALPM.AbstractEvent) -> begin
@@ -421,7 +421,7 @@ end
     mktempdir() do dir
         pkgdir = joinpath(dir, "pkgdir")
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Sys.ARCH)
+        LibALPM.set_architectures(hdl, [Sys.ARCH])
 
         pkg = makepkg(joinpath(thisdir, "pkgs", "PKGBUILD.changelog"),
                       pkgdir; copy_files=[joinpath(thisdir, "pkgs",
@@ -476,7 +476,7 @@ end
     mktempdir() do dir
         pkgdir = joinpath(dir, "pkgdir")
         hdl = setup_handle(dir)
-        LibALPM.set_arch(hdl, Sys.ARCH)
+        LibALPM.set_architectures(hdl, [Sys.ARCH])
         optdep_rm_event = false
         eventcb = (cbhdl::LibALPM.Handle, event::LibALPM.AbstractEvent) -> begin
             @test cbhdl === hdl
