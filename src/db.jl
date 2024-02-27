@@ -120,12 +120,50 @@ remove_server(db::DB, server) = with_handle(db.hdl) do
     ret != 0
 end
 
-"Return true if db is already up to date."
-update(db::DB, force) = with_handle(db.hdl) do
-    ret = ccall((:alpm_db_update, libalpm), Cint, (Cint, Ptr{Cvoid}), force, db)
-    ret < 0 && throw(Error(db.hdl, "update"))
-    ret != 0
+"""
+Update package databases.
+
+An update of the package databases in the list `dbs` will be attempted.
+Unless `force` is `true`, the update will only be performed if the remote
+databases were modified since the last update.
+
+This operation requires a database lock, and will return an applicable error
+if the lock could not be obtained.
+
+After a successful update, the `get_pkgcache()` package cache will be invalidated
+`dbs`: list of package databases to update
+`force`: if `true`, then forces the update, otherwise update only in case
+         the databases aren't up to date.
+Return true if db is already up to date.
+"""
+function update(dbs, force)
+    hdl = Ref{Handle}()
+    function db_convert(db)
+        if isassigned(hdl)
+            if hdl[] !== db.hdl
+                throw(ArgumentError("Handle mismatch from multiple DBs"))
+            end
+        else
+            hdl[] = db.hdl
+        end
+        return db.ptr
+    end
+    db_list = array_to_list(dbs, db_convert)
+    if !isassigned(hdl)
+        return true
+    end
+    # For now just assume this will keep the DBs alive,
+    # which might not be the case for mutable iterators...
+    with_handle(hdl[]) do
+        GC.@preserve dbs begin
+            ret = ccall((:alpm_db_update, libalpm), Cint,
+                        (Ptr{Cvoid}, Ptr{list_t}, Cint), hdl[], db_list, force)
+        end
+        ret < 0 && throw(Error(hdl[], "update"))
+        ret != 0
+    end
 end
+update(db::DB, force) = update([db], force)
 
 """
 Get a package entry from a package database.
