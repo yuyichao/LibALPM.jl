@@ -59,7 +59,7 @@ function Base.show(io::IO, pkg::Pkg)
 end
 
 "Check the integrity (with md5) of a package from the sync cache"
-checkmd5sum(pkg::Pkg) = with_handle(pkg.hdl) do
+function checkmd5sum(pkg::Pkg)
     # Can't really find a way to test this
     # (this seems to require the package validation to be not using signatures?)
     # Apparently not used by pacman either...
@@ -69,14 +69,14 @@ checkmd5sum(pkg::Pkg) = with_handle(pkg.hdl) do
 end
 
 "Computes the list of packages requiring a given package"
-compute_requiredby(pkg::Pkg) = with_handle(pkg.hdl) do
+function compute_requiredby(pkg::Pkg)
     list = ccall((:alpm_pkg_compute_requiredby, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), pkg)
     list_to_array(String, list, take_cstring, cglobal(:free))
 end
 
 "Computes the list of packages optionally requiring a given package"
-compute_optionalfor(pkg::Pkg) = with_handle(pkg.hdl) do
+function compute_optionalfor(pkg::Pkg)
     list = ccall((:alpm_pkg_compute_optionalfor, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), pkg)
     list_to_array(String, list, take_cstring, cglobal(:free))
@@ -101,10 +101,9 @@ function get_filename(pkg::Pkg)
 end
 
 "Returns the package base name"
-get_base(pkg::Pkg) = with_handle(pkg.hdl) do
+get_base(pkg::Pkg) =
     unsafe_string(ccall((:alpm_pkg_get_base, libalpm),
                         Ptr{UInt8}, (Ptr{Cvoid},), pkg))
-end
 
 "Returns the package name"
 function get_name(pkg::Pkg)
@@ -133,32 +132,27 @@ function get_origin(pkg::Pkg)
 end
 
 "Returns the package description"
-get_desc(pkg::Pkg) = with_handle(pkg.hdl) do
+get_desc(pkg::Pkg) =
     unsafe_string(ccall((:alpm_pkg_get_desc, libalpm),
                         Ptr{UInt8}, (Ptr{Cvoid},), pkg))
-end
 
 "Returns the package URL"
-get_url(pkg::Pkg) = with_handle(pkg.hdl) do
+get_url(pkg::Pkg) =
     unsafe_string(ccall((:alpm_pkg_get_url, libalpm),
                         Ptr{UInt8}, (Ptr{Cvoid},), pkg))
-end
 
 "Returns the build timestamp of the package"
-get_builddate(pkg::Pkg) = with_handle(pkg.hdl) do
+get_builddate(pkg::Pkg) =
     ccall((:alpm_pkg_get_builddate, libalpm), Int64, (Ptr{Cvoid},), pkg)
-end
 
 "Returns the install timestamp of the package"
-get_installdate(pkg::Pkg) = with_handle(pkg.hdl) do
+get_installdate(pkg::Pkg) =
     ccall((:alpm_pkg_get_installdate, libalpm), Int64, (Ptr{Cvoid},), pkg)
-end
 
 "Returns the packager's name"
-get_packager(pkg::Pkg) = with_handle(pkg.hdl) do
+get_packager(pkg::Pkg) =
     unsafe_string(ccall((:alpm_pkg_get_packager, libalpm),
                         Ptr{UInt8}, (Ptr{Cvoid},), pkg))
-end
 
 "Returns the package's MD5 checksum as a string"
 function get_md5sum(pkg::Pkg)
@@ -175,10 +169,9 @@ function get_sha256sum(pkg::Pkg)
 end
 
 "Returns the architecture for which the package was built"
-get_arch(pkg::Pkg) = with_handle(pkg.hdl) do
+get_arch(pkg::Pkg) =
     unsafe_string(ccall((:alpm_pkg_get_arch, libalpm),
                         Ptr{UInt8}, (Ptr{Cvoid},), pkg))
-end
 
 """
 Returns the size of the package.
@@ -191,14 +184,12 @@ get_size(pkg::Pkg) =
     ccall((:alpm_pkg_get_size, libalpm), Int64, (Ptr{Cvoid},), pkg)
 
 "Returns the installed size of the package"
-get_isize(pkg::Pkg) = with_handle(pkg.hdl) do
+get_isize(pkg::Pkg) =
     ccall((:alpm_pkg_get_isize, libalpm), Int64, (Ptr{Cvoid},), pkg)
-end
 
 "Returns the package installation reason"
-get_reason(pkg::Pkg) = with_handle(pkg.hdl) do
+get_reason(pkg::Pkg) =
     ccall((:alpm_pkg_get_reason, libalpm), pkgreason_t, (Ptr{Cvoid},), pkg)
-end
 
 """
 Set install reason for a package in the local database
@@ -206,7 +197,7 @@ Set install reason for a package in the local database
 The provided package object must be from the local database or this method
 will fail. The write to the local database is performed immediately.
 """
-set_reason(pkg::Pkg, reason) = with_handle(pkg.hdl) do
+function set_reason(pkg::Pkg, reason)
     ret = ccall((:alpm_pkg_set_reason, libalpm),
                 Cint, (Ptr{Cvoid}, pkgreason_t), pkg, reason)
     ret == 0 || throw(Error(pkg.hdl, "set_reason"))
@@ -214,14 +205,14 @@ set_reason(pkg::Pkg, reason) = with_handle(pkg.hdl) do
 end
 
 "Returns the list of package licenses"
-get_licenses(pkg::Pkg) = with_handle(pkg.hdl) do
+function get_licenses(pkg::Pkg)
     list = ccall((:alpm_pkg_get_licenses, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), pkg)
     list_to_array(String, list, p->unsafe_string(Ptr{UInt8}(p)))
 end
 
 "Returns the list of package groups"
-get_groups(pkg::Pkg) = with_handle(pkg.hdl) do
+function get_groups(pkg::Pkg)
     list = ccall((:alpm_pkg_get_groups, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), pkg)
     list_to_array(String, list, p->unsafe_string(Ptr{UInt8}(p)))
@@ -233,7 +224,7 @@ Returns the list of files installed by pkg
 The filenames are relative to the install root,
 and do not include leading slashes.
 """
-get_files(pkg::Pkg) = with_handle(pkg.hdl) do
+function get_files(pkg::Pkg)
     listptr = ccall((:alpm_pkg_get_files, libalpm), Ptr{CTypes.FileList},
                     (Ptr{Cvoid},), pkg)
     list = unsafe_load(listptr)
@@ -245,7 +236,7 @@ get_files(pkg::Pkg) = with_handle(pkg.hdl) do
 end
 
 "Returns the list of files backed up when installing pkg"
-get_backup(pkg::Pkg) = with_handle(pkg.hdl) do
+function get_backup(pkg::Pkg)
     list = ccall((:alpm_pkg_get_backup, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), pkg)
     list_to_array(Backup, list, Backup)
@@ -265,54 +256,51 @@ get_base64_sig(pkg::Pkg) =
                         Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 
 "Returns the method used to validate a package during install"
-get_validation(pkg::Pkg) = with_handle(pkg.hdl) do
+get_validation(pkg::Pkg) =
     ccall((:alpm_pkg_get_validation, libalpm), UInt32, (Ptr{Cvoid},), pkg)
-end
 
 "Returns whether the package has an install scriptlet"
-has_scriptlet(pkg::Pkg) = with_handle(pkg.hdl) do
+has_scriptlet(pkg::Pkg) =
     ccall((:alpm_pkg_has_scriptlet, libalpm), Cint, (Ptr{Cvoid},), pkg) != 0
-end
 
 """
 Returns the size of download
 
 Returns the size of the files that will be downloaded to install a package.
 """
-download_size(pkg::Pkg) = with_handle(pkg.hdl) do
+download_size(pkg::Pkg) =
     ccall((:alpm_pkg_download_size, libalpm), Int, (Ptr{Cvoid},), pkg)
-end
 
 "Returns the list of package dependencies"
-get_depends(pkg::Pkg) = with_handle(pkg.hdl) do
+function get_depends(pkg::Pkg)
     list = ccall((:alpm_pkg_get_depends, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), pkg)
     list_to_array(Depend, list, Depend)
 end
 
 "Returns the list of package optional dependencies"
-get_optdepends(pkg::Pkg) = with_handle(pkg.hdl) do
+function get_optdepends(pkg::Pkg)
     list = ccall((:alpm_pkg_get_optdepends, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), pkg)
     list_to_array(Depend, list, Depend)
 end
 
 "Returns the list of packages conflicting with pkg"
-get_conflicts(pkg::Pkg) = with_handle(pkg.hdl) do
+function get_conflicts(pkg::Pkg)
     list = ccall((:alpm_pkg_get_conflicts, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), pkg)
     list_to_array(Depend, list, Depend)
 end
 
 "Returns the list of packages provided by pkg"
-get_provides(pkg::Pkg) = with_handle(pkg.hdl) do
+function get_provides(pkg::Pkg)
     list = ccall((:alpm_pkg_get_provides, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), pkg)
     list_to_array(Depend, list, Depend)
 end
 
 "Returns the list of packages to be replaced by pkg"
-get_replaces(pkg::Pkg) = with_handle(pkg.hdl) do
+function get_replaces(pkg::Pkg)
     list = ccall((:alpm_pkg_get_replaces, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), pkg)
     list_to_array(Depend, list, Depend)
@@ -324,7 +312,7 @@ Add a package to the transaction
 If the package was loaded by `LibALPM.load()`, it will be freed upon
 `LibALPM.trans_release()` invocation.
 """
-add_pkg(hdl::Handle, pkg::Pkg) = with_handle(hdl) do
+function add_pkg(hdl::Handle, pkg::Pkg)
     ret = ccall((:alpm_add_pkg, libalpm),
                 Cint, (Ptr{Cvoid}, Ptr{Cvoid}), hdl, pkg)
     ret == 0 || throw(Error(hdl, "add_pkg"))
@@ -336,7 +324,7 @@ add_pkg(hdl::Handle, pkg::Pkg) = with_handle(hdl) do
 end
 
 "Add a package removal action to the transaction"
-remove_pkg(hdl::Handle, pkg::Pkg) = with_handle(hdl) do
+function remove_pkg(hdl::Handle, pkg::Pkg)
     ret = ccall((:alpm_remove_pkg, libalpm),
                 Cint, (Ptr{Cvoid}, Ptr{Cvoid}), hdl, pkg)
     ret == 0 || throw(Error(hdl, "remove_pkg"))

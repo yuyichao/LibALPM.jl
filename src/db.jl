@@ -45,13 +45,11 @@ function unregister(db::DB)
     ptr = db.ptr
     ptr == C_NULL && throw(UndefRefError())
     hdl = db.hdl
-    with_handle(hdl) do
-        _null_all_pkgs(db)
-        db.ptr = C_NULL
-        delete!(hdl.dbs, ptr)
-        ret = ccall((:alpm_db_unregister, libalpm), Cint, (Ptr{Cvoid},), ptr)
-        ret == 0 || throw(Error(hdl, "unregister"))
-    end
+    _null_all_pkgs(db)
+    db.ptr = C_NULL
+    delete!(hdl.dbs, ptr)
+    ret = ccall((:alpm_db_unregister, libalpm), Cint, (Ptr{Cvoid},), ptr)
+    ret == 0 || throw(Error(hdl, "unregister"))
     nothing
 end
 
@@ -80,9 +78,7 @@ This is most useful for sync databases and verifying signature status.
 If invalid, the handle error code will be set accordingly.
 Return 0 if valid, -1 if invalid (errno is set accordingly)
 """
-get_valid(db::DB) = with_handle(db.hdl) do
-    ccall((:alpm_db_get_valid, libalpm), Cint, (Ptr{Cvoid},), db)
-end
+get_valid(db::DB) = ccall((:alpm_db_get_valid, libalpm), Cint, (Ptr{Cvoid},), db)
 function check_valid(db::DB)
     get_valid(db) == 0 || throw(Error(db.hdl, "check_valid"))
     nothing
@@ -100,22 +96,20 @@ function set_servers(db::DB, servers)
     list = array_to_list(servers,
                          str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
-    ret = with_handle(db.hdl) do
-        ccall((:alpm_db_set_servers, libalpm), Cint,
-                    (Ptr{Cvoid}, Ptr{list_t}), db, list)
-    end
+    ret = ccall((:alpm_db_set_servers, libalpm), Cint,
+                (Ptr{Cvoid}, Ptr{list_t}), db, list)
     if ret != 0
         free(list, cglobal(:free))
         throw(Error(db.hdl, "set_servers"))
     end
 end
-add_server(db::DB, server) = with_handle(db.hdl) do
+function add_server(db::DB, server)
     ret = ccall((:alpm_db_add_server, libalpm), Cint,
                 (Ptr{Cvoid}, Cstring), db, server)
     ret == 0 || throw(Error(db.hdl, "add_server"))
     nothing
 end
-remove_server(db::DB, server) = with_handle(db.hdl) do
+function remove_server(db::DB, server)
     ret = ccall((:alpm_db_remove_server, libalpm), Cint,
                 (Ptr{Cvoid}, Cstring), db, server)
     ret < 0 && throw(Error(db.hdl, "remove_server"))
@@ -156,14 +150,12 @@ function update(dbs, force)
     end
     # For now just assume this will keep the DBs alive,
     # which might not be the case for mutable iterators...
-    with_handle(hdl[]) do
-        GC.@preserve dbs begin
-            ret = ccall((:alpm_db_update, libalpm), Cint,
-                        (Ptr{Cvoid}, Ptr{list_t}, Cint), hdl[], db_list, force)
-        end
-        ret < 0 && throw(Error(hdl[], "update"))
-        ret != 0
+    GC.@preserve dbs begin
+        ret = ccall((:alpm_db_update, libalpm), Cint,
+                    (Ptr{Cvoid}, Ptr{list_t}, Cint), hdl[], db_list, force)
     end
+    ret < 0 && throw(Error(hdl[], "update"))
+    ret != 0
 end
 update(db::DB, force) = update([db], force)
 
@@ -172,7 +164,7 @@ Get a package entry from a package database.
 
 `name`: of the package
 """
-get_pkg(db::DB, name) = with_handle(db.hdl) do
+function get_pkg(db::DB, name)
     pkg = ccall((:alpm_db_get_pkg, libalpm), Ptr{Cvoid}, (Ptr{Cvoid}, Cstring),
                 db, name)
     hdl = db.hdl
@@ -181,7 +173,7 @@ get_pkg(db::DB, name) = with_handle(db.hdl) do
 end
 
 "Get the package cache of a package database"
-get_pkgcache(db::DB) = with_handle(db.hdl) do
+function get_pkgcache(db::DB)
     pkgs = ccall((:alpm_db_get_pkgcache, libalpm), Ptr{list_t}, (Ptr{Cvoid},), db)
     hdl = db.hdl
     list_to_array(Pkg, pkgs, p->Pkg(p, hdl))

@@ -5,10 +5,8 @@ mutable struct ChangeLog <: IO
     ptr::Ptr{Cvoid}
     pkg::Pkg
     function ChangeLog(pkg::Pkg)
-        ptr = with_handle(pkg.hdl) do
-            ccall((:alpm_pkg_changelog_open, libalpm),
-                  Ptr{Cvoid}, (Ptr{Cvoid},), pkg)
-        end
+        ptr = ccall((:alpm_pkg_changelog_open, libalpm),
+                    Ptr{Cvoid}, (Ptr{Cvoid},), pkg)
         ptr == C_NULL && throw(Error(pkg.hdl, "ChangeLog"))
         clog = new(ptr, pkg)
         add_tofree(pkg, clog)
