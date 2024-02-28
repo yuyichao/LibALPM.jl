@@ -50,32 +50,6 @@ function cb_show_error(ex)
     end
 end
 
-function libalpm_log_cb(hdl, level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
-    cb = hdl.log_cb
-    len = printf_len(fmt, ap)
-    buf = zeros(UInt8, len)
-    ccall(:vsnprintf, Cint,
-          (Ptr{UInt8}, Csize_t, Ptr{UInt8}, va_list_arg_t),
-          buf, len, fmt, ap)
-    str = String(buf)
-    try
-        cb(hdl, level, str)
-    catch ex
-        cb_show_error(ex)
-    end
-    nothing
-end
-
-function libalpm_event_cb(hdl, eventptr::Ptr{Cvoid})
-    cb = hdl.event_cb
-    try
-        dispatch_event(cb, hdl, eventptr)
-    catch ex
-        cb_show_error(ex)
-    end
-    nothing
-end
-
 mutable struct Handle
     ptr::Ptr{Cvoid}
     dbs::CObjMap
@@ -97,40 +71,99 @@ mutable struct Handle
     end
 end
 
-function set_logcb(hdl::Handle, @nospecialize(f))
-    oldf = hdl.log_cb
-    if oldf === f
-        return
+mutable struct LogCallbackData{T}
+    hdl::Handle
+    cb::T
+    function LogCallbackData(hdl::Handle, cb::T) where T
+        return new{T}(hdl, cb)
     end
-    hdl.log_cb = f
-    if f === nothing
-        ccall((:alpm_option_set_logcb, libalpm),
-              Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}), hdl, C_NULL, C_NULL)
-    elseif oldf === nothing
-        ccall((:alpm_option_set_logcb, libalpm),
-              Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ref{Handle}),
-              hdl, @cfunction(libalpm_log_cb, Cvoid,
-                              (Ref{Handle}, UInt32, Ptr{UInt8}, va_list_arg_t)),
-              hdl)
+    function LogCallbackData(hdl::Handle, ::Type{T}) where T
+        return new{Type{T}}(hdl, T)
+    end
+end
+
+function _libalpm_cb(cb_data::LogCallbackData, level::UInt32,
+                     fmt::Ptr{UInt8}, ap::va_list_arg_t)
+    hdl = cb_data.hdl
+    cb = cb_data.cb
+    len = printf_len(fmt, ap)
+    buf = zeros(UInt8, len)
+    ccall(:vsnprintf, Cint,
+          (Ptr{UInt8}, Csize_t, Ptr{UInt8}, va_list_arg_t),
+          buf, len, fmt, ap)
+    str = String(buf)
+    try
+        cb(hdl, level, str)
+    catch ex
+        cb_show_error(ex)
     end
     nothing
 end
 
-function set_eventcb(hdl::Handle, @nospecialize(f))
-    oldf = hdl.event_cb
-    if oldf === f
+@inline function _register_libalpm_cb(hdl::Handle,
+                                      cb_data::CBData) where CBData <: LogCallbackData
+    fptr = @cfunction(_libalpm_cb, Cvoid,
+                      (Ref{CBData}, UInt32, Ptr{UInt8}, va_list_arg_t))
+    ccall((:alpm_option_set_logcb, libalpm),
+          Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ref{CBData}), hdl, fptr, cb_data)
+end
+
+function set_logcb(hdl::Handle, cb)
+    if cb === nothing
+        if hdl.log_cb !== nothing
+            ccall((:alpm_option_set_logcb, libalpm),
+                  Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}), hdl, C_NULL, C_NULL)
+            hdl.log_cb = nothing
+        end
         return
     end
-    hdl.event_cb = f
-    if f === nothing
-        ccall((:alpm_option_set_eventcb, libalpm),
-              Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}), hdl, C_NULL, C_NULL)
-    elseif oldf === nothing
-        ccall((:alpm_option_set_eventcb, libalpm),
-              Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ref{Handle}),
-              hdl, @cfunction(libalpm_event_cb,
-                              Cvoid, (Ref{Handle}, Ptr{Cvoid})), hdl)
+    cb_data = LogCallbackData(hdl, cb)
+    hdl.log_cb = cb_data
+    _register_libalpm_cb(hdl, cb_data)
+    nothing
+end
+
+mutable struct EventCallbackData{T}
+    hdl::Handle
+    cb::T
+    function EventCallbackData(hdl::Handle, cb::T) where T
+        return new{T}(hdl, cb)
     end
+    function EventCallbackData(hdl::Handle, ::Type{T}) where T
+        return new{Type{T}}(hdl, T)
+    end
+end
+
+function _libalpm_cb(cb_data::EventCallbackData, eventptr::Ptr{Cvoid})
+    hdl = cb_data.hdl
+    cb = cb_data.cb
+    try
+        dispatch_event(cb, hdl, eventptr)
+    catch ex
+        cb_show_error(ex)
+    end
+    nothing
+end
+
+@inline function _register_libalpm_cb(hdl::Handle,
+                                      cb_data::CBData) where CBData <: EventCallbackData
+    fptr = @cfunction(_libalpm_cb, Cvoid, (Ref{CBData}, Ptr{Cvoid}))
+    ccall((:alpm_option_set_eventcb, libalpm),
+          Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ref{CBData}), hdl, fptr, cb_data)
+end
+
+function set_eventcb(hdl::Handle, cb)
+    if cb === nothing
+        if hdl.event_cb !== nothing
+            ccall((:alpm_option_set_eventcb, libalpm),
+                  Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}), hdl, C_NULL, C_NULL)
+            hdl.event_cb = nothing
+        end
+        return
+    end
+    cb_data = EventCallbackData(hdl, cb)
+    hdl.event_cb = cb_data
+    _register_libalpm_cb(hdl, cb_data)
     nothing
 end
 
