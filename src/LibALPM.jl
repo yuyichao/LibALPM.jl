@@ -75,28 +75,71 @@ include("changelog.jl")
 #  * Libalpm option getters and setters
 
 # /** Returns the callback used to report download progress.
+#  * @param handle the context handle
+#  * @return the currently set download callback
 # alpm_cb_download alpm_option_get_dlcb(alpm_handle_t *handle);
+
+# /** Returns the callback used to report download progress.
+#  * @param handle the context handle
+#  * @return the currently set download callback context
+# void *alpm_option_get_dlcb_ctx(alpm_handle_t *handle);
+
 # /** Sets the callback used to report download progress.
-# int alpm_option_set_dlcb(alpm_handle_t *handle, alpm_cb_download cb);
+#  * @param handle the context handle
+#  * @param cb the cb to use
+#  * @param ctx user-provided context to pass to cb
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+# int alpm_option_set_dlcb(alpm_handle_t *handle, alpm_cb_download cb, void *ctx);
 
 # /** Returns the downloading callback.
+#  * @param handle the context handle
+#  * @return the currently set fetch callback
 # alpm_cb_fetch alpm_option_get_fetchcb(alpm_handle_t *handle);
-# /** Sets the downloading callback.
-# int alpm_option_set_fetchcb(alpm_handle_t *handle, alpm_cb_fetch cb);
 
-# /** Returns the callback used to report total download size.
-# alpm_cb_totaldl alpm_option_get_totaldlcb(alpm_handle_t *handle);
-# /** Sets the callback used to report total download size.
-# int alpm_option_set_totaldlcb(alpm_handle_t *handle, alpm_cb_totaldl cb);
+# /** Returns the downloading callback.
+#  * @param handle the context handle
+#  * @return the currently set fetch callback context
+# void *alpm_option_get_fetchcb_ctx(alpm_handle_t *handle);
+
+# /** Sets the downloading callback.
+#  * @param handle the context handle
+#  * @param cb the cb to use
+#  * @param ctx user-provided context to pass to cb
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+# int alpm_option_set_fetchcb(alpm_handle_t *handle, alpm_cb_fetch cb, void *ctx);
 
 # /** Returns the callback used for questions.
+#  * @param handle the context handle
+#  * @return the currently set question callback
 # alpm_cb_question alpm_option_get_questioncb(alpm_handle_t *handle);
-# /** Sets the callback used for questions.
-# int alpm_option_set_questioncb(alpm_handle_t *handle, alpm_cb_question cb);
 
-# /** Returns the callback used for operation progress.
+# /** Returns the callback used for questions.
+#  * @param handle the context handle
+#  * @return the currently set question callback context
+# void *alpm_option_get_questioncb_ctx(alpm_handle_t *handle);
+
+# /** Sets the callback used for questions.
+#  * @param handle the context handle
+#  * @param cb the cb to use
+#  * @param ctx user-provided context to pass to cb
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+# int alpm_option_set_questioncb(alpm_handle_t *handle, alpm_cb_question cb, void *ctx);
+
+# /**Returns the callback used for operation progress.
+#  * @param handle the context handle
+#  * @return the currently set progress callback
 # alpm_cb_progress alpm_option_get_progresscb(alpm_handle_t *handle);
+
+# /**Returns the callback used for operation progress.
+#  * @param handle the context handle
+#  * @return the currently set progress callback context
+# void *alpm_option_get_progresscb_ctx(alpm_handle_t *handle);
+
 # /** Sets the callback used for operation progress.
-# int alpm_option_set_progresscb(alpm_handle_t *handle, alpm_cb_progress cb);
+#  * @param handle the context handle
+#  * @param cb the cb to use
+#  * @param ctx user-provided context to pass to cb
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+# int alpm_option_set_progresscb(alpm_handle_t *handle, alpm_cb_progress cb, void *ctx);
 
 end

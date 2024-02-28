@@ -894,10 +894,72 @@ function sysupgrade(hdl::Handle, enable_downgrade)
 end
 
 # TODO
-# alpm_list_t *alpm_checkdeps(alpm_handle_t *handle, alpm_list_t *pkglist,
-# alpm_list_t *remove, alpm_list_t *upgrade, int reversedeps);
-# alpm_pkg_t *alpm_find_satisfier(alpm_list_t *pkgs, const char *depstring);
-# alpm_pkg_t *alpm_find_dbs_satisfier(alpm_handle_t *handle,
-# alpm_list_t *dbs, const char *depstring);
+# /** Checks dependencies and returns missing ones in a list.
+#  * Dependencies can include versions with depmod operators.
+#  * @param handle the context handle
+#  * @param pkglist the list of local packages
+#  * @param remove an alpm_list_t* of packages to be removed
+#  * @param upgrade an alpm_list_t* of packages to be upgraded (remove-then-upgrade)
+#  * @param reversedeps handles the backward dependencies
+#  * @return an alpm_list_t* of alpm_depmissing_t pointers.
+# alpm_list_t *alpm_checkdeps(alpm_handle_t *handle, alpm_list_t *pkglist, alpm_list_t *remove, alpm_list_t *upgrade, int reversedeps);
 
+# /** Find a package satisfying a specified dependency.
+#  * The dependency can include versions with depmod operators.
+#  * @param pkgs an alpm_list_t* of alpm_pkg_t where the satisfyer will be searched
+#  * @param depstring package or provision name, versioned or not
+#  * @return a alpm_pkg_t* satisfying depstring
+# alpm_pkg_t *alpm_find_satisfier(alpm_list_t *pkgs, const char *depstring);
+
+# /** Find a package satisfying a specified dependency.
+#  * First look for a literal, going through each db one by one. Then look for
+#  * providers. The first satisfyer that belongs to an installed package is
+#  * returned. If no providers belong to an installed package then an
+#  * alpm_question_select_provider_t is created to select the provider.
+#  * The dependency can include versions with depmod operators.
+#  *
+#  * @param handle the context handle
+#  * @param dbs an alpm_list_t* of alpm_db_t where the satisfyer will be searched
+#  * @param depstring package or provision name, versioned or not
+#  * @return a alpm_pkg_t* satisfying depstring
+# alpm_pkg_t *alpm_find_dbs_satisfier(alpm_handle_t *handle, alpm_list_t *dbs, const char *depstring);
+
+# /** Check the package conflicts in a database
+#  *
+#  * @param handle the context handle
+#  * @param pkglist the list of packages to check
+#  *
+#  * @return an alpm_list_t of alpm_conflict_t
 # alpm_list_t *alpm_checkconflicts(alpm_handle_t *handle, alpm_list_t *pkglist);
+
+# /** Gets the currently configured overwritable files,
+#  * @param handle the context handle
+#  * @return a char* list of overwritable file globs
+#  */
+# alpm_list_t *alpm_option_get_overwrite_files(alpm_handle_t *handle);
+
+# /** Sets the overwritable files.
+#  * @param handle the context handle
+#  * @param globs a char* list of overwritable file globs. The list will be duped and
+#  * the original will still need to be freed by the caller.
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+#  */
+# int alpm_option_set_overwrite_files(alpm_handle_t *handle, alpm_list_t *globs);
+
+# /** Append an overwritable file to the configured overwritable files.
+#  * @param handle the context handle
+#  * @param glob the file glob to add
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+#  */
+# int alpm_option_add_overwrite_file(alpm_handle_t *handle, const char *glob);
+
+# /** Remove a file glob from the configured overwritable files globs.
+#  * @note The overwritable file list contains a list of globs. The glob to
+#  * remove must exactly match the entry to remove. There is no glob expansion.
+#  * @param handle the context handle
+#  * @param glob the file glob to remove
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+#  */
+# int alpm_option_remove_overwrite_file(alpm_handle_t *handle, const char *glob);
+# /* End of overwrite accessors */
+# /** @} */

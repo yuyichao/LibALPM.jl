@@ -371,3 +371,38 @@ end
 # TODO
 #  * Groups
 # alpm_list_t *alpm_find_group_pkgs(alpm_list_t *dbs, const char *name);
+
+# /** Create a package from a file.
+#  * If full is false, the archive is read only until all necessary
+#  * metadata is found. If it is true, the entire archive is read, which
+#  * serves as a verification of integrity and the filelist can be created.
+#  * The allocated structure should be freed using alpm_pkg_free().
+#  * @param handle the context handle
+#  * @param filename location of the package tarball
+#  * @param full whether to stop the load after metadata is read or continue
+#  * through the full archive
+#  * @param level what level of package signature checking to perform on the
+#  * package; note that this must be a '.sig' file type verification
+#  * @param pkg address of the package pointer
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+# int alpm_pkg_load(alpm_handle_t *handle, const char *filename, int full, int level, alpm_pkg_t **pkg);
+
+# /** Returns a list of package check dependencies
+#  * @param pkg a pointer to package
+#  * @return a reference to an internal list of alpm_depend_t structures.
+# alpm_list_t *alpm_pkg_get_checkdepends(alpm_pkg_t *pkg);
+
+# /** Returns a list of package make dependencies
+#  * @param pkg a pointer to package
+#  * @return a reference to an internal list of alpm_depend_t structures.
+# alpm_list_t *alpm_pkg_get_makedepends(alpm_pkg_t *pkg);
+
+# /** Extracts package signature either from embedded package signature
+#  * or if it is absent then reads data from detached signature file.
+#  * @param pkg a pointer to package.
+#  * @param sig output parameter for signature data. Callee function allocates
+#  * a buffer needed for the signature data. Caller is responsible for
+#  * freeing this buffer.
+#  * @param sig_len output parameter for the signature data length.
+#  * @return 0 on success, negative number on error.
+# int alpm_pkg_get_sig(alpm_pkg_t *pkg, unsigned char **sig, size_t *sig_len);
