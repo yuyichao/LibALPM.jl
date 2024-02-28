@@ -333,6 +333,26 @@ function remove_pkg(hdl::Handle, pkg::Pkg)
     nothing
 end
 
+"""
+Check for new version of pkg in syncdbs.
+
+If the same package appears multiple dbs only the first will be checked
+This only checks the syncdb for a newer version. It does not access the network at all.
+See `update()` to update a database.
+"""
+function sync_get_new_version(pkg::Pkg, dbs)
+    db_list = array_to_list(dbs, db->db.ptr)
+    GC.@preserve dbs begin
+        new_pkg = ccall((:alpm_sync_get_new_version, libalpm), Ptr{Cvoid},
+                        (Ptr{Cvoid}, Ptr{list_t}), pkg, db_list)
+    end
+    free(db_list)
+    hdl = pkg.hdl
+    new_pkg == C_NULL && throw(Error(hdl, "sync_get_new_version"))
+    Pkg(new_pkg, hdl)
+end
+sync_get_new_version(pkg::Pkg, db::DB) = sync_get_new_version(pkg, [db])
+
 struct ReadPkg <: LibArchive.ReaderData
 end
 
@@ -351,6 +371,3 @@ end
 # TODO
 #  * Groups
 # alpm_list_t *alpm_find_group_pkgs(alpm_list_t *dbs, const char *name);
-
-#  * Sync
-# alpm_pkg_t *alpm_sync_newversion(alpm_pkg_t *pkg, alpm_list_t *dbs_sync);
