@@ -183,35 +183,34 @@ end
 
 # TODO
 # /** Get a group entry from a package database.
+#  * Looking up a group is O(1) and will be significantly faster than
+#  * iterating over the groupcahe.
 #  * @param db pointer to the package database to get the group from
 #  * @param name of the group
 #  * @return the groups entry on success, NULL on error
-#
 # alpm_group_t *alpm_db_get_group(alpm_db_t *db, const char *name);
 
 # /** Get the group cache of a package database.
 #  * @param db pointer to the package database to get the group from
 #  * @return the list of groups on success, NULL on error
-#
 # alpm_list_t *alpm_db_get_groupcache(alpm_db_t *db);
 
 # /** Searches a database with regular expressions.
 #  * @param db pointer to the package database to search in
 #  * @param needles a list of regular expressions to search for
-#  * @return the list of packages matching all regular expressions on success, NULL on error
-#
-# alpm_list_t *alpm_db_search(alpm_db_t *db, const alpm_list_t *needles);
+#  * @param ret pointer to list for storing packages matching all
+#  * regular expressions - must point to an empty (NULL) alpm_list_t *.
+#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
+# int alpm_db_search(alpm_db_t *db, const alpm_list_t *needles, alpm_list_t **ret);
 
 # /** Sets the usage of a database.
 #  * @param db pointer to the package database to set the status for
 #  * @param usage a bitmask of alpm_db_usage_t values
 #  * @return 0 on success, or -1 on error
-#
-# int alpm_db_set_usage(alpm_db_t *db, alpm_db_usage_t usage);
+# int alpm_db_set_usage(alpm_db_t *db, int usage);
 
 # /** Gets the usage of a database.
 #  * @param db pointer to the package database to get the status of
 #  * @param usage pointer to an alpm_db_usage_t to store db's status
 #  * @return 0 on success, or -1 on error
-#
-# int alpm_db_get_usage(alpm_db_t *db, alpm_db_usage_t *usage);
+# int alpm_db_get_usage(alpm_db_t *db, int *usage);
