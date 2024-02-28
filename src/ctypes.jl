@@ -98,6 +98,37 @@ struct SigList
     results::Ptr{SigResult}
 end
 
+"Context struct for when a download starts."
+struct DownloadEventInit
+    # whether this file is optional and thus the errors could be ignored
+    optional::Cint
+end
+
+"Context struct for when a download progresses."
+struct DownloadEventProgress
+    # Amount of data downloaded
+    downloaded::Int64 # off_t
+    # Total amount need to be downloaded
+    total::Int64 # off_t
+end
+
+"Context struct for when a download retries."
+struct DownloadEventRetry
+    # If the download will resume or start over
+    resume::Cint
+end
+
+"Context struct for when a download completes."
+struct DownloadEventCompleted
+    # Total bytes in file
+    total::Int64 # off_t
+    # download result code:
+    #    0 - download completed successfully
+    #    1 - the file is up-to-date
+    #   -1 - error
+    result::Cint
+end
+
 module Event
 import LibALPM: LibALPM, event_type_t
 import ..CTypes
@@ -430,5 +461,42 @@ struct Backup
         name = convert_cstring(cbackup.name)
         hash = convert_cstring(cbackup.hash)
         new(name, hash)
+    end
+end
+
+"Context struct for when a download starts."
+struct DownloadEventInit
+    # whether this file is optional and thus the errors could be ignored
+    optional::Bool
+    function DownloadEventInit(_ptr::Ptr)
+        cevent = unsafe_load(Ptr{CTypes.DownloadEventInit}(_ptr))
+        new(cevent.optional != 0)
+    end
+end
+
+const DownloadEventProgress = CTypes.DownloadEventProgress
+
+"Context struct for when a download retries."
+struct DownloadEventRetry
+    # If the download will resume or start over
+    resume::Bool
+    function DownloadEventRetry(_ptr::Ptr)
+        cevent = unsafe_load(Ptr{CTypes.DownloadEventRetry}(_ptr))
+        new(cevent.resume != 0)
+    end
+end
+
+"Context struct for when a download completes."
+struct DownloadEventCompleted
+    # Total bytes in file
+    total::Int64 # off_t
+    # download result code:
+    #    0 - download completed successfully
+    #    1 - the file is up-to-date
+    #   -1 - error
+    result::Int
+    function DownloadEventCompleted(_ptr::Ptr)
+        cevent = unsafe_load(Ptr{CTypes.DownloadEventCompleted}(_ptr))
+        new(cevent.total, cevent.result)
     end
 end

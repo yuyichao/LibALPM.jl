@@ -329,6 +329,16 @@ module Progress
 end
 import .Progress.progress_t
 
+"File download events."
+module DownloadEventType
+@enum(download_event_type_t,
+      INIT,
+      PROGRESS,
+      RETRY,
+      COMPLETED)
+end
+import .DownloadEventType.download_event_type_t
+
 module DBUsage
 const SYNC = UInt32(1)
 const SEARCH = UInt32(1) << 1
