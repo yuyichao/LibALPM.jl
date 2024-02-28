@@ -208,6 +208,40 @@ function fetch_pkgurl(hdl::Handle, urls)
 end
 fetch_pkgurl(hdl::Handle, url::AbstractString) = fetch_pkgurl(hdl, [url])[1]
 
+"""
+Enables/disables the download timeout.
+
+`hdl`: the context handle
+`disable`: false for enabled, true for disabled
+"""
+function set_disable_dl_timeout(hdl::Handle, disable::Bool)
+    if ccall((:alpm_option_set_disable_dl_timeout, libalpm), Cint,
+             (Ptr{Cvoid}, Cushort), hdl, disable ? 0x1 : 0x0) != 0
+        throw(Error(hdl, "set_disable_dl_timeout"))
+    end
+end
+
+"""
+Gets the number of parallel streams to download database and package files.
+
+`hdl`: the context handle
+"""
+get_parallel_downloads(hdl::Handle) =
+    Int(ccall((:alpm_option_get_parallel_downloads, libalpm), Cint,
+              (Ptr{Cvoid},), hdl))
+"""
+Sets number of parallel streams to download database and package files.
+
+`hdl`: the context handle
+`num_streams`: number of parallel download streams
+"""
+function set_parallel_downloads(hdl::Handle, num_streams)
+    if ccall((:alpm_option_set_parallel_downloads, libalpm), Cint,
+             (Ptr{Cvoid}, Cuint), hdl, num_streams) != 0
+        throw(Error(hdl, "set_parallel_downloads"))
+    end
+end
+
 "Returns the root of the destination filesystem"
 function get_root(hdl::Handle)
     # Should not trigger callback
