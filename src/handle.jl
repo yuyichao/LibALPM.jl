@@ -51,8 +51,7 @@ function cb_show_error(ex)
 end
 
 function libalpm_log_cb(hdl, level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
-    cb = get(hdl.cbs, :log, nothing)
-    cb === nothing && return
+    cb = hdl.log_cb
     len = printf_len(fmt, ap)
     buf = zeros(UInt8, len)
     ccall(:vsnprintf, Cint,
@@ -68,8 +67,7 @@ function libalpm_log_cb(hdl, level::UInt32, fmt::Ptr{UInt8}, ap::va_list_arg_t)
 end
 
 function libalpm_event_cb(hdl, eventptr::Ptr{Cvoid})
-    cb = get(hdl.cbs, :event, nothing)
-    cb === nothing && return
+    cb = hdl.event_cb
     try
         dispatch_event(cb, hdl, eventptr)
     catch ex
@@ -84,36 +82,55 @@ mutable struct Handle
     pkgs::CObjMap
     transpkgs::Set
     rmpkgs::Set
-    cbs::Dict{Symbol,Any} # Good enough for now...
+
+    log_cb
+    event_cb
     function Handle(root, db)
         err = Ref{errno_t}()
         ptr = ccall((:alpm_initialize, libalpm), Ptr{Cvoid},
                     (Cstring, Cstring, Ref{errno_t}), root, db, err)
         ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
         self = new(ptr, CObjMap(), CObjMap(), Set{Pkg}(), Set{Pkg}(),
-                   Dict{Symbol,Any}())
+                   nothing, nothing)
         finalizer(self, release)
-        ccall((:alpm_option_set_logcb, libalpm),
-              Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ref{Handle}),
-              self, @cfunction(libalpm_log_cb, Cvoid,
-                               (Ref{Handle}, UInt32, Ptr{UInt8}, va_list_arg_t)),
-              self)
-        ccall((:alpm_option_set_eventcb, libalpm),
-              Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ref{Handle}),
-              self, @cfunction(libalpm_event_cb,
-                               Cvoid, (Ref{Handle}, Ptr{Cvoid})),
-              self)
         self
     end
 end
 
 function set_logcb(hdl::Handle, @nospecialize(f))
-    hdl.cbs[:log] = f
+    oldf = hdl.log_cb
+    if oldf === f
+        return
+    end
+    hdl.log_cb = f
+    if f === nothing
+        ccall((:alpm_option_set_logcb, libalpm),
+              Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}), hdl, C_NULL, C_NULL)
+    elseif oldf === nothing
+        ccall((:alpm_option_set_logcb, libalpm),
+              Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ref{Handle}),
+              hdl, @cfunction(libalpm_log_cb, Cvoid,
+                              (Ref{Handle}, UInt32, Ptr{UInt8}, va_list_arg_t)),
+              hdl)
+    end
     nothing
 end
 
 function set_eventcb(hdl::Handle, @nospecialize(f))
-    hdl.cbs[:event] = f
+    oldf = hdl.event_cb
+    if oldf === f
+        return
+    end
+    hdl.event_cb = f
+    if f === nothing
+        ccall((:alpm_option_set_eventcb, libalpm),
+              Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid}), hdl, C_NULL, C_NULL)
+    elseif oldf === nothing
+        ccall((:alpm_option_set_eventcb, libalpm),
+              Cint, (Ptr{Cvoid}, Ptr{Cvoid}, Ref{Handle}),
+              hdl, @cfunction(libalpm_event_cb,
+                              Cvoid, (Ref{Handle}, Ptr{Cvoid})), hdl)
+    end
     nothing
 end
 
