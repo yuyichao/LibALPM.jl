@@ -45,29 +45,32 @@ include("changelog.jl")
 # typedef void (*alpm_cb_question)(alpm_question_t *);
 
 # Progress callback
-# typedef void (*alpm_cb_progress)(alpm_progress_t, const char *, int, size_t, size_t);
+# typedef void (*alpm_cb_progress)(void *ctx, alpm_progress_t progress, const char *pkg,
+#               int percent, size_t howmany, size_t current);
 
 #  * Downloading
 
 # /** Type of download progress callbacks.
+#  * @param ctx user-provided context
 #  * @param filename the name of the file being downloaded
-#  * @param xfered the number of transferred bytes
-#  * @param total the total number of bytes to transfer
-#
-# typedef void (*alpm_cb_download)(const char *filename,
-# off_t xfered, off_t total);
+#  * @param event the event type
+#  * @param data the event data of type alpm_download_event_*_t
+#  */
+# typedef void (*alpm_cb_download)(void *ctx, const char *filename,
+# 		alpm_download_event_type_t event, void *data);
 
 # typedef void (*alpm_cb_totaldl)(off_t total);
 
 # /** A callback for downloading files
+#  * @param ctx user-provided context
 #  * @param url the URL of the file to be downloaded
 #  * @param localpath the directory to which the file should be downloaded
 #  * @param force whether to force an update, even if the file is the same
 #  * @return 0 on success, 1 if the file exists and is identical, -1 on
 #  * error.
-#
-# typedef int (*alpm_cb_fetch)(const char *url, const char *localpath,
-# int force);
+#  */
+# typedef int (*alpm_cb_fetch)(void *ctx, const char *url, const char *localpath,
+# 		int force);
 
 #  * Libalpm option getters and setters
 
