@@ -204,7 +204,7 @@ function fetch_pkgurl(hdl::Handle, urls)
                 hdl, url_list, path_list)
     free(url_list, cglobal(:free))
     ret != 0 && throw(Error(hdl, "fetch_pkgurl"))
-    return list_to_array(String, path_list[], p->unsafe_string(Ptr{UInt8}(p)))
+    return list_to_array(String, path_list[], take_cstring, cglobal(:free))
 end
 fetch_pkgurl(hdl::Handle, url::AbstractString) = fetch_pkgurl(hdl, [url])[1]
 

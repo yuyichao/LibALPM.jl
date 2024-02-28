@@ -146,6 +146,7 @@ function update(dbs, force)
     end
     db_list = array_to_list(dbs, db_convert)
     if !isassigned(hdl)
+        free(db_list)
         return true
     end
     # For now just assume this will keep the DBs alive,
@@ -154,6 +155,7 @@ function update(dbs, force)
         ret = ccall((:alpm_db_update, libalpm), Cint,
                     (Ptr{Cvoid}, Ptr{list_t}, Cint), hdl[], db_list, force)
     end
+    free(db_list)
     ret < 0 && throw(Error(hdl[], "update"))
     ret != 0
 end
