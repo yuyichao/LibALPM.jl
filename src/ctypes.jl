@@ -145,7 +145,7 @@ struct PkgRetrieve <: AbstractEvent
     # Number of packages to download
     num::Csize_t
     # Total size of packages to download
-    total_size::Int # off_t
+    total_size::Int64 # off_t
 end
 
 struct PacnewCreated <: AbstractEvent
