@@ -34,11 +34,11 @@ LibALPM.add_hookdir(hdl, "/tmp")
 @test LibALPM.get_hookdirs(hdl) == ["/usr/share/libalpm/hooks/",
                                     "/etc/pacman.d/hooks/"]
 
-@test_throws ArgumentError LibALPM.get_logfile(hdl)
+@test LibALPM.get_logfile(hdl) == ""
 LibALPM.set_logfile(hdl, "/var/log/pacman.log")
 @test LibALPM.get_logfile(hdl) == "/var/log/pacman.log"
 
-@test_throws ArgumentError LibALPM.get_gpgdir(hdl)
+@test LibALPM.get_gpgdir(hdl) == ""
 LibALPM.set_gpgdir(hdl, "/etc/pacman.d/gnupg")
 @test LibALPM.get_gpgdir(hdl) == "/etc/pacman.d/gnupg/"
 

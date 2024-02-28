@@ -1,7 +1,7 @@
 #!/usr/bin/julia -f
 
 module Errno
-import LibALPM: libalpm
+import LibALPM: libalpm, convert_cstring
 @enum(errno_t,
       OK = 0,
       MEMORY,
@@ -70,7 +70,7 @@ import LibALPM: libalpm
       MISSING_CAPABILITY_SIGNATURES
       )
 Libc.strerror(err::errno_t) =
-    unsafe_string(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
+    convert_cstring(ccall((:alpm_strerror, libalpm), Ptr{UInt8}, (Cint,), err))
 end
 import .Errno.errno_t
 abstract type AbstractError <: Exception end

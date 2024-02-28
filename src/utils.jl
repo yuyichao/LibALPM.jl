@@ -1,14 +1,18 @@
 #!/usr/bin/julia -f
 
-version() =
-    VersionNumber(unsafe_string(ccall((:alpm_version, libalpm), Ptr{UInt8}, ())))
-capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
-
-function take_cstring(ptr)
-    str = unsafe_string(Ptr{UInt8}(ptr))
-    ccall(:free, Cvoid, (Ptr{Cvoid},), Ptr{Cvoid}(ptr))
-    return str
+@inline function cstr_to_utf8(cstr, own)
+    cstr == C_NULL && return ""
+    res = unsafe_string(Ptr{UInt8}(cstr))
+    own && ccall(:free, Cvoid, (Ptr{Cvoid},), Ptr{Cvoid}(cstr))
+    return res
 end
+
+take_cstring(ptr) = cstr_to_utf8(ptr, true)
+convert_cstring(ptr) = cstr_to_utf8(ptr, false)
+
+version() =
+    VersionNumber(convert_cstring(ccall((:alpm_version, libalpm), Ptr{UInt8}, ())))
+capabilities() = ccall((:alpm_capabilities, libalpm), UInt32, ())
 
 # checksums
 compute_md5sum(fname) =

@@ -146,7 +146,7 @@ end
     @test !isempty(LibALPM.compute_optionalfor(glibcpkg)) # tzdata
     @test !LibALPM.should_ignore(glibcpkg)
     # no filename for localdb package
-    @test_throws ArgumentError LibALPM.get_filename(glibcpkg)
+    @test LibALPM.get_filename(glibcpkg) == ""
     # no pkgbase for localdb package
     @test LibALPM.get_base(glibcpkg) == "glibc"
     @test LibALPM.get_name(glibcpkg) == "glibc"
@@ -160,8 +160,8 @@ end
     @test LibALPM.get_installdate(glibcpkg) > 0
     @test isa(LibALPM.get_packager(glibcpkg), String)
     # Apparently local package doesn't have checksum...
-    @test_throws ArgumentError LibALPM.get_md5sum(glibcpkg)
-    @test_throws ArgumentError LibALPM.get_sha256sum(glibcpkg)
+    @test LibALPM.get_md5sum(glibcpkg) == ""
+    @test LibALPM.get_sha256sum(glibcpkg) == ""
     # This may fail on 32bit...
     @test LibALPM.get_arch(glibcpkg) == string(Sys.ARCH)
     # Not available for local pkg

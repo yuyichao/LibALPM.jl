@@ -1,7 +1,7 @@
 #!/usr/bin/julia -f
 
 module Event
-import LibALPM: LibALPM, event_type_t, Handle, DB, Pkg
+import LibALPM: LibALPM, event_type_t, Handle, DB, Pkg, convert_cstring
 import ..CTypes
 const CEvent = CTypes.Event
 
@@ -47,7 +47,7 @@ struct ScriptletInfo <: AbstractEvent
     line::String
     function ScriptletInfo(hdl::Handle, ptr::Ptr{Cvoid})
         cevent = unsafe_load(Ptr{CEvent.ScriptletInfo}(ptr))
-        new(cevent._type, unsafe_string(Ptr{UInt8}(cevent.line)))
+        new(cevent._type, convert_cstring(cevent.line))
     end
 end
 
@@ -57,7 +57,7 @@ struct DatabaseMissing <: AbstractEvent
     dbname::String
     function DatabaseMissing(hdl::Handle, ptr::Ptr{Cvoid})
         cevent = unsafe_load(Ptr{CEvent.DatabaseMissing}(ptr))
-        new(cevent._type, unsafe_string(Ptr{UInt8}(cevent.dbname)))
+        new(cevent._type, convert_cstring(cevent.dbname))
     end
 end
 
@@ -67,7 +67,7 @@ end
 #     file::String
 #     function PkgDownload(hdl::Handle, ptr::Ptr{Cvoid})
 #         cevent = unsafe_load(Ptr{CEvent.PkgDownload}(ptr))
-#         new(cevent._type, unsafe_string(Ptr{UInt8}(cevent.file)))
+#         new(cevent._type, convert_cstring(cevent.file))
 #     end
 # end
 struct PkgRetrieve <: AbstractEvent
@@ -97,7 +97,7 @@ struct PacnewCreated <: AbstractEvent
         new(cevent._type, cevent.from_noupgrade,
             Union{Pkg,Nothing}(cevent.oldpkg, hdl),
             Union{Pkg,Nothing}(cevent.newpkg, hdl),
-            unsafe_string(Ptr{UInt8}(cevent.file)))
+            convert_cstring(cevent.file))
     end
 end
 
@@ -110,7 +110,7 @@ struct PacsaveCreated <: AbstractEvent
     function PacsaveCreated(hdl::Handle, ptr::Ptr{Cvoid})
         cevent = unsafe_load(Ptr{CEvent.PacsaveCreated}(ptr))
         new(cevent._type, Union{Pkg,Nothing}(cevent.oldpkg, hdl),
-            unsafe_string(Ptr{UInt8}(cevent.file)))
+            convert_cstring(cevent.file))
     end
 end
 
@@ -136,8 +136,8 @@ struct HookRun <: AbstractEvent
     total::Csize_t
     function HookRun(hdl::Handle, ptr::Ptr{Cvoid})
         cevent = unsafe_load(Ptr{CEvent.HookRun}(ptr))
-        new(cevent._type, unsafe_string(Ptr{UInt8}(cevent.name)),
-            unsafe_string(Ptr{UInt8}(cevent.desc)), cevent.position,
+        new(cevent._type, convert_cstring(cevent.name),
+            convert_cstring(cevent.desc), cevent.position,
             cevent.total)
     end
 end

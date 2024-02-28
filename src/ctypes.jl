@@ -278,13 +278,6 @@ end
 
 end
 
-function cstr_to_utf8(cstr, own)
-    cstr == C_NULL && return ""
-    res = unsafe_string(Ptr{UInt8}(cstr))
-    own && ccall(:free, Cvoid, (Ptr{Cvoid},), Ptr{Cvoid}(cstr))
-    return res
-end
-
 struct Depend
     name::String
     version::String
@@ -364,9 +357,9 @@ struct DepMissing
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cdepmissing = unsafe_load(ptr)
         ccall(:free, Cvoid, (Ptr{Cvoid},), ptr)
-        target = cstr_to_utf8(cdepmissing.target, true)
+        target = take_cstring(cdepmissing.target)
         depend = Depend(cdepmissing.depend, true)
-        causingpkg = cstr_to_utf8(cdepmissing.causingpkg, true)
+        causingpkg = take_cstring(cdepmissing.causingpkg)
         new(target, depend, causingpkg)
     end
 end
@@ -388,8 +381,8 @@ struct Conflict
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cconflict = unsafe_load(ptr)
         ccall(:free, Cvoid, (Ptr{Cvoid},), ptr)
-        package1 = cstr_to_utf8(cconflict.package1, true)
-        package2 = cstr_to_utf8(cconflict.package2, true)
+        package1 = take_cstring(cconflict.package1)
+        package2 = take_cstring(cconflict.package2)
         # But don't take the ownership of the reason.
         # This is the internal API.
         reason = Depend(cconflict.reason)
@@ -409,9 +402,9 @@ struct FileConflict
         # WARNING! Relies on alpm internal API (freeing fields with `free`)
         cfileconflict = unsafe_load(ptr)
         ccall(:free, Cvoid, (Ptr{Cvoid},), ptr)
-        target = cstr_to_utf8(cfileconflict.target, true)
-        file = cstr_to_utf8(cfileconflict.file, true)
-        ctarget = cstr_to_utf8(cfileconflict.ctarget, true)
+        target = take_cstring(cfileconflict.target)
+        file = take_cstring(cfileconflict.file)
+        ctarget = take_cstring(cfileconflict.ctarget)
         new(target, cfileconflict.conflicttype, file, ctarget)
     end
 end
@@ -423,7 +416,7 @@ struct File
     function File(_ptr::Ptr)
         ptr = Ptr{CTypes.File}(_ptr)
         cfile = unsafe_load(ptr)
-        name = unsafe_string(Ptr{UInt8}(cfile.name))
+        name = convert_cstring(cfile.name)
         new(name, cfile.size, cfile.mode)
     end
 end
@@ -434,8 +427,8 @@ struct Backup
     function Backup(_ptr::Ptr)
         ptr = Ptr{CTypes.Backup}(_ptr)
         cbackup = unsafe_load(ptr)
-        name = unsafe_string(Ptr{UInt8}(cbackup.name))
-        hash = unsafe_string(Ptr{UInt8}(cbackup.hash))
+        name = convert_cstring(cbackup.name)
+        hash = convert_cstring(cbackup.hash)
         new(name, hash)
     end
 end

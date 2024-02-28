@@ -211,22 +211,22 @@ fetch_pkgurl(hdl::Handle, url::AbstractString) = fetch_pkgurl(hdl, [url])[1]
 "Returns the root of the destination filesystem"
 function get_root(hdl::Handle)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
-                        (Ptr{Cvoid},), hdl))
+    convert_cstring(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
+                          (Ptr{Cvoid},), hdl))
 end
 
 "Returns the path to the database directory"
 function get_dbpath(hdl::Handle)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
-                        (Ptr{Cvoid},), hdl))
+    convert_cstring(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
+                          (Ptr{Cvoid},), hdl))
 end
 
 "Get the name of the database lock file"
 function get_lockfile(hdl::Handle)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
-                        (Ptr{Cvoid},), hdl))
+    convert_cstring(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
+                          (Ptr{Cvoid},), hdl))
 end
 
 # Accessors to the list of package cache directories
@@ -234,7 +234,7 @@ function get_cachedirs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_cachedirs, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
-    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, convert_cstring)
 end
 function set_cachedirs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
@@ -264,7 +264,7 @@ function get_hookdirs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_hookdirs, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
-    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, convert_cstring)
 end
 function set_hookdirs(hdl::Handle, dirs)
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
@@ -292,8 +292,8 @@ end
 "Returns the logfile name"
 function get_logfile(hdl::Handle)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_option_get_logfile, libalpm), Ptr{UInt8},
-                        (Ptr{Cvoid},), hdl))
+    convert_cstring(ccall((:alpm_option_get_logfile, libalpm), Ptr{UInt8},
+                          (Ptr{Cvoid},), hdl))
 end
 "Sets the logfile name"
 function set_logfile(hdl::Handle, logfile)
@@ -306,8 +306,8 @@ end
 "Returns the path to libalpm's GnuPG home directory"
 function get_gpgdir(hdl::Handle)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_option_get_gpgdir, libalpm), Ptr{UInt8},
-                        (Ptr{Cvoid},), hdl))
+    convert_cstring(ccall((:alpm_option_get_gpgdir, libalpm), Ptr{UInt8},
+                          (Ptr{Cvoid},), hdl))
 end
 "Sets the path to libalpm's GnuPG home directory"
 function set_gpgdir(hdl::Handle, gpgdir)
@@ -338,7 +338,7 @@ function get_noupgrades(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_noupgrades, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
-    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, convert_cstring)
 end
 function set_noupgrades(hdl::Handle, dirs)
     # Should not trigger callback
@@ -381,7 +381,7 @@ function get_noextracts(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_noextracts, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
-    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, convert_cstring)
 end
 function set_noextracts(hdl::Handle, dirs)
     # Should not trigger callback
@@ -424,7 +424,7 @@ function get_ignorepkgs(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_ignorepkgs, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
-    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, convert_cstring)
 end
 function set_ignorepkgs(hdl::Handle, dirs)
     # Should not trigger callback
@@ -458,7 +458,7 @@ function get_ignoregroups(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_ignoregroups, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
-    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, convert_cstring)
 end
 function set_ignoregroups(hdl::Handle, dirs)
     # Should not trigger callback
@@ -489,7 +489,7 @@ function get_architectures(hdl::Handle)
     # Should not trigger callback
     dirs = ccall((:alpm_option_get_architectures, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
-    list_to_array(String, dirs, p->unsafe_string(Ptr{UInt8}(p)))
+    list_to_array(String, dirs, convert_cstring)
 end
 "Sets the allowed package architecture."
 function set_architectures(hdl::Handle, dirs)
@@ -530,8 +530,8 @@ end
 
 function get_dbext(hdl::Handle)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_option_get_dbext, libalpm), Ptr{UInt8},
-                        (Ptr{Cvoid},), hdl))
+    convert_cstring(ccall((:alpm_option_get_dbext, libalpm), Ptr{UInt8},
+                          (Ptr{Cvoid},), hdl))
 end
 function set_dbext(hdl::Handle, dbext)
     ret = ccall((:alpm_option_set_dbext, libalpm), Cint,

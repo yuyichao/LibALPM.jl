@@ -96,20 +96,20 @@ should_ignore(pkg::Pkg) =
 "Gets the name of the file from which the package was loaded"
 function get_filename(pkg::Pkg)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_pkg_get_filename, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_filename, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 end
 
 "Returns the package base name"
 get_base(pkg::Pkg) =
-    unsafe_string(ccall((:alpm_pkg_get_base, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_base, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 
 "Returns the package name"
 function get_name(pkg::Pkg)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_pkg_get_name, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_name, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 end
 
 """
@@ -120,8 +120,8 @@ This includes all available epoch, version, and pkgrel components. Use
 """
 function get_version(pkg::Pkg)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_pkg_get_version, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_version, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 end
 
 "Returns the origin of the package"
@@ -133,13 +133,13 @@ end
 
 "Returns the package description"
 get_desc(pkg::Pkg) =
-    unsafe_string(ccall((:alpm_pkg_get_desc, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_desc, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 
 "Returns the package URL"
 get_url(pkg::Pkg) =
-    unsafe_string(ccall((:alpm_pkg_get_url, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_url, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 
 "Returns the build timestamp of the package"
 get_builddate(pkg::Pkg) =
@@ -151,27 +151,27 @@ get_installdate(pkg::Pkg) =
 
 "Returns the packager's name"
 get_packager(pkg::Pkg) =
-    unsafe_string(ccall((:alpm_pkg_get_packager, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_packager, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 
 "Returns the package's MD5 checksum as a string"
 function get_md5sum(pkg::Pkg)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_pkg_get_md5sum, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_md5sum, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 end
 
 "Returns the package's SHA256 checksum as a string"
 function get_sha256sum(pkg::Pkg)
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_pkg_get_sha256sum, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_sha256sum, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 end
 
 "Returns the architecture for which the package was built"
 get_arch(pkg::Pkg) =
-    unsafe_string(ccall((:alpm_pkg_get_arch, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_arch, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 
 """
 Returns the size of the package.
@@ -208,14 +208,14 @@ end
 function get_licenses(pkg::Pkg)
     list = ccall((:alpm_pkg_get_licenses, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), pkg)
-    list_to_array(String, list, p->unsafe_string(Ptr{UInt8}(p)))
+    list_to_array(String, list, convert_cstring)
 end
 
 "Returns the list of package groups"
 function get_groups(pkg::Pkg)
     list = ccall((:alpm_pkg_get_groups, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), pkg)
-    list_to_array(String, list, p->unsafe_string(Ptr{UInt8}(p)))
+    list_to_array(String, list, convert_cstring)
 end
 
 """
@@ -252,8 +252,8 @@ get_db(pkg::Pkg) =
 "Returns the base64 encoded package signature"
 get_base64_sig(pkg::Pkg) =
     # Should not trigger callback
-    unsafe_string(ccall((:alpm_pkg_get_base64_sig, libalpm),
-                        Ptr{UInt8}, (Ptr{Cvoid},), pkg))
+    convert_cstring(ccall((:alpm_pkg_get_base64_sig, libalpm),
+                          Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 
 "Returns the method used to validate a package during install"
 get_validation(pkg::Pkg) =
