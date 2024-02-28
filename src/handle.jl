@@ -44,8 +44,8 @@ end
 function cb_show_error(ex)
     try
         # Good enough for now...
-        Base.showerror(STDERR, ex, catch_backtrace())
-        println(STDERR)
+        Base.showerror(stderr, ex, catch_backtrace())
+        println(stderr)
     catch
     end
 end
