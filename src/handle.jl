@@ -52,10 +52,10 @@ end
 
 mutable struct Handle
     ptr::Ptr{Cvoid}
-    dbs::CObjMap
-    pkgs::CObjMap
-    transpkgs::Set
-    rmpkgs::Set
+    const dbs::CObjMap
+    const pkgs::CObjMap
+    const transpkgs::Set
+    const rmpkgs::Set
 
     log_cb
     event_cb
@@ -72,8 +72,8 @@ mutable struct Handle
 end
 
 mutable struct LogCallbackData{T}
-    hdl::Handle
-    cb::T
+    const hdl::Handle
+    const cb::T
     function LogCallbackData(hdl::Handle, cb::T) where T
         return new{T}(hdl, cb)
     end
@@ -124,8 +124,8 @@ function set_logcb(hdl::Handle, cb)
 end
 
 mutable struct EventCallbackData{T}
-    hdl::Handle
-    cb::T
+    const hdl::Handle
+    const cb::T
     function EventCallbackData(hdl::Handle, cb::T) where T
         return new{T}(hdl, cb)
     end

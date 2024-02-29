@@ -2,7 +2,7 @@
 
 mutable struct Pkg
     ptr::Ptr{Cvoid}
-    hdl::Handle
+    const hdl::Handle
     should_free::Bool
     tofree::Vector{WeakRef}
     function Pkg(ptr::Ptr{Cvoid}, hdl::Handle, should_free=false)

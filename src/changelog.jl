@@ -3,7 +3,7 @@
 "Open a package changelog for reading"
 mutable struct ChangeLog <: IO
     ptr::Ptr{Cvoid}
-    pkg::Pkg
+    const pkg::Pkg
     function ChangeLog(pkg::Pkg)
         ptr = ccall((:alpm_pkg_changelog_open, libalpm),
                     Ptr{Cvoid}, (Ptr{Cvoid},), pkg)

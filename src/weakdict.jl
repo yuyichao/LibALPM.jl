@@ -1,7 +1,7 @@
 #!/usr/bin/julia -f
 
 mutable struct CObjMap
-    dict::Dict{Ptr{Cvoid},WeakRef}
+    const dict::Dict{Ptr{Cvoid},WeakRef}
     new_added::Int
     last_pause::Int
     CObjMap() = new(Dict{Ptr{Cvoid},WeakRef}(), 0, 0)

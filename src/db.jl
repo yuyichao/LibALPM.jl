@@ -2,7 +2,7 @@
 
 mutable struct DB
     ptr::Ptr{Cvoid}
-    hdl::Handle
+    const hdl::Handle
     function DB(ptr::Ptr{Cvoid}, hdl::Handle)
         ptr == C_NULL && throw(UndefRefError())
         cached = hdl.dbs[ptr, DB]
