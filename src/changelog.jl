@@ -72,8 +72,7 @@ function Base.read(clog::ChangeLog)
     res = Vector{UInt8}(undef, block_size)
     pos = 1
     while true
-        ptr = Base.unsafe_convert(Ptr{UInt8}, Ref(res, pos))
-        nbread = unsafe_changelog_read(clog, ptr, block_size)
+        nbread = unsafe_changelog_read(clog, pointer(res, pos), block_size)
         if nbread < block_size
             resize!(res, nbread + pos - 1)
             return res
