@@ -210,7 +210,7 @@ function release(hdl::Handle)
     _null_all_pkgs(pkgs)
     _null_all_dbs(dbs)
     hdl.ptr = C_NULL
-    # The callback table contains a reference to the julia hdl object
+    # The callback data contains a reference to the julia hdl object
     # so we still need to preserve hdl even though
     # the finalizer (i.e. ourselves) won't mess with the C pointer anymore.
     GC.@preserve hdl begin
@@ -294,28 +294,24 @@ end
 
 "Returns the root of the destination filesystem"
 function get_root(hdl::Handle)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_option_get_root, libalpm), Ptr{UInt8},
                           (Ptr{Cvoid},), hdl))
 end
 
 "Returns the path to the database directory"
 function get_dbpath(hdl::Handle)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_option_get_dbpath, libalpm), Ptr{UInt8},
                           (Ptr{Cvoid},), hdl))
 end
 
 "Get the name of the database lock file"
 function get_lockfile(hdl::Handle)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_option_get_lockfile, libalpm), Ptr{UInt8},
                           (Ptr{Cvoid},), hdl))
 end
 
 # Accessors to the list of package cache directories
 function get_cachedirs(hdl::Handle)
-    # Should not trigger callback
     dirs = ccall((:alpm_option_get_cachedirs, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, convert_cstring)
@@ -345,7 +341,6 @@ end
 
 # Accessors to the list of package hook directories
 function get_hookdirs(hdl::Handle)
-    # Should not trigger callback
     dirs = ccall((:alpm_option_get_hookdirs, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, convert_cstring)
@@ -375,7 +370,6 @@ end
 
 "Returns the logfile name"
 function get_logfile(hdl::Handle)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_option_get_logfile, libalpm), Ptr{UInt8},
                           (Ptr{Cvoid},), hdl))
 end
@@ -389,7 +383,6 @@ end
 
 "Returns the path to libalpm's GnuPG home directory"
 function get_gpgdir(hdl::Handle)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_option_get_gpgdir, libalpm), Ptr{UInt8},
                           (Ptr{Cvoid},), hdl))
 end
@@ -403,12 +396,11 @@ end
 
 "Returns whether to use syslog"
 function get_usesyslog(hdl::Handle)
-    # Should not trigger callback
     ccall((:alpm_option_get_usesyslog, libalpm), Cint, (Ptr{Cvoid},), hdl) != 0
 end
 "Sets whether to use syslog"
 function set_usesyslog(hdl::Handle, usesyslog)
-    # Should not trigger callback and should not fail
+    # Should not fail
     ccall((:alpm_option_set_usesyslog, libalpm), Cint,
           (Ptr{Cvoid}, Cint), hdl, usesyslog)
     nothing
@@ -419,13 +411,11 @@ end
 # These functions modify the list of files which should
 # not be updated by package installation.
 function get_noupgrades(hdl::Handle)
-    # Should not trigger callback
     dirs = ccall((:alpm_option_get_noupgrades, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, convert_cstring)
 end
 function set_noupgrades(hdl::Handle, dirs)
-    # Should not trigger callback
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_option_set_noupgrades, libalpm), Cint,
@@ -452,7 +442,6 @@ Return 0 if string matches pattern,
 negative if they don't match and positive if the last match was inverted.
 """
 function match_noupgrade(hdl::Handle, noupgrade)
-    # Should not trigger callback
     ccall((:alpm_option_match_noupgrade, libalpm), Cint,
           (Ptr{Cvoid}, Cstring), hdl, noupgrade)
 end
@@ -462,13 +451,11 @@ end
 # These functions modify the list of filenames which should
 # be skipped packages which should not be upgraded by a sysupgrade operation.
 function get_noextracts(hdl::Handle)
-    # Should not trigger callback
     dirs = ccall((:alpm_option_get_noextracts, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, convert_cstring)
 end
 function set_noextracts(hdl::Handle, dirs)
-    # Should not trigger callback
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_option_set_noextracts, libalpm), Cint,
@@ -495,7 +482,6 @@ Return 0 if string matches pattern,
 negative if they don't match and positive if the last match was inverted.
 """
 function match_noextract(hdl::Handle, noextract)
-    # Should not trigger callback
     ccall((:alpm_option_match_noextract, libalpm), Cint,
           (Ptr{Cvoid}, Cstring), hdl, noextract)
 end
@@ -505,13 +491,11 @@ end
 # These functions modify the list of packages that
 # should be ignored by a sysupgrade.
 function get_ignorepkgs(hdl::Handle)
-    # Should not trigger callback
     dirs = ccall((:alpm_option_get_ignorepkgs, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, convert_cstring)
 end
 function set_ignorepkgs(hdl::Handle, dirs)
-    # Should not trigger callback
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_option_set_ignorepkgs, libalpm), Cint,
@@ -539,13 +523,11 @@ end
 # These functions modify the list of groups whose packages
 # should be ignored by a sysupgrade.
 function get_ignoregroups(hdl::Handle)
-    # Should not trigger callback
     dirs = ccall((:alpm_option_get_ignoregroups, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, convert_cstring)
 end
 function set_ignoregroups(hdl::Handle, dirs)
-    # Should not trigger callback
     list = array_to_list(dirs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
     ret = ccall((:alpm_option_set_ignoregroups, libalpm), Cint,
@@ -570,7 +552,6 @@ end
 
 "Returns the allowed package architecture."
 function get_architectures(hdl::Handle)
-    # Should not trigger callback
     dirs = ccall((:alpm_option_get_architectures, libalpm), Ptr{list_t},
                  (Ptr{Cvoid},), hdl)
     list_to_array(String, dirs, convert_cstring)
@@ -602,18 +583,16 @@ function remove_architecture(hdl::Handle, architecture)
 end
 
 function get_checkspace(hdl::Handle)
-    # Should not trigger callback
     ccall((:alpm_option_get_checkspace, libalpm), Cint, (Ptr{Cvoid},), hdl) != 0
 end
 function set_checkspace(hdl::Handle, checkspace)
-    # Should not trigger callback and should not fail
+    # Should not fail
     ccall((:alpm_option_set_checkspace, libalpm), Cint,
           (Ptr{Cvoid}, Cint), hdl, checkspace)
     nothing
 end
 
 function get_dbext(hdl::Handle)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_option_get_dbext, libalpm), Ptr{UInt8},
                           (Ptr{Cvoid},), hdl))
 end
@@ -625,7 +604,6 @@ function set_dbext(hdl::Handle, dbext)
 end
 
 function get_default_siglevel(hdl::Handle)
-    # Should not trigger callback
     ccall((:alpm_option_get_default_siglevel, libalpm), Cint, (Ptr{Cvoid},), hdl)
 end
 function set_default_siglevel(hdl::Handle, siglevel)
@@ -636,7 +614,6 @@ function set_default_siglevel(hdl::Handle, siglevel)
 end
 
 function get_local_file_siglevel(hdl::Handle)
-    # Should not trigger callback
     ccall((:alpm_option_get_local_file_siglevel, libalpm),
           Cint, (Ptr{Cvoid},), hdl)
 end
@@ -648,7 +625,6 @@ function set_local_file_siglevel(hdl::Handle, siglevel)
 end
 
 function get_remote_file_siglevel(hdl::Handle)
-    # Should not trigger callback
     ccall((:alpm_option_get_remote_file_siglevel, libalpm),
           Cint, (Ptr{Cvoid},), hdl)
 end
@@ -669,7 +645,6 @@ Get the database of locally installed packages.
 Return a reference to the local database
 """
 get_localdb(hdl::Handle) =
-    # Should not trigger callback
     DB(ccall((:alpm_get_localdb, libalpm), Ptr{Cvoid}, (Ptr{Cvoid},), hdl), hdl)
 
 """
@@ -678,7 +653,6 @@ Get the list of sync databases.
 Returns an array of DB's, one for each registered sync database.
 """
 function get_syncdbs(hdl::Handle)
-    # Should not trigger callback
     dbs = ccall((:alpm_get_syncdbs, libalpm), Ptr{list_t}, (Ptr{Cvoid},), hdl)
     list_to_array(DB, dbs, p->DB(p, hdl))
 end
@@ -745,7 +719,6 @@ end
 # These functions modify the list of dependencies that
 # should be ignored by a sysupgrade.
 function get_assumeinstalled(hdl::Handle)
-    # Should not trigger callback
     list = ccall((:alpm_option_get_assumeinstalled, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), hdl)
     list_to_array(Depend, list, Depend)

@@ -20,7 +20,7 @@ Union{Pkg,Nothing}(ptr::Ptr{Cvoid}, hdl::Handle) =
     ptr == C_NULL ? nothing : Pkg(ptr, hdl)
 
 function free(pkg::Pkg)
-    # Should not trigger callback and should not fail
+    # Should not fail
     if isdefined(pkg, :tofree)
         tofree = pkg.tofree
         while !isempty(tofree)
@@ -89,13 +89,11 @@ Checks if the package is ignored via IgnorePkg,
 or if the package is in a group ignored via IgnoreGroup.
 """
 should_ignore(pkg::Pkg) =
-    # Should not trigger callback
     ccall((:alpm_pkg_should_ignore, libalpm), Cint, (Ptr{Cvoid}, Ptr{Cvoid}),
           pkg.hdl, pkg) != 0
 
 "Gets the name of the file from which the package was loaded"
 function get_filename(pkg::Pkg)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_pkg_get_filename, libalpm),
                           Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 end
@@ -107,7 +105,6 @@ get_base(pkg::Pkg) =
 
 "Returns the package name"
 function get_name(pkg::Pkg)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_pkg_get_name, libalpm),
                           Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 end
@@ -119,14 +116,13 @@ This includes all available epoch, version, and pkgrel components. Use
 `LibALPM.vercmp()` to compare version strings if necessary.
 """
 function get_version(pkg::Pkg)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_pkg_get_version, libalpm),
                           Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 end
 
 "Returns the origin of the package"
 function get_origin(pkg::Pkg)
-    # Should not trigger callback and should not fail
+    # Should not fail
     ccall((:alpm_pkg_get_origin, libalpm),
           pkgfrom_t, (Ptr{Cvoid},), pkg)
 end
@@ -156,14 +152,12 @@ get_packager(pkg::Pkg) =
 
 "Returns the package's MD5 checksum as a string"
 function get_md5sum(pkg::Pkg)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_pkg_get_md5sum, libalpm),
                           Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 end
 
 "Returns the package's SHA256 checksum as a string"
 function get_sha256sum(pkg::Pkg)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_pkg_get_sha256sum, libalpm),
                           Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 end
@@ -180,7 +174,6 @@ This is only available for sync database packages and package files,
 not those loaded from the local database.
 """
 get_size(pkg::Pkg) =
-    # Should not trigger callback
     ccall((:alpm_pkg_get_size, libalpm), Int64, (Ptr{Cvoid},), pkg)
 
 "Returns the installed size of the package"
@@ -245,13 +238,11 @@ end
 
 "Returns the database containing pkg"
 get_db(pkg::Pkg) =
-    # Should not trigger callback
     DB(ccall((:alpm_pkg_get_db, libalpm), Ptr{Cvoid}, (Ptr{Cvoid},), pkg),
        pkg.hdl)
 
 "Returns the base64 encoded package signature"
 get_base64_sig(pkg::Pkg) =
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_pkg_get_base64_sig, libalpm),
                           Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 

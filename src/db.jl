@@ -57,7 +57,6 @@ end
 Get the name of a package database.
 """
 function get_name(db::DB)
-    # Should not trigger callback
     convert_cstring(ccall((:alpm_db_get_name, libalpm), Ptr{UInt8}, (Ptr{Cvoid},), db))
 end
 
@@ -68,7 +67,6 @@ Will return the default verification level if this database is set up
 with ALPM_SIG_USE_DEFAULT.
 """
 get_siglevel(db::DB) =
-    # Should not trigger callback
     ccall((:alpm_db_get_siglevel, libalpm), UInt32, (Ptr{Cvoid},), db)
 
 """
@@ -86,13 +84,11 @@ end
 
 # Accessors to the list of servers for a database.
 function get_servers(db::DB)
-    # Should not trigger callback
     servers = ccall((:alpm_db_get_servers, libalpm), Ptr{list_t},
                     (Ptr{Cvoid},), db)
     list_to_array(String, servers, convert_cstring)
 end
 function set_servers(db::DB, servers)
-    # Should not trigger callback
     list = array_to_list(servers,
                          str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
                          cglobal(:free))
