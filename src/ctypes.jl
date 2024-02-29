@@ -40,7 +40,8 @@ end
 "Package group"
 struct Group
     name::Cstring
-    package::Ptr{list_t}
+    # list of alpm_pkg_t packages
+    packages::Ptr{list_t}
 end
 
 "File in a package"
