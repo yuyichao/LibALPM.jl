@@ -14,8 +14,8 @@ const libalpm = "/usr/lib/libalpm.so"
 
 include("utils.jl")
 include("enums.jl")
-include("ctypes.jl")
 include("list.jl")
+include("ctypes.jl")
 include("weakdict.jl")
 include("handle.jl")
 include("db.jl")

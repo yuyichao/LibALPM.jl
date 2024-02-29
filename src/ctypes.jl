@@ -1,7 +1,7 @@
 #!/usr/bin/julia -f
 
 module CTypes
-import LibALPM: LibALPM, EventType
+import LibALPM: LibALPM, EventType, list_t
 
 "Dependency"
 struct Depend
@@ -40,8 +40,7 @@ end
 "Package group"
 struct Group
     name::Cstring
-    # FIXME: alpm_list_t*
-    package::Ptr{Cvoid}
+    package::Ptr{list_t}
 end
 
 "File in a package"
@@ -280,8 +279,7 @@ struct RemovePkgs <: AbstractQuestion
     # Answer: whether or not to skip packages
     skip::Cint
     # List of alpm_pkg_t* with unresolved dependencies
-    # FIXME: alpm_list_t*
-    packages::Ptr{Cvoid}
+    packages::Ptr{list_t}
 end
 
 struct SelectProvider <: AbstractQuestion
@@ -290,8 +288,7 @@ struct SelectProvider <: AbstractQuestion
     # Answer: which provider to use (index from providers)
     use_index::Cint
     # List of alpm_pkg_t* as possible providers
-    # FIXME: alpm_list_t*
-    providers::Ptr{Cvoid}
+    providers::Ptr{list_t}
     # What providers provide for
     depend::Ptr{CTypes.Depend}
 end
