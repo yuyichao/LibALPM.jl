@@ -413,6 +413,48 @@ function remove_hookdir(hdl::Handle, hookdir)
     ret != 0
 end
 
+"Check the package conflicts in a database"
+function check_conflicts(hdl::Handle, pkgs)
+    pkg_list = array_to_list(pkgs, pkg->pkg.ptr)
+    conflict_list = ccall((:alpm_checkconflicts, libalpm), Ptr{list_t},
+                          (Ptr{Cvoid}, Ptr{list_t}), hdl, pkg_list)
+    free(pkg_list)
+    return list_to_array(Conflict, list[], Conflict,
+                         cglobal((:alpm_conflict_free, libalpm)))
+end
+
+"Gets the currently configured overwritable files,"
+function get_override_files(hdl::Handle)
+    dirs = ccall((:alpm_option_get_override_files, libalpm), Ptr{list_t},
+                 (Ptr{Cvoid},), hdl)
+    list_to_array(String, dirs, convert_cstring)
+end
+"Sets the overwritable files."
+function set_override_files(hdl::Handle, globs)
+    list = array_to_list(globs, str->ccall(:strdup, Ptr{Cvoid}, (Cstring,), str),
+                         cglobal(:free))
+    ret = ccall((:alpm_option_set_override_files, libalpm), Cint,
+                (Ptr{Cvoid}, Ptr{list_t}), hdl, list)
+    if ret != 0
+        free(list, cglobal(:free))
+        throw(Error(hdl, "set_override_files"))
+    end
+end
+"Append an overwritable file to the configured overwritable files."
+function add_override_file(hdl::Handle, glob)
+    ret = ccall((:alpm_option_add_override_file, libalpm), Cint,
+                (Ptr{Cvoid}, Cstring), hdl, glob)
+    ret == 0 || throw(Error(hdl, "add_override_file"))
+    nothing
+end
+"Remove a file glob from the configured overwritable files globs."
+function remove_override_file(hdl::Handle, glob)
+    ret = ccall((:alpm_option_remove_override_file, libalpm), Cint,
+                (Ptr{Cvoid}, Cstring), hdl, glob)
+    ret < 0 && throw(Error(hdl, "remove_override_file"))
+    ret != 0
+end
+
 "Returns the logfile name"
 function get_logfile(hdl::Handle)
     convert_cstring(ccall((:alpm_option_get_logfile, libalpm), Ptr{UInt8},
@@ -991,43 +1033,3 @@ end
 #  * @param depstring package or provision name, versioned or not
 #  * @return a alpm_pkg_t* satisfying depstring
 # alpm_pkg_t *alpm_find_dbs_satisfier(alpm_handle_t *handle, alpm_list_t *dbs, const char *depstring);
-
-# /** Check the package conflicts in a database
-#  *
-#  * @param handle the context handle
-#  * @param pkglist the list of packages to check
-#  *
-#  * @return an alpm_list_t of alpm_conflict_t
-# alpm_list_t *alpm_checkconflicts(alpm_handle_t *handle, alpm_list_t *pkglist);
-
-# /** Gets the currently configured overwritable files,
-#  * @param handle the context handle
-#  * @return a char* list of overwritable file globs
-#  */
-# alpm_list_t *alpm_option_get_overwrite_files(alpm_handle_t *handle);
-
-# /** Sets the overwritable files.
-#  * @param handle the context handle
-#  * @param globs a char* list of overwritable file globs. The list will be duped and
-#  * the original will still need to be freed by the caller.
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#  */
-# int alpm_option_set_overwrite_files(alpm_handle_t *handle, alpm_list_t *globs);
-
-# /** Append an overwritable file to the configured overwritable files.
-#  * @param handle the context handle
-#  * @param glob the file glob to add
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#  */
-# int alpm_option_add_overwrite_file(alpm_handle_t *handle, const char *glob);
-
-# /** Remove a file glob from the configured overwritable files globs.
-#  * @note The overwritable file list contains a list of globs. The glob to
-#  * remove must exactly match the entry to remove. There is no glob expansion.
-#  * @param handle the context handle
-#  * @param glob the file glob to remove
-#  * @return 0 on success, -1 on error (pm_errno is set accordingly)
-#  */
-# int alpm_option_remove_overwrite_file(alpm_handle_t *handle, const char *glob);
-# /* End of overwrite accessors */
-# /** @} */
