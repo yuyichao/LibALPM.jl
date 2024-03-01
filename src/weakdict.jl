@@ -7,19 +7,25 @@ mutable struct CObjMap
     CObjMap() = new(Dict{Ptr{Cvoid},WeakRef}(), 0, 0)
 end
 
-function maybe_gc(map::CObjMap)
-    map.new_added <= 100 && return
+function maybe_gc(map)
     cur_pause = Base.gc_num().pause
-    map.last_pause == cur_pause && return
+    if map.last_pause == cur_pause
+        # Try again 20 cycles later
+        map.new_added = 80
+        return
+    end
     map.last_pause = cur_pause
     map.new_added = 0
     filter!(map.dict) do kv
         kv[2].value !== nothing
     end
+    return
 end
 
 function Base.setindex!(map::CObjMap, @nospecialize(val), ptr::Ptr{Cvoid})
-    maybe_gc(map)
+    if map.new_added > 100
+        maybe_gc(map)
+    end
     ref = WeakRef(val)
     map.new_added += 1
     map.dict[ptr] = ref
