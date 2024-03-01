@@ -161,11 +161,6 @@ end
 #  * @return the groups entry on success, NULL on error
 # alpm_group_t *alpm_db_get_group(alpm_db_t *db, const char *name);
 
-# /** Get the group cache of a package database.
-#  * @param db pointer to the package database to get the group from
-#  * @return the list of groups on success, NULL on error
-# alpm_list_t *alpm_db_get_groupcache(alpm_db_t *db);
-
 # /** Searches a database with regular expressions.
 #  * @param db pointer to the package database to search in
 #  * @param needles a list of regular expressions to search for
