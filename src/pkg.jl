@@ -1,5 +1,16 @@
 #!/usr/bin/julia -f
 
+struct Group
+    name::String
+    packages::Vector{Pkg}
+    Group(name::AbstractString) = new(name, Pkg[])
+    function Group(hdl::Handle, _ptr::Ptr)
+        cgroup = unsafe_load(Ptr{CTypes.Group}(_ptr))
+        new(convert_cstring(cgroup.name),
+            list_to_array(Pkg, cgroup.packages, p->Pkg(p, hdl)))
+    end
+end
+
 Union{Pkg,Nothing}(ptr::Ptr{Cvoid}, hdl::Handle) =
     ptr == C_NULL ? nothing : Pkg(ptr, hdl)
 
@@ -343,10 +354,25 @@ function LibArchive.Reader(pkg::Pkg)
     LibArchive.Reader{ReadPkg}(ReadPkg(), archive, true)
 end
 
-# TODO
-#  * Groups
-# alpm_list_t *alpm_find_group_pkgs(alpm_list_t *dbs, const char *name);
+function find_group_pkgs(dbs, name)
+    db_list, hdl = convert_obj_list(dbs)
+    if !isassigned(hdl)
+        free(db_list)
+        return Group(name)
+    end
+    GC.@preserve dbs begin
+        grp_ptr = ccall((:alpm_find_group_pkgs, libalpm), Ptr{list_t},
+                        (Ptr{list_t}, Cstring), db_list, name)
+    end
+    free(db_list)
+    if grp_ptr == C_NULL
+        return Group(name)
+    end
+    return Group(hdl, grp_ptr)
+end
+find_group_pkgs(db::DB, name) = find_group_pkgs([db], name)
 
+# TODO
 # /** Create a package from a file.
 #  * If full is false, the archive is read only until all necessary
 #  * metadata is found. If it is true, the entire archive is read, which
