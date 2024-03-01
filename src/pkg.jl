@@ -1,21 +1,5 @@
 #!/usr/bin/julia -f
 
-mutable struct Pkg
-    ptr::Ptr{Cvoid}
-    const hdl::Handle
-    should_free::Bool
-    tofree::Vector{WeakRef}
-    function Pkg(ptr::Ptr{Cvoid}, hdl::Handle, should_free=false)
-        ptr == C_NULL && throw(UndefRefError())
-        cached = hdl.pkgs[ptr, Pkg]
-        cached === nothing || return cached
-        self = new(ptr, hdl, should_free)
-        should_free && finalizer(self, free)
-        hdl.pkgs[ptr] = self
-        self
-    end
-end
-
 Union{Pkg,Nothing}(ptr::Ptr{Cvoid}, hdl::Handle) =
     ptr == C_NULL ? nothing : Pkg(ptr, hdl)
 
@@ -308,7 +292,7 @@ function add_pkg(hdl::Handle, pkg::Pkg)
                 Cint, (Ptr{Cvoid}, Ptr{Cvoid}), hdl, pkg)
     ret == 0 || throw(Error(hdl, "add_pkg"))
     if pkg.should_free
-        push!(hdl.transpkgs::Set{Pkg}, pkg)
+        push!(hdl.transpkgs, pkg)
         pkg.should_free = false
     end
     nothing
@@ -319,7 +303,7 @@ function remove_pkg(hdl::Handle, pkg::Pkg)
     ret = ccall((:alpm_remove_pkg, libalpm),
                 Cint, (Ptr{Cvoid}, Ptr{Cvoid}), hdl, pkg)
     ret == 0 || throw(Error(hdl, "remove_pkg"))
-    push!(hdl.rmpkgs::Set{Pkg}, pkg)
+    push!(hdl.rmpkgs, pkg)
     pkg.should_free = false
     nothing
 end

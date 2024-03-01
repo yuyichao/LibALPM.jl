@@ -1,18 +1,5 @@
 #!/usr/bin/julia -f
 
-mutable struct DB
-    ptr::Ptr{Cvoid}
-    const hdl::Handle
-    function DB(ptr::Ptr{Cvoid}, hdl::Handle)
-        ptr == C_NULL && throw(UndefRefError())
-        cached = hdl.dbs[ptr, DB]
-        cached === nothing || return cached
-        self = new(ptr, hdl)
-        hdl.dbs[ptr] = self
-        self
-    end
-end
-
 function _null_all_pkgs(db::DB)
     # Must be called in a handle context
     db.ptr == C_NULL && return

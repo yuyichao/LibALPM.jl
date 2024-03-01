@@ -3,6 +3,59 @@
 ##
 # handle
 
+mutable struct _Handle{Pkg}
+    ptr::Ptr{Cvoid}
+    const dbs::CObjMap
+    const pkgs::CObjMap
+    const transpkgs::Set{Pkg}
+    const rmpkgs::Set{Pkg}
+
+    log_cb
+    event_cb
+    function _Handle{Pkg}(root, db) where Pkg
+        err = Ref{errno_t}()
+        ptr = ccall((:alpm_initialize, libalpm), Ptr{Cvoid},
+                    (Cstring, Cstring, Ref{errno_t}), root, db, err)
+        ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
+        self = new{Pkg}(ptr, CObjMap(), CObjMap(), Set{Pkg}(), Set{Pkg}(),
+                        nothing, nothing)
+        finalizer(self, release)
+        self
+    end
+end
+
+mutable struct _DB{Pkg}
+    ptr::Ptr{Cvoid}
+    const hdl::_Handle{Pkg}
+    function _DB{Pkg}(ptr::Ptr{Cvoid}, hdl::_Handle{Pkg}) where Pkg
+        ptr == C_NULL && throw(UndefRefError())
+        cached = hdl.dbs[ptr, _DB]
+        cached === nothing || return cached
+        self = new{Pkg}(ptr, hdl)
+        hdl.dbs[ptr] = self
+        self
+    end
+end
+
+mutable struct Pkg
+    ptr::Ptr{Cvoid}
+    const hdl::_Handle{Pkg}
+    should_free::Bool
+    tofree::Vector{WeakRef}
+    function Pkg(ptr::Ptr{Cvoid}, hdl::_Handle{Pkg}, should_free=false)
+        ptr == C_NULL && throw(UndefRefError())
+        cached = hdl.pkgs[ptr, Pkg]
+        cached === nothing || return cached
+        self = new(ptr, hdl, should_free)
+        should_free && finalizer(self, free)
+        hdl.pkgs[ptr] = self
+        self
+    end
+end
+
+const Handle = _Handle{Pkg}
+const DB = _DB{Pkg}
+
 generic_printf_len = true
 if Sys.ARCH === :x86_64 && !Sys.iswindows()
     struct __va_list_tag
@@ -47,27 +100,6 @@ function cb_show_error(ex)
         Base.showerror(stderr, ex, catch_backtrace())
         println(stderr)
     catch
-    end
-end
-
-mutable struct Handle
-    ptr::Ptr{Cvoid}
-    const dbs::CObjMap
-    const pkgs::CObjMap
-    const transpkgs::Set
-    const rmpkgs::Set
-
-    log_cb
-    event_cb
-    function Handle(root, db)
-        err = Ref{errno_t}()
-        ptr = ccall((:alpm_initialize, libalpm), Ptr{Cvoid},
-                    (Cstring, Cstring, Ref{errno_t}), root, db, err)
-        ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
-        self = new(ptr, CObjMap(), CObjMap(), Set{Pkg}(), Set{Pkg}(),
-                   nothing, nothing)
-        finalizer(self, release)
-        self
     end
 end
 
@@ -205,8 +237,8 @@ function release(hdl::Handle)
     dbs = hdl.dbs
     pkgs = hdl.pkgs
     ptr == C_NULL && return
-    empty!(hdl.transpkgs::Set{Pkg})
-    empty!(hdl.rmpkgs::Set{Pkg})
+    empty!(hdl.transpkgs)
+    empty!(hdl.rmpkgs)
     _null_all_pkgs(pkgs)
     _null_all_dbs(dbs)
     hdl.ptr = C_NULL
@@ -765,7 +797,7 @@ function get_remove(hdl::Handle)
     pkgs = ccall((:alpm_trans_get_remove, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), hdl)
     list_to_array(Pkg, pkgs, p->(pkg = Pkg(p, hdl);
-                                 push!(hdl.rmpkgs::Set{Pkg}, pkg);
+                                 push!(hdl.rmpkgs, pkg);
                                  pkg.should_free = false; pkg))
 end
 
@@ -853,7 +885,7 @@ end
 
 "Commit a transaction"
 function trans_commit(hdl::Handle)
-    rmpkgs = hdl.rmpkgs::Set{Pkg}
+    rmpkgs = hdl.rmpkgs
     for pkg in rmpkgs
         free(pkg)
     end
@@ -892,7 +924,7 @@ end
 
 "Release a transaction"
 function trans_release(hdl::Handle)
-    transpkg = hdl.transpkgs::Set{Pkg}
+    transpkg = hdl.transpkgs
     for pkg in transpkg
         free(pkg)
     end
