@@ -13,14 +13,8 @@ function maybe_gc(map::CObjMap)
     map.last_pause == cur_pause && return
     map.last_pause = cur_pause
     map.new_added = 0
-    @static if VERSION >= v"0.7.0-DEV.1393"
-        filter!(map.dict) do kv
-            kv[2].value !== nothing
-        end
-    else
-        filter!(map.dict) do k, v
-            v.value !== nothing
-        end
+    filter!(map.dict) do kv
+        kv[2].value !== nothing
     end
 end
 
