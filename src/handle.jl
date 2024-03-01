@@ -56,6 +56,21 @@ end
 const Handle = _Handle{Pkg}
 const DB = _DB{Pkg}
 
+function convert_obj_list(objs) # DB or Pkg array
+    hdl = Ref{Handle}()
+    function obj_convert(obj)
+        if isassigned(hdl)
+            if hdl[] !== obj.hdl
+                throw(ArgumentError("Handle mismatch from multiple DBs"))
+            end
+        else
+            hdl[] = obj.hdl
+        end
+        return obj.ptr
+    end
+    return array_to_list(objs, obj_convert), hdl
+end
+
 generic_printf_len = true
 if Sys.ARCH === :x86_64 && !Sys.iswindows()
     struct __va_list_tag

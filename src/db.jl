@@ -115,18 +115,7 @@ After a successful update, the `get_pkgcache()` package cache will be invalidate
 Return true if db is already up to date.
 """
 function update(dbs, force)
-    hdl = Ref{Handle}()
-    function db_convert(db)
-        if isassigned(hdl)
-            if hdl[] !== db.hdl
-                throw(ArgumentError("Handle mismatch from multiple DBs"))
-            end
-        else
-            hdl[] = db.hdl
-        end
-        return db.ptr
-    end
-    db_list = array_to_list(dbs, db_convert)
+    db_list, hdl = convert_obj_list(dbs)
     if !isassigned(hdl)
         free(db_list)
         return true
