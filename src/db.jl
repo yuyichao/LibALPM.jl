@@ -1,7 +1,6 @@
 #!/usr/bin/julia -f
 
 function _null_all_pkgs(db::DB)
-    # Must be called in a handle context
     db.ptr == C_NULL && return
     hdl = db.hdl
     for ptr in list_iter(ccall((:alpm_db_get_pkgcache, libalpm),

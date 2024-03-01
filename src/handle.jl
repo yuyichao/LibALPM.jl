@@ -210,7 +210,6 @@ function Base.show(io::IO, hdl::Handle)
 end
 
 function _null_all_dbs(cmap::CObjMap)
-    # Must be called in a handle context
     for (k, v) in cmap.dict
         val = v.value
         val === nothing && continue
@@ -222,7 +221,6 @@ function _null_all_dbs(cmap::CObjMap)
 end
 
 function _null_all_pkgs(cmap::CObjMap)
-    # Must be called in a handle context
     for (k, v) in cmap.dict
         val = v.value
         val === nothing && continue
