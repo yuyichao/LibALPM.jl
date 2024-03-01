@@ -47,7 +47,7 @@ mutable struct Pkg
         cached = hdl.pkgs[ptr, Pkg]
         cached === nothing || return cached
         self = new(ptr, hdl, should_free)
-        should_free && finalizer(self, free)
+        finalizer(self, free)
         hdl.pkgs[ptr] = self
         self
     end
