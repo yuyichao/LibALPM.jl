@@ -241,6 +241,20 @@ get_base64_sig(pkg::Pkg) =
     convert_cstring(ccall((:alpm_pkg_get_base64_sig, libalpm),
                           Ptr{UInt8}, (Ptr{Cvoid},), pkg))
 
+"""
+Extracts package signature either from embedded package signature
+or if it is absent then reads data from detached signature file.
+"""
+function get_sig(pkg::Pkg)
+    sig = Ref{Ptr{UInt8}}()
+    sig_len = Ref{Csize_t}()
+    ret = ccall((:alpm_pkg_get_sig, libalpm),
+                Cint, (Ptr{Cvoid}, Ptr{Ptr{UInt8}}, Ptr{Csize_t}),
+                pkg, sig, sig_len)
+    ret != 0 && throw(Error(pkg.hdl, "get_sig"))
+    return unsafe_wrap(Array, sig[], sig_len[], own=true)
+end
+
 "Returns the method used to validate a package during install"
 get_validation(pkg::Pkg) =
     ccall((:alpm_pkg_get_validation, libalpm), UInt32, (Ptr{Cvoid},), pkg)
@@ -385,14 +399,3 @@ function find_group_pkgs(dbs, name)
     return Group(hdl, grp_ptr)
 end
 find_group_pkgs(db::DB, name) = find_group_pkgs([db], name)
-
-# TODO
-# /** Extracts package signature either from embedded package signature
-#  * or if it is absent then reads data from detached signature file.
-#  * @param pkg a pointer to package.
-#  * @param sig output parameter for signature data. Callee function allocates
-#  * a buffer needed for the signature data. Caller is responsible for
-#  * freeing this buffer.
-#  * @param sig_len output parameter for the signature data length.
-#  * @return 0 on success, negative number on error.
-# int alpm_pkg_get_sig(alpm_pkg_t *pkg, unsigned char **sig, size_t *sig_len);
