@@ -35,9 +35,6 @@ include("changelog.jl")
 
 # int alpm_siglist_cleanup(alpm_siglist_t *siglist);
 
-# int alpm_decode_signature(const char *base64_data,
-# unsigned char **data, size_t *data_len);
-
 # int alpm_extract_keyid(alpm_handle_t *handle, const char *identifier,
 # const unsigned char *sig, const size_t len, alpm_list_t **keys);
 
