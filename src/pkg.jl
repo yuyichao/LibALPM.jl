@@ -292,7 +292,7 @@ function add_pkg(hdl::Handle, pkg::Pkg)
                 Cint, (Ptr{Cvoid}, Ptr{Cvoid}), hdl, pkg)
     ret == 0 || throw(Error(hdl, "add_pkg"))
     if pkg.should_free
-        push!(hdl.transpkgs, pkg)
+        hdl.transpkgs[pkg] = nothing
         pkg.should_free = false
     end
     nothing
@@ -303,7 +303,7 @@ function remove_pkg(hdl::Handle, pkg::Pkg)
     ret = ccall((:alpm_remove_pkg, libalpm),
                 Cint, (Ptr{Cvoid}, Ptr{Cvoid}), hdl, pkg)
     ret == 0 || throw(Error(hdl, "remove_pkg"))
-    push!(hdl.rmpkgs, pkg)
+    hdl.rmpkgs[pkg] = nothing
     pkg.should_free = false
     nothing
 end

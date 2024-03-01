@@ -7,8 +7,8 @@ mutable struct _Handle{Pkg}
     ptr::Ptr{Cvoid}
     const dbs::CObjMap
     const pkgs::CObjMap
-    const transpkgs::Set{Pkg}
-    const rmpkgs::Set{Pkg}
+    const transpkgs::WeakKeyDict{Pkg,Nothing}
+    const rmpkgs::WeakKeyDict{Pkg,Nothing}
 
     log_cb
     event_cb
@@ -17,8 +17,8 @@ mutable struct _Handle{Pkg}
         ptr = ccall((:alpm_initialize, libalpm), Ptr{Cvoid},
                     (Cstring, Cstring, Ref{errno_t}), root, db, err)
         ptr == C_NULL && throw(Error(err[], "Create ALPM handle"))
-        self = new{Pkg}(ptr, CObjMap(), CObjMap(), Set{Pkg}(), Set{Pkg}(),
-                        nothing, nothing)
+        self = new{Pkg}(ptr, CObjMap(), CObjMap(), WeakKeyDict{Pkg,Nothing}(),
+                        WeakKeyDict{Pkg,Nothing}(), nothing, nothing)
         finalizer(self, release)
         self
     end
@@ -797,7 +797,7 @@ function get_remove(hdl::Handle)
     pkgs = ccall((:alpm_trans_get_remove, libalpm),
                  Ptr{list_t}, (Ptr{Cvoid},), hdl)
     list_to_array(Pkg, pkgs, p->(pkg = Pkg(p, hdl);
-                                 push!(hdl.rmpkgs, pkg);
+                                 hdl.rmpkgs[pkg] = nothing;
                                  pkg.should_free = false; pkg))
 end
 
@@ -886,7 +886,7 @@ end
 "Commit a transaction"
 function trans_commit(hdl::Handle)
     rmpkgs = hdl.rmpkgs
-    for pkg in rmpkgs
+    for (pkg, _) in rmpkgs
         free(pkg)
     end
     empty!(rmpkgs)
@@ -925,7 +925,7 @@ end
 "Release a transaction"
 function trans_release(hdl::Handle)
     transpkg = hdl.transpkgs
-    for pkg in transpkg
+    for (pkg, _) in transpkg
         free(pkg)
     end
     empty!(transpkg)
