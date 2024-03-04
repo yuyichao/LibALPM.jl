@@ -175,6 +175,27 @@ function get_group(db::DB, name)
     return Group(db.hdl, grp_ptr)
 end
 
+"Sets the usage of a database."
+function set_usage(db::DB, usage)
+    res = ccall((:alpm_db_set_usage, libalpm), Cint,
+                (Ptr{Cvoid}, Cint), db, usage)
+    if res != 0
+        throw(Error(db.hdl, "set_usage"))
+    end
+    return
+end
+
+"Gets the usage of a database."
+function get_usage(db::DB)
+    usage = Ref{Cint}()
+    res = ccall((:alpm_db_get_usage, libalpm), Cint,
+                (Ptr{Cvoid}, Ptr{Cint}), db, usage)
+    if res != 0
+        throw(Error(db.hdl, "get_usage"))
+    end
+    return usage[]
+end
+
 # /** Searches a database with regular expressions.
 #  * @param db pointer to the package database to search in
 #  * @param needles a list of regular expressions to search for
@@ -182,15 +203,3 @@ end
 #  * regular expressions - must point to an empty (NULL) alpm_list_t *.
 #  * @return 0 on success, -1 on error (pm_errno is set accordingly)
 # int alpm_db_search(alpm_db_t *db, const alpm_list_t *needles, alpm_list_t **ret);
-
-# /** Sets the usage of a database.
-#  * @param db pointer to the package database to set the status for
-#  * @param usage a bitmask of alpm_db_usage_t values
-#  * @return 0 on success, or -1 on error
-# int alpm_db_set_usage(alpm_db_t *db, int usage);
-
-# /** Gets the usage of a database.
-#  * @param db pointer to the package database to get the status of
-#  * @param usage pointer to an alpm_db_usage_t to store db's status
-#  * @return 0 on success, or -1 on error
-# int alpm_db_get_usage(alpm_db_t *db, int *usage);
