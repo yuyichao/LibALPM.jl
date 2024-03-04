@@ -1,5 +1,15 @@
 #!/usr/bin/julia -f
 
+struct Group
+    name::String
+    packages::Vector{Pkg}
+    function Group(hdl::Handle, _ptr::Ptr)
+        cgroup = unsafe_load(Ptr{CTypes.Group}(_ptr))
+        new(convert_cstring(cgroup.name),
+            list_to_array(Pkg, cgroup.packages, p->Pkg(p, hdl)))
+    end
+end
+
 function _null_all_pkgs(db::DB)
     db.ptr == C_NULL && return
     hdl = db.hdl
@@ -152,14 +162,18 @@ function get_pkgcache(db::DB)
     list_to_array(Pkg, pkgs, p->Pkg(p, hdl))
 end
 
-# TODO
-# /** Get a group entry from a package database.
-#  * Looking up a group is O(1) and will be significantly faster than
-#  * iterating over the groupcahe.
-#  * @param db pointer to the package database to get the group from
-#  * @param name of the group
-#  * @return the groups entry on success, NULL on error
-# alpm_group_t *alpm_db_get_group(alpm_db_t *db, const char *name);
+"""
+Get a group entry from a package database.
+Looking up a group is O(1).
+"""
+function get_group(db::DB, name)
+    grp_ptr = ccall((:alpm_db_get_group, libalpm), Ptr{list_t},
+                    (Ptr{Cvoid}, Cstring), db, name)
+    if grp_ptr == C_NULL
+        throw(Error(db.hdl, "get_group"))
+    end
+    return Group(db.hdl, grp_ptr)
+end
 
 # /** Searches a database with regular expressions.
 #  * @param db pointer to the package database to search in
